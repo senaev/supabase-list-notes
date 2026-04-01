@@ -12,6 +12,7 @@ import {
   ArrowLeftOnRectangleIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
+import { APP_BASE_URL } from "../../const/APP_BASE_URL";
 import { NBSP } from "../../const/NBSP";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
@@ -127,7 +128,7 @@ export function MainPage() {
                 Icon: ShareIcon,
                 onSelect: () => {
                   const shareUrl = new URL(
-                    import.meta.env.BASE_URL,
+                    APP_BASE_URL,
                     window.location.origin,
                   );
                   Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
