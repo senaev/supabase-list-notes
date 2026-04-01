@@ -4,15 +4,16 @@ import {
   EllipsisHorizontalCircleIcon,
   PlusCircleIcon,
 } from "@heroicons/react/24/outline";
+import type { ReactNode } from "react";
 import { APP_TITLE } from "../../const/APP_TITLE";
 import { PageHeader } from "../PageHeader/PageHeader";
 
 export function MainPageHeader({
   createNewNote,
-  openMenu,
+  menu,
 }: {
   createNewNote?: VoidFunction;
-  openMenu?: VoidFunction;
+  menu?: ReactNode;
 }) {
   return (
     <PageHeader
@@ -26,11 +27,7 @@ export function MainPageHeader({
           <PlusCircleIcon className="MainPageHeader__icon" />
         </button>
       ) : null}
-      {openMenu ? (
-        <button type="button" aria-label="Open menu" onClick={openMenu}>
-          <EllipsisHorizontalCircleIcon className="MainPageHeader__icon" />
-        </button>
-      ) : null}
+      {menu}
     </PageHeader>
   );
 }

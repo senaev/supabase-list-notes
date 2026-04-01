@@ -105,8 +105,6 @@ export function NotesApp({
 export function NotesWithAuthApp() {
   const supabaseStatusObject = useSupabaseClientContext();
 
-  console.log(supabaseStatusObject.status);
-
   if (supabaseStatusObject.status === "ready") {
     return <NotesApp supabaseClient={supabaseStatusObject.client} />;
   }

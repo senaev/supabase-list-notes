@@ -4,9 +4,12 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UNTITLED_PLACEHOLDER } from "../../const/UNTITLED_PLACEHOLDER";
 import { useNotesListContext } from "../../contexts/NotesListContext";
+import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { FullPageContent } from "../FullPageContent/FullPageContent";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
+import { ArrowLeftOnRectangleIcon } from "@heroicons/react/24/outline";
+import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
@@ -78,6 +81,7 @@ export function MainPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const notes = useNotesListContext();
+  const statusObject = useSupabaseClientContext();
 
   const lists = useNotesListContext();
   useEffect(() => {
@@ -94,6 +98,10 @@ export function MainPage() {
     });
   }, [location, navigate, notes]);
 
+  if (statusObject.status !== "ready") {
+    throw new Error("Supabase client is not ready in MainPage component");
+  }
+
   const createNewNote = async () => {
     const { id } = await lists.createNewOne();
 
@@ -104,9 +112,19 @@ export function MainPage() {
     <div className="MainPage">
       <MainPageHeader
         createNewNote={createNewNote}
-        openMenu={() => {
-          // 
-        }}
+        menu={
+          <ContextMenu
+            items={[
+              {
+                label: "Logout",
+                Icon: ArrowLeftOnRectangleIcon,
+                onSelect: () => {
+                  statusObject.logout();
+                },
+              },
+            ]}
+          />
+        }
       />
       <MainPageContent createNewNote={createNewNote} />
     </div>

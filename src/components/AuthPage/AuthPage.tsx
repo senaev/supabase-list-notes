@@ -116,8 +116,7 @@ export function AuthPage({
           <h3>2. Input credentials</h3>
           {statusObject.status === "wrong-credentials" && (
             <p className="AuthPage__wrongCredentialsMessage">
-              Invalid credentials ({statusObject.message}). Please enter a valid
-              project URL and publishable key.
+              Invalid credentials. {statusObject.message}
             </p>
           )}
           <div className="AuthPage__credentialsInputs">

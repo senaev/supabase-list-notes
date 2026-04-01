@@ -33,6 +33,7 @@ export const SUPABASE_CONTROLLER_STATUS_INITIALIZATION: SupabaseControllerStatus
 export type SupabaseControllerStatusObjectReady = {
   status: "ready";
   client: SupabaseClient;
+  logout: VoidFunction;
 };
 
 export type SupabaseControllerStatus =
@@ -91,6 +92,11 @@ export class SupabaseController {
     }
 
     if (!credentials) {
+      this.status = {
+        status: "require-credentials",
+        authenticate: this.authenticate,
+      };
+      this.params.onChange();
       return;
     }
 
@@ -124,9 +130,19 @@ export class SupabaseController {
     this.status = {
       status: "ready",
       client: this.client,
+      logout: this.logout,
     };
     this.params.onChange();
 
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(credentials));
+  };
+
+  private readonly logout: VoidFunction = () => {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    this.status = {
+      status: "require-credentials",
+      authenticate: this.authenticate,
+    };
+    this.params.onChange();
   };
 }

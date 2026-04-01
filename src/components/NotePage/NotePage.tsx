@@ -1,5 +1,6 @@
 import "./NotePage.css";
 
+import { PlusIcon } from "@heroicons/react/24/outline";
 import {
   KeyboardEvent,
   SyntheticEvent,
@@ -420,7 +421,8 @@ export function NotePage({ noteId }: { noteId: number }) {
           }}
           type="button"
         >
-          ➕ Item
+          <PlusIcon className="NotePage_addItemButton__icon" />
+          Item
         </button>
 
         {dragState ? (
