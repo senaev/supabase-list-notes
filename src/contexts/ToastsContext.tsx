@@ -56,7 +56,12 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
       }}
     >
       {children}
-      <Toasts errors={errors} onClose={hideError} />
+      <Toasts
+        errors={errors}
+        infoMessages={infoMessages}
+        onCloseError={hideError}
+        onCloseInfoMessage={hideInfoMessage}
+      />
     </ToastsContext.Provider>
   );
 }

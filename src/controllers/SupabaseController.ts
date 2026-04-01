@@ -33,6 +33,7 @@ export const SUPABASE_CONTROLLER_STATUS_INITIALIZATION: SupabaseControllerStatus
 export type SupabaseControllerStatusObjectReady = {
   status: "ready";
   client: SupabaseClient;
+  credentials: SupabaseCredentials;
   logout: VoidFunction;
 };
 
@@ -130,6 +131,7 @@ export class SupabaseController {
     this.status = {
       status: "ready",
       client: this.client,
+      credentials,
       logout: this.logout,
     };
     this.params.onChange();

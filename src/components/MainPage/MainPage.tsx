@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { NBSP } from "../../const/NBSP";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
+import { useToastsContext } from "../../contexts/ToastsContext";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
@@ -84,10 +85,11 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
 export function MainPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showError, showInfoMessage } = useToastsContext();
   const notes = useNotesListContext();
   const statusObject = useSupabaseClientContext();
-
   const lists = useNotesListContext();
+
   useEffect(() => {
     const deleteListId = location.state?.deleteListId;
     if (deleteListId == null) {
@@ -123,7 +125,20 @@ export function MainPage() {
                 label: `Share${NBSP}access`,
                 Icon: ShareIcon,
                 onSelect: () => {
-                  console.log(`Share!${NBSP}access`);
+                  navigator.clipboard
+                    .writeText(
+                      JSON.stringify(statusObject.credentials, null, 2),
+                    )
+                    .then(() => {
+                      showInfoMessage(
+                        "Share link copied to clipboard. ⚠️ ANYONE with this link will have full access to your notes.",
+                      );
+                    })
+                    .catch((error) => {
+                      showError(
+                        `Failed to copy credentials to clipboard. Error: ${error.message}`,
+                      );
+                    });
                 },
               },
               {
