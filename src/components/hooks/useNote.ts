@@ -10,17 +10,20 @@ export function useNote(params: {
 
   const { noteItemsTable } = useTablesContext();
 
-  const ref = useRef<Note | null>(null);
-  if (!ref.current) {
-    ref.current = new Note({
-      ...params,
-      noteItemsTable,
-      onChange: () => {
-        setVer((prev) => prev + 1);
-      },
-    });
+  const ref = useRef<{ listId: number; note: Note } | null>(null);
+  if (!ref.current || ref.current.listId !== params.listId) {
+    ref.current = {
+      listId: params.listId,
+      note: new Note({
+        ...params,
+        noteItemsTable,
+        onChange: () => {
+          setVer((prev) => prev + 1);
+        },
+      }),
+    };
   }
-  const val = ref.current;
+  const val = ref.current.note;
 
   return [ver, val];
 }

@@ -105,6 +105,7 @@ export function AuthPage({
             </a>
             .
             <button
+              type="button"
               className="AuthPage__copyButton"
               onClick={copySqlRequestToClipboard}
             >
