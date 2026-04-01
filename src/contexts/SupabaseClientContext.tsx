@@ -16,8 +16,8 @@ const SupabaseClientContext = createContext<SupabaseControllerStatus>(
 );
 SupabaseClientContext.displayName = "SupabaseClientContext";
 
-const getSupabaseClient = (): [number, SupabaseControllerStatus] => {
-  const [ver, setVer] = useState<number>(0);
+export function SupabaseClientContextProvider({ children }: PropsWithChildren) {
+  const [, setVer] = useState<number>(0);
 
   const ref = useRef<SupabaseController | null>(null);
   if (!ref.current) {
@@ -27,16 +27,9 @@ const getSupabaseClient = (): [number, SupabaseControllerStatus] => {
       },
     });
   }
-  const val = ref.current;
-
-  return [ver, val.status];
-};
-
-export function SupabaseClientContextProvider({ children }: PropsWithChildren) {
-  const supabaseStatusObject = getSupabaseClient()[1];
 
   return (
-    <SupabaseClientContext.Provider value={supabaseStatusObject}>
+    <SupabaseClientContext.Provider value={ref.current.status}>
       {children}
     </SupabaseClientContext.Provider>
   );

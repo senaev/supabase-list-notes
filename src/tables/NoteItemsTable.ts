@@ -4,98 +4,107 @@ import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
 
 const TABLE_NAME = "notes_items";
 const TABLE_COLUMNS =
-    "id, list_id, child, title, position, created, updated, update_index, check_time";
+  "id, list_id, child, title, position, created, updated, update_index, check_time";
 type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
 
 export class NoteItemsTable {
-    constructor(private readonly supabase: SupabaseClient) {}
+  constructor(private readonly supabase: SupabaseClient) {}
 
-    public async create({
+  public async create({
+    list_id,
+    title,
+    position,
+    check_time,
+    update_index,
+    child,
+  }: Pick<
+    NoteItem,
+    "list_id" | "title" | "position" | "check_time" | "update_index" | "child"
+  >): Promise<Pick<NoteItem, TableColumns>> {
+    const { data, error } = await this.supabase
+      .from(TABLE_NAME)
+      .insert({
         list_id,
         title,
         position,
         check_time,
         update_index,
         child,
-    }: Pick<
-        NoteItem,
-        "list_id" | "title" | "position" | "check_time" | "update_index" | "child"
-    >): Promise<Record<TableColumns, any>> {
-        const { data, error } = await this.supabase
-            .from(TABLE_NAME)
-            .insert({
-                list_id,
-                title,
-                position,
-                check_time,
-                update_index,
-                child,
-            })
-            .select(TABLE_COLUMNS)
-            .single();
+      })
+      .select(TABLE_COLUMNS)
+      .single();
 
-        if (error) {
-            throw new Error(`NoteItemsTable.create: ${error.message}`);
-        }
-
-        return data;
+    if (error) {
+      throw new Error(`NoteItemsTable.create: ${error.message}`);
     }
 
-    public async readAll(listId: number): Promise<Pick<NoteItem, TableColumns>[]> {
-        const { error, data } = await this.supabase
-            .from(TABLE_NAME)
-            .select(TABLE_COLUMNS)
-            .eq("list_id", listId);
+    return data;
+  }
 
-        if (error) {
-            throw new Error(
-                `NoteItemsTable.readAll: Error loading list items for id=[${listId}] error=[${error.message}]`,
-            );
-        }
+  public async readAll(
+    listId: number,
+  ): Promise<Pick<NoteItem, TableColumns>[]> {
+    const { error, data } = await this.supabase
+      .from(TABLE_NAME)
+      .select(TABLE_COLUMNS)
+      .eq("list_id", listId);
 
-        return data;
+    if (error) {
+      throw new Error(
+        `NoteItemsTable.readAll: Error loading list items for id=[${listId}] error=[${error.message}]`,
+      );
     }
 
-    public async update(
-        itemId: number,
-        updates: Partial<Pick<NoteItem, "title" | "position" | "check_time">> & {
-            update_index: number;
-        },
-    ): Promise<
-        | "update_index_conflict"
-        | {
-              updated: string;
-          }
-    > {
-        const { error, data } = await this.supabase
-            .from(TABLE_NAME)
-            .update(updates)
-            .eq("id", itemId)
-            .select(TABLE_COLUMNS)
-            .single();
+    return data;
+  }
 
-        if (error) {
-            try {
-                const json = JSON.parse(error.message);
+  public async update(
+    itemId: number,
+    updates: Partial<Pick<NoteItem, "title" | "position" | "check_time">> & {
+      update_index: number;
+    },
+  ): Promise<
+    | "update_index_conflict"
+    | {
+        updated: string;
+      }
+  > {
+    const { error, data } = await this.supabase
+      .from(TABLE_NAME)
+      .update(updates)
+      .eq("id", itemId)
+      .select(TABLE_COLUMNS)
+      .single();
 
-                if (json.id === "update_index_conflict") {
-                    return "update_index_conflict";
-                }
-            } catch (e) {}
+    if (error) {
+      try {
+        const json = JSON.parse(error.message);
 
-            throw new Error(`NoteItemsTable.update(${itemId}) error: ${error.message}`);
+        if (json.id === "update_index_conflict") {
+          return "update_index_conflict";
         }
+      } catch (e) {}
 
-        return {
-            updated: data.updated,
-        };
+      throw new Error(
+        `NoteItemsTable.update(${itemId}) error: ${error.message}`,
+      );
     }
 
-    public async delete(itemId: number): Promise<void> {
-        const { error } = await this.supabase.from(TABLE_NAME).delete().eq("id", itemId);
+    return {
+      updated: data.updated,
+    };
+  }
 
-        if (error) {
-            throw new Error(`NoteItemsTable.delete(${itemId}) error: ${error.message}`);
-        }
+  public async delete(itemId: number): Promise<void> {
+    const { error } = await this.supabase
+      .from(TABLE_NAME)
+      .delete()
+      .eq("id", itemId);
+
+    if (error) {
+      throw new Error(
+        `NoteItemsTable.delete(${itemId}) error: ${error.message}`,
+      );
     }
+  }
 }
