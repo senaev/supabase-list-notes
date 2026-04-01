@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
                     includeHtmlHeadLinks: true,
                     injectThemeColor: true,
                     overrideManifestIcons: true,
+                    integration: {
+                        baseUrl: basePath,
+                    },
                 },
                 manifest: {
                     name: "Supabase Notes",
