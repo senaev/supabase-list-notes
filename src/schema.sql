@@ -29,7 +29,7 @@ create table if not exists public.notes_items (
     position integer not null,
     created timestamptz not null default timezone('utc', now()),
     updated timestamptz not null default timezone('utc', now()),
-    check_time timestamp default null,
+    check_time timestamptz default null,
     update_index bigint not null
 );
 

@@ -90,7 +90,6 @@ export function MainPage() {
   const { showError, showInfoMessage } = useToastsContext();
   const notes = useNotesListContext();
   const statusObject = useSupabaseClientContext();
-  const lists = useNotesListContext();
 
   useEffect(() => {
     const deleteListId = location.state?.deleteListId;
@@ -111,7 +110,8 @@ export function MainPage() {
   }
 
   const createNewNote = async () => {
-    const { id } = await lists.createNewNote();
+    // TODO: handle errors and show error message to user
+    const { id } = await notes.createNewNote();
 
     navigate(`/${id}`);
   };
