@@ -126,7 +126,10 @@ export function MainPage() {
                 label: `Share${NBSP}access`,
                 Icon: ShareIcon,
                 onSelect: () => {
-                  const shareUrl = new URL(window.location.origin);
+                  const shareUrl = new URL(
+                    import.meta.env.BASE_URL,
+                    window.location.origin,
+                  );
                   Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
                     ([credentialKey, queryParam]) => {
                       const credentialValue =
