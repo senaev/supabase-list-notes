@@ -6,13 +6,13 @@ import {
   useState,
 } from "react";
 import {
-  SUPABASE_CONTROLLER_STATUS_REQUIRE_CREDENTIALS,
+  SUPABASE_CONTROLLER_STATUS_INITIALIZATION,
   SupabaseController,
   SupabaseControllerStatus,
 } from "../controllers/SupabaseController";
 
 const SupabaseClientContext = createContext<SupabaseControllerStatus>(
-  SUPABASE_CONTROLLER_STATUS_REQUIRE_CREDENTIALS,
+  SUPABASE_CONTROLLER_STATUS_INITIALIZATION,
 );
 SupabaseClientContext.displayName = "SupabaseClientContext";
 

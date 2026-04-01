@@ -38,22 +38,6 @@ export function AuthPage({
   const [publishableKey, setPublishableKey] = useState("");
   const { showError } = useErrorsContext();
 
-  function saveCredentials(event: SubmitEvent) {
-    event.preventDefault();
-
-    if (!projectUrl || !publishableKey) {
-      showError("Both project URL and publishable key are required.");
-      return;
-    }
-
-    const nextCredentials: SupabaseCredentials = {
-      projectUrl,
-      publishableKey,
-    };
-
-    console.log(nextCredentials);
-  }
-
   function copySqlRequestToClipboard() {
     SQL_SCHEMA_IMPORT_PROMISE.then((sqlRequest) => {
       return navigator.clipboard.writeText(sqlRequest);
@@ -75,7 +59,28 @@ export function AuthPage({
   return (
     <>
       <MainPageHeader />
-      <form onSubmit={saveCredentials} className="AuthPage__instruction">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+
+          if (!projectUrl || !publishableKey) {
+            showError("Both project URL and publishable key are required.");
+            return;
+          }
+
+          const nextCredentials: SupabaseCredentials = {
+            projectUrl,
+            publishableKey,
+          };
+
+          statusObject.authenticate(nextCredentials).catch((error) => {
+            showError(
+              "Failed to authenticate with provided credentials. Please check them and try again.",
+            );
+          });
+        }}
+        className="AuthPage__instruction"
+      >
         <section>
           <h3>1. Create database</h3>
           <p>
@@ -109,6 +114,12 @@ export function AuthPage({
         </section>
         <section>
           <h3>2. Input credentials</h3>
+          {statusObject.status === "wrong-credentials" && (
+            <p className="AuthPage__wrongCredentialsMessage">
+              Invalid credentials ({statusObject.message}). Please enter a valid
+              project URL and publishable key.
+            </p>
+          )}
           <div className="AuthPage__credentialsInputs">
             <label className="AuthPage__field">
               <span>Project URL</span>

@@ -5,6 +5,7 @@
   --textarea-margin-vertical: 6px;
   --border-color: rgb(95 99 104 / 0.45);
   --supabase-green: rgb(45 206 137);
+  --text-color-error: #ff5e3e;
 }
 
 html,

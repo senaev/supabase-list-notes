@@ -1,8 +1,8 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { NOTES_LIST_TABLE_NAME } from "../const/NOTES_LIST_TABLE_NAME";
 import { NoteRecord } from "../controllers/NotesList";
 import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
 
-const TABLE_NAME = "notes";
 const TABLE_COLUMNS = "id, title, created, updated";
 type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
 
@@ -20,7 +20,7 @@ export class NotesListTable {
     title: string;
   }): Promise<Pick<NoteRecord, TableColumns>> {
     const { data, error } = await this.supabase
-      .from(TABLE_NAME)
+      .from(NOTES_LIST_TABLE_NAME)
       .insert({ title })
       .select(TABLE_COLUMNS)
       .single();
@@ -51,7 +51,7 @@ export class NotesListTable {
     },
   ): Promise<void> {
     const { error } = await this.supabase
-      .from(TABLE_NAME)
+      .from(NOTES_LIST_TABLE_NAME)
       .update(updates)
       .eq("id", id)
       .select(TABLE_COLUMNS)
@@ -64,7 +64,7 @@ export class NotesListTable {
 
   public async delete(id: number): Promise<void> {
     const { error } = await this.supabase
-      .from(TABLE_NAME)
+      .from(NOTES_LIST_TABLE_NAME)
       .delete()
       .eq("id", id);
 

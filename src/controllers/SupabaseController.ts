@@ -1,13 +1,34 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { NOTES_LIST_TABLE_NAME } from "../const/NOTES_LIST_TABLE_NAME";
 
 export type SupabaseCredentials = {
   projectUrl: string;
   publishableKey: string;
 };
 
-export type SupabaseControllerStatusObjectNotReady = {
-  status: "require-credentials" | "check-credentials" | "wrong-credentials";
+type SupabaseControllerAuthenticateFunction = (
+  credentials: SupabaseCredentials,
+) => Promise<void>;
+
+export type SupabaseControllerStatusObjectNotReady =
+  | {
+      status: "wrong-credentials";
+      authenticate: SupabaseControllerAuthenticateFunction;
+      message: string;
+    }
+  | {
+      status: "require-credentials";
+      authenticate: SupabaseControllerAuthenticateFunction;
+    };
+
+export type SupabaseControllerStatusObjectInitialization = {
+  status: "initialization";
 };
+
+export const SUPABASE_CONTROLLER_STATUS_INITIALIZATION: SupabaseControllerStatusObjectInitialization =
+  {
+    status: "initialization",
+  };
 
 export type SupabaseControllerStatusObjectReady = {
   status: "ready";
@@ -15,12 +36,9 @@ export type SupabaseControllerStatusObjectReady = {
 };
 
 export type SupabaseControllerStatus =
+  | SupabaseControllerStatusObjectInitialization
   | SupabaseControllerStatusObjectNotReady
   | SupabaseControllerStatusObjectReady;
-
-export const SUPABASE_CONTROLLER_STATUS_REQUIRE_CREDENTIALS = {
-  status: "require-credentials",
-} as const;
 
 const LOCAL_STORAGE_KEY = "supabase-credentials";
 
@@ -47,7 +65,7 @@ function parseLocalStorageCredentials(
 
 export class SupabaseController {
   public status: SupabaseControllerStatus =
-    SUPABASE_CONTROLLER_STATUS_REQUIRE_CREDENTIALS;
+    SUPABASE_CONTROLLER_STATUS_INITIALIZATION;
   private client?: SupabaseClient;
 
   constructor(
@@ -79,22 +97,25 @@ export class SupabaseController {
     this.authenticate(credentials);
   }
 
-  private async authenticate(credentials: SupabaseCredentials): Promise<void> {
+  private authenticate: SupabaseControllerAuthenticateFunction = async (
+    credentials,
+  ) => {
     this.client = createClient(
       credentials.projectUrl,
       credentials.publishableKey,
     );
 
-    this.status = {
-      status: "check-credentials",
-    };
-    this.params.onChange();
+    const { error } = await this.client
+      .from(NOTES_LIST_TABLE_NAME)
+      .select("id")
+      .limit(1);
 
-    const { data, error } = await this.client.auth.getUser();
-
-    if (error || !data.user) {
+    if (error) {
+      console.error("Failed to authenticate with Supabase:", error);
       this.status = {
         status: "wrong-credentials",
+        authenticate: this.authenticate,
+        message: error.message,
       };
       this.params.onChange();
       return;
@@ -105,5 +126,7 @@ export class SupabaseController {
       client: this.client,
     };
     this.params.onChange();
-  }
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(credentials));
+  };
 }

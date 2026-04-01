@@ -68,3 +68,7 @@
   color: #535353;
   cursor: not-allowed;
 }
+
+.AuthPage__wrongCredentialsMessage {
+  color: var(--text-color-error);
+}
