@@ -1,0 +1,74 @@
+.AuthPage__instruction > section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 20px;
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.AuthPage__instruction h3,
+.AuthPage__instruction p {
+  margin: 0;
+}
+.AuthPage__instruction a {
+  color: var(--supabase-green);
+}
+
+.AuthPage__copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  cursor: pointer;
+  width: 32px;
+  height: 24px;
+  margin: 0 8px;
+  background-color: var(--supabase-green);
+  padding-inline: 5px;
+  border-width: 1px;
+  border-style: outset;
+  border-color: buttonborder;
+  border-radius: 4px;
+  position: relative;
+  top: 3px;
+  color: var(--text-color-button);
+}
+
+.AuthPage__credentialsInputs {
+  display: grid;
+  gap: 16px;
+}
+
+.AuthPage__field {
+  display: grid;
+  gap: 6px;
+}
+
+.AuthPage__field input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.AuthPage__submitButton {
+  width: fit-content;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--supabase-green);
+  color: white;
+  cursor: pointer;
+  color: var(--text-color-button);
+}
+
+.AuthPage__submitButton:disabled {
+  background-color: #b4b4b4;
+  color: #535353;
+  cursor: not-allowed;
+}
+
+.AuthPage__wrongCredentialsMessage {
+  color: var(--text-color-error);
+}
