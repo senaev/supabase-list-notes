@@ -9,7 +9,7 @@ import { type FormEvent, useState } from "react";
 import { SQL_SCHEMA_IMPORT_PROMISE } from "../../const/SQL_SCHEMA_IMPORT_PROMISE";
 import { SUPABASE_DASHBOARD_LINK } from "../../const/SUPABASE_DASHBOARD_LINK";
 import { SUPABASE_SQL_REQUEST_LINK } from "../../const/SUPABASE_SQL_REQUEST_LINK";
-import { SupabaseClientStatusObjectNotReady } from "../../contexts/SupabaseClientContext";
+import { SupabaseControllerStatusObjectNotReady } from "../../controllers/SupabaseController";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
 const CLIPBOARD_STATUS_ICONS = {
@@ -27,7 +27,7 @@ const PUBLISHABLE_KEY_PLACEHOLDER =
 export function AuthPage({
   statusObject,
 }: {
-  statusObject: SupabaseClientStatusObjectNotReady;
+  statusObject: SupabaseControllerStatusObjectNotReady;
 }) {
   const [copyStatus, setCopyStatus] = useState<ClipboardStatus>("idle");
   const [projectUrl, setProjectUrl] = useState("");

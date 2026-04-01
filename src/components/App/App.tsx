@@ -13,7 +13,7 @@ import {
   useSupabaseClientContext,
 } from "../../contexts/SupabaseClientContext";
 import { TablesContext, TablesContextType } from "../../contexts/TablesContext";
-import { NotesList } from "../../NotesList/NotesList";
+import { NotesList } from "../../controllers/NotesList";
 import { NoteItemsTable } from "../../tables/NoteItemsTable";
 import { NotesListTable } from "../../tables/NotesListTable";
 import { AuthPage } from "../AuthPage/AuthPage";
@@ -103,13 +103,13 @@ export function NotesApp({
 }
 
 export function NotesWithAuthApp() {
-  const supabaseClientContext = useSupabaseClientContext();
+  const supabaseStatusObject = useSupabaseClientContext();
 
-  if (supabaseClientContext.status === "ready") {
-    return <NotesApp supabaseClient={supabaseClientContext.client} />;
+  if (supabaseStatusObject.status === "ready") {
+    return <NotesApp supabaseClient={supabaseStatusObject.client} />;
   }
 
-  return <AuthPage statusObject={supabaseClientContext} />;
+  return <AuthPage statusObject={supabaseStatusObject} />;
 }
 
 export function App() {
