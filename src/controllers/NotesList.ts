@@ -38,10 +38,11 @@ export class NotesList {
       });
   }
 
-  public async createNewOne(): Promise<NoteRecord> {
+  public async createNewNote(): Promise<NoteRecord> {
     const newNote = await this.params.notesListTable.create({ title: "" });
 
     this.items = [
+      // TODO: remove workaround after fixing items persistence
       ...this.items!,
       {
         ...newNote,

@@ -37,7 +37,7 @@ export function NotePage({ noteId }: { noteId: number }) {
   const desiredCaretPositionRef = useRef(0);
   const ignoreNextSelectionRef = useRef(false);
   const itemsContainerRef = useRef<HTMLDivElement>(null);
-  const itemsContainer = itemsContainerRef.current!;
+  const itemsContainer = itemsContainerRef.current;
 
   const parentGroups = list.getItemGroupsSplit();
   const unchecked = flattenGroups(parentGroups.unchecked);
@@ -280,6 +280,13 @@ export function NotePage({ noteId }: { noteId: number }) {
               return "source-collapsed";
             })()}
             onDragStart={(event) => {
+              if (!itemsContainer) {
+                showError(
+                  "Unable to start drag and drop: items container not found",
+                );
+                return;
+              }
+
               const dragElement = event.target as HTMLElement;
               const dragItemElement = dragElement.closest(".item-row")!;
 

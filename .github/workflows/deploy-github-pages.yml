@@ -60,3 +60,33 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  notify:
+    if: always()
+    needs:
+      - build
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Telegram
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          TG_NOTIFICATION_BOT_TOKEN: ${{ secrets.TG_NOTIFICATION_BOT_TOKEN }}
+          TG_NOTIFICATION_CHAT_ID: ${{ secrets.TG_NOTIFICATION_CHAT_ID }}
+        run: |
+          if [ "$BUILD_RESULT" = "success" ] && { [ "$DEPLOY_RESULT" = "success" ] || [ "$DEPLOY_RESULT" = "skipped" ]; }; then
+            STATUS_ICON="✅"
+            STATUS_TEXT="succeeded"
+          else
+            STATUS_ICON="❌"
+            STATUS_TEXT="failed"
+          fi
+
+          TEXT="${STATUS_ICON} GitHub Pages deploy ${STATUS_TEXT} for <a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">${GITHUB_REPOSITORY}</a>"
+
+          curl -sS -X POST "https://api.telegram.org/bot${TG_NOTIFICATION_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_NOTIFICATION_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXT}"

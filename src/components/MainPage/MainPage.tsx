@@ -111,7 +111,7 @@ export function MainPage() {
   }
 
   const createNewNote = async () => {
-    const { id } = await lists.createNewOne();
+    const { id } = await lists.createNewNote();
 
     navigate(`/${id}`);
   };
