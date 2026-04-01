@@ -141,7 +141,7 @@ export function MainPage() {
                     .writeText(shareUrl.toString())
                     .then(() => {
                       showInfoMessage(
-                        "Share link copied to clipboard. ⚠️ ANYONE with this link will have full access to your notes.",
+                        "Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.",
                       );
                     })
                     .catch((error) => {
