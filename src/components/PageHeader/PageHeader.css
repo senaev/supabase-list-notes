@@ -1,0 +1,15 @@
+.PageHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 24px 14px;
+    gap: 8px;
+}
+
+.PageHeader > button {
+    display: flex;
+    background-color: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--text-color);
+}

@@ -1,0 +1,15 @@
+.MainPageHeader__logo {
+    width: 32px;
+    height: 32px;
+}
+
+.MainPageHeader__appTitle {
+    flex: 1;
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.MainPageHeader__addNoteIcon {
+    width: 32px;
+    height: 32px;
+}
