@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useErrorsContext } from "../../contexts/ErrorsContext";
+import { useToastsContext } from "../../contexts/ToastsContext";
 import { flattenGroups } from "../../controllers/Note";
 import { NoteItem } from "../../types/NoteItem";
 import { captureDragAndDrop } from "../../utils/captureDragAndDrop";
@@ -30,7 +30,7 @@ type DragState = {
 };
 
 export function NotePage({ noteId }: { noteId: number }) {
-  const { showError } = useErrorsContext();
+  const { showError } = useToastsContext();
   const [itemsVer, list] = useNote({ listId: noteId, showError });
   const [dragState, setDragState] = useState<DragState | null>(null);
   const inputRefs = useRef(new Map<number, HTMLTextAreaElement>());

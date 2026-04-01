@@ -9,7 +9,7 @@ import { useState } from "react";
 import { SQL_SCHEMA_IMPORT_PROMISE } from "../../const/SQL_SCHEMA_IMPORT_PROMISE";
 import { SUPABASE_DASHBOARD_LINK } from "../../const/SUPABASE_DASHBOARD_LINK";
 import { SUPABASE_SQL_REQUEST_LINK } from "../../const/SUPABASE_SQL_REQUEST_LINK";
-import { useErrorsContext } from "../../contexts/ErrorsContext";
+import { useToastsContext } from "../../contexts/ToastsContext";
 import {
   SupabaseControllerStatusObjectNotReady,
   SupabaseCredentials,
@@ -36,7 +36,7 @@ export function AuthPage({
   const [copyStatus, setCopyStatus] = useState<ClipboardStatus>("idle");
   const [projectUrl, setProjectUrl] = useState("");
   const [publishableKey, setPublishableKey] = useState("");
-  const { showError } = useErrorsContext();
+  const { showError } = useToastsContext();
 
   function copySqlRequestToClipboard() {
     SQL_SCHEMA_IMPORT_PROMISE.then((sqlRequest) => {

@@ -8,7 +8,11 @@ import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { FullPageContent } from "../FullPageContent/FullPageContent";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
-import { ArrowLeftOnRectangleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftOnRectangleIcon,
+  ShareIcon,
+} from "@heroicons/react/24/outline";
+import { NBSP } from "../../const/NBSP";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 
@@ -115,6 +119,13 @@ export function MainPage() {
         menu={
           <ContextMenu
             items={[
+              {
+                label: `Share${NBSP}access`,
+                Icon: ShareIcon,
+                onSelect: () => {
+                  console.log(`Share!${NBSP}access`);
+                },
+              },
               {
                 label: "Logout",
                 Icon: ArrowLeftOnRectangleIcon,

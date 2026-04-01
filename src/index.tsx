@@ -2,16 +2,18 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./components/App/App";
-import { ErrorsProvider } from "./contexts/ErrorsContext";
+import { ToastsContextProvider } from "./contexts/ToastsContext";
 import "./index.css";
 
-const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
+const root = ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement,
+);
 root.render(
-    <React.StrictMode>
-        <BrowserRouter>
-            <ErrorsProvider>
-                <App />
-            </ErrorsProvider>
-        </BrowserRouter>
-    </React.StrictMode>,
+  <React.StrictMode>
+    <BrowserRouter>
+      <ToastsContextProvider>
+        <App />
+      </ToastsContextProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
 );

@@ -3,7 +3,6 @@ import "./App.css";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { useRef, useState } from "react";
 import { Route, Routes, useParams } from "react-router-dom";
-import { useErrorsContext } from "../../contexts/ErrorsContext";
 import {
   NotesListContext,
   useNotesListContext,
@@ -13,6 +12,7 @@ import {
   useSupabaseClientContext,
 } from "../../contexts/SupabaseClientContext";
 import { TablesContext, TablesContextType } from "../../contexts/TablesContext";
+import { useToastsContext } from "../../contexts/ToastsContext";
 import { NotesList } from "../../controllers/NotesList";
 import { NoteItemsTable } from "../../tables/NoteItemsTable";
 import { NotesListTable } from "../../tables/NotesListTable";
@@ -65,7 +65,7 @@ export function NotesApp({
 }: {
   supabaseClient: SupabaseClient;
 }) {
-  const { showError } = useErrorsContext();
+  const { showError } = useToastsContext();
 
   const tablesRef = useRef<TablesContextType | null>(null);
   if (!tablesRef.current) {
