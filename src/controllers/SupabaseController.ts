@@ -1,6 +1,9 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-export type SupabaseCredentials = { supabaseUrl: string; supabaseKey: string };
+export type SupabaseCredentials = {
+  projectUrl: string;
+  publishableKey: string;
+};
 
 export type SupabaseControllerStatusObjectNotReady = {
   status: "require-credentials" | "check-credentials" | "wrong-credentials";
@@ -31,9 +34,9 @@ function parseLocalStorageCredentials(
   try {
     const parsed = JSON.parse(value);
 
-    const { supabaseUrl, supabaseKey } = parsed;
-    if (typeof supabaseUrl === "string" && typeof supabaseKey === "string") {
-      return { supabaseUrl, supabaseKey };
+    const { projectUrl, publishableKey } = parsed;
+    if (typeof projectUrl === "string" && typeof publishableKey === "string") {
+      return { projectUrl, publishableKey };
     }
   } catch (error) {
     //
@@ -78,8 +81,8 @@ export class SupabaseController {
 
   private async authenticate(credentials: SupabaseCredentials): Promise<void> {
     this.client = createClient(
-      credentials.supabaseUrl,
-      credentials.supabaseKey,
+      credentials.projectUrl,
+      credentials.publishableKey,
     );
 
     this.status = {

@@ -5,11 +5,15 @@ import {
   ClipboardDocumentListIcon,
   NoSymbolIcon,
 } from "@heroicons/react/24/outline";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 import { SQL_SCHEMA_IMPORT_PROMISE } from "../../const/SQL_SCHEMA_IMPORT_PROMISE";
 import { SUPABASE_DASHBOARD_LINK } from "../../const/SUPABASE_DASHBOARD_LINK";
 import { SUPABASE_SQL_REQUEST_LINK } from "../../const/SUPABASE_SQL_REQUEST_LINK";
-import { SupabaseControllerStatusObjectNotReady } from "../../controllers/SupabaseController";
+import { useErrorsContext } from "../../contexts/ErrorsContext";
+import {
+  SupabaseControllerStatusObjectNotReady,
+  SupabaseCredentials,
+} from "../../controllers/SupabaseController";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
 const CLIPBOARD_STATUS_ICONS = {
@@ -32,18 +36,22 @@ export function AuthPage({
   const [copyStatus, setCopyStatus] = useState<ClipboardStatus>("idle");
   const [projectUrl, setProjectUrl] = useState("");
   const [publishableKey, setPublishableKey] = useState("");
+  const { showError } = useErrorsContext();
 
-  function saveCredentials(event: FormEvent<HTMLFormElement>) {
+  function saveCredentials(event: SubmitEvent) {
     event.preventDefault();
 
-    localStorage.setItem(
-      "supabase-credentials",
-      JSON.stringify({
-        supabaseUrl: projectUrl,
-        supabaseKey: publishableKey,
-      }),
-    );
-    window.location.reload();
+    if (!projectUrl || !publishableKey) {
+      showError("Both project URL and publishable key are required.");
+      return;
+    }
+
+    const nextCredentials: SupabaseCredentials = {
+      projectUrl,
+      publishableKey,
+    };
+
+    console.log(nextCredentials);
   }
 
   function copySqlRequestToClipboard() {
@@ -133,13 +141,6 @@ export function AuthPage({
             className="AuthPage__submitButton"
             type="submit"
             disabled={!projectUrl || !publishableKey}
-            onSubmit={(event) => {
-              event.preventDefault();
-              console.log({
-                projectUrl,
-                publishableKey,
-              });
-            }}
           >
             Login
           </button>
