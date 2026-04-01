@@ -1,5 +1,6 @@
 :root {
   --text-color: rgb(232 234 237);
+  --text-color-button: #2c2c2c;
   --background-color: rgb(32 33 36);
   --textarea-margin-vertical: 6px;
   --border-color: rgb(95 99 104 / 0.45);
