@@ -13,6 +13,7 @@ import {
   ShareIcon,
 } from "@heroicons/react/24/outline";
 import { NBSP } from "../../const/NBSP";
+import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
@@ -125,10 +126,19 @@ export function MainPage() {
                 label: `Share${NBSP}access`,
                 Icon: ShareIcon,
                 onSelect: () => {
+                  const shareUrl = new URL(window.location.origin);
+                  Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
+                    ([credentialKey, queryParam]) => {
+                      const credentialValue =
+                        statusObject.credentials[
+                          credentialKey as keyof typeof statusObject.credentials
+                        ];
+                      shareUrl.searchParams.set(queryParam, credentialValue);
+                    },
+                  );
+
                   navigator.clipboard
-                    .writeText(
-                      JSON.stringify(statusObject.credentials, null, 2),
-                    )
+                    .writeText(shareUrl.toString())
                     .then(() => {
                       showInfoMessage(
                         "Share link copied to clipboard. ⚠️ ANYONE with this link will have full access to your notes.",
