@@ -1,6 +1,6 @@
 import "./MainPage.css";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UNTITLED_PLACEHOLDER } from "../../const/UNTITLED_PLACEHOLDER";
 import { useNotesListContext } from "../../contexts/NotesListContext";
@@ -9,6 +9,7 @@ import { FullPageContent } from "../FullPageContent/FullPageContent";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
 import {
+  ArrowDownTrayIcon,
   ArrowLeftOnRectangleIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
@@ -18,6 +19,10 @@ import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTI
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
   const { items } = useNotesListContext();
@@ -90,6 +95,8 @@ export function MainPage() {
   const { showError, showInfoMessage } = useToastsContext();
   const notes = useNotesListContext();
   const statusObject = useSupabaseClientContext();
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     const deleteListId = location.state?.deleteListId;
@@ -104,6 +111,28 @@ export function MainPage() {
       state: null,
     });
   }, [location, navigate, notes]);
+
+  useEffect(() => {
+    function handleBeforeInstallPrompt(event: Event) {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    }
+
+    function handleAppInstalled() {
+      setInstallPrompt(null);
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
 
   if (statusObject.status !== "ready") {
     throw new Error("Supabase client is not ready in MainPage component");
@@ -151,6 +180,29 @@ export function MainPage() {
                     .catch((error) => {
                       showError(
                         `Failed to copy credentials to clipboard. Error: ${error.message}`,
+                      );
+                    });
+                },
+              },
+              {
+                label: `Add${NBSP}to${NBSP}home${NBSP}screen`,
+                Icon: ArrowDownTrayIcon,
+                onSelect: () => {
+                  if (!installPrompt) {
+                    showInfoMessage(
+                      'To install this app, open the browser menu and choose "Add to Home Screen" or "Install App".',
+                    );
+                    return;
+                  }
+
+                  installPrompt
+                    .prompt()
+                    .then(() => {
+                      setInstallPrompt(null);
+                    })
+                    .catch((error) => {
+                      showError(
+                        `Failed to show install prompt. Error: ${error.message}`,
                       );
                     });
                 },
