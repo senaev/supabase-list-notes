@@ -1,0 +1,28 @@
+.AuthPage__instruction {
+  margin: 20px;
+  border: 1px solid var(--border-color);
+  padding: 0px 20px;
+  border-radius: 14px;
+}
+
+.AuthPage__instruction a {
+  color: var(--supabase-green);
+}
+
+.AuthPage__copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  cursor: pointer;
+  width: 32px;
+  height: 24px;
+  margin: 0 8px;
+  background-color: var(--supabase-green);
+  padding-inline: 5px;
+  border-width: 1px;
+  border-style: outset;
+  border-color: buttonborder;
+  border-radius: 4px;
+  position: relative;
+  top: 3px;
+}
