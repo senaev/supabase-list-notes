@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { NOTES_LIST_TABLE_NAME } from "../const/NOTES_LIST_TABLE_NAME";
+import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 
 export type SupabaseCredentials = {
   projectUrl: string;
@@ -90,6 +91,31 @@ export class SupabaseController {
         error,
       );
       localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+
+    const { searchParams } = new URL(window.location.href);
+    const hasAllRequiredCredentialsInUrl = Object.values(
+      SUPABASE_CREDENTIALS_QUERY_PARAMS,
+    ).every((param) => searchParams.has(param));
+
+    if (hasAllRequiredCredentialsInUrl) {
+      const credentialsFromUrl: Partial<SupabaseCredentials> = {};
+      Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
+        ([credentialKey, queryParam]) => {
+          const paramValue = searchParams.get(queryParam);
+          if (paramValue) {
+            credentialsFromUrl[credentialKey as keyof SupabaseCredentials] =
+              paramValue;
+          }
+        },
+      );
+
+      // Remove all query parameters without reloading the page
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState({}, document.title, url);
+
+      credentials = credentialsFromUrl as SupabaseCredentials;
     }
 
     if (!credentials) {
