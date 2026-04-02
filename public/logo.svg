@@ -3,17 +3,24 @@
   <defs>
     <linearGradient id="gradient-1" bx:pinned="true">
       <stop offset="0" style="stop-color: rgb(0, 248, 101);"/>
+      <stop offset="0.607" style="stop-color: rgb(4, 240, 100);"/>
       <stop offset="1" style="stop-color: rgb(33, 197, 94);"/>
     </linearGradient>
-    <linearGradient id="gradient-1-0" href="#gradient-1" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="64" y2="33.231"/>
+    <linearGradient id="gradient-1-0" href="#gradient-1" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="64" y2="33.231" gradientTransform="matrix(1, 0, 0, 0.962956, 0, 0)"/>
     <linearGradient id="gradient-0" bx:pinned="true">
-      <stop offset="0" style="stop-color: rgb(103, 254, 132);"/>
-      <stop offset="1" style="stop-color: rgb(229, 250, 236);"/>
+      <stop offset="0" style="stop-color: rgb(242, 255, 160);"/>
+      <stop offset="1" style="stop-color: rgb(212, 255, 223);"/>
     </linearGradient>
-    <radialGradient gradientUnits="userSpaceOnUse" cx="76.272" cy="65.037" r="64" id="gradient-0-1" href="#gradient-0" gradientTransform="matrix(1.102496, 0.9322, -0.847693, 1.002554, 35.142403, -57.534344)"/>
+    <linearGradient id="gradient-3" bx:pinned="true">
+      <stop offset="0" style="stop-color: rgb(78, 142, 101);"/>
+      <stop offset="0.217" style="stop-color: rgba(113, 128, 119, 0.29);"/>
+      <stop offset="1" style="stop-color: rgba(123, 123, 123, 0);"/>
+    </linearGradient>
+    <linearGradient id="gradient-0-0" href="#gradient-0" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="64" y2="128"/>
+    <linearGradient id="gradient-3-0" href="#gradient-3" gradientUnits="userSpaceOnUse" x1="63.961" y1="32" x2="63.961" y2="48.019" gradientTransform="matrix(1, 0, 0, 1.137147, 0, -4.388693)"/>
   </defs>
-  <rect width="128" height="128" rx="28.315" style="fill: url(&quot;#gradient-0-1&quot;);" ry="28.315"/>
-  <path d="M 0 33.231 C 0 11.078 10.667 0 32.001 0 L 96.001 0 C 117.334 0 128 11.078 128 33.231 L 0 33.231 Z" style="fill-rule: nonzero; paint-order: fill; fill: url(&quot;#gradient-1-0&quot;);"/>
+  <rect width="128" height="128" rx="32" style="fill: url(&quot;#gradient-0-0&quot;);" ry="32"/>
+  <path d="M 0 32 C 0 10.668 10.667 0 32.001 0 L 96.001 0 C 117.334 0 128 10.668 128 32 L 0 32 Z" style="fill-rule: nonzero; paint-order: fill; fill: url(&quot;#gradient-1-0&quot;);"/>
   <rect x="20" y="60" width="88" height="6" rx="3" style="fill: rgb(35, 198, 96);" ry="3"/>
   <ellipse style="fill: rgb(35, 198, 96);" cx="4.536" cy="37" rx="2" ry="2"/>
   <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="11.536" cy="37" rx="2" ry="2"/>
@@ -33,5 +40,6 @@
   <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="109.536" cy="37" rx="2" ry="2"/>
   <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="116.536" cy="37" rx="2" ry="2"/>
   <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="123.536" cy="37" rx="2" ry="2"/>
+  <rect y="32" width="128" height="18.216" style="fill: url(&quot;#gradient-3-0&quot;);" x="-0.039"/>
   <rect x="20" y="91" width="88" height="6" rx="3" style="stroke-width: 1; fill: rgb(35, 198, 96);" ry="3"/>
 </svg>
