@@ -2,37 +2,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" xmlns:bx="https://boxy-svg.com">
   <defs>
     <linearGradient id="gradient-1" bx:pinned="true">
-      <stop offset="0" style="stop-color: rgb(134, 245, 183);"/>
-      <stop offset="0.711" style="stop-color: rgb(85, 221, 139);"/>
+      <stop offset="0" style="stop-color: rgb(0, 248, 101);"/>
       <stop offset="1" style="stop-color: rgb(33, 197, 94);"/>
     </linearGradient>
     <linearGradient id="gradient-1-0" href="#gradient-1" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="64" y2="33.231"/>
     <linearGradient id="gradient-0" bx:pinned="true">
-      <stop offset="0" style="stop-color: rgb(223, 252, 241);"/>
-      <stop offset="1" style="stop-color: rgb(224, 224, 224);"/>
+      <stop offset="0" style="stop-color: rgb(103, 254, 132);"/>
+      <stop offset="1" style="stop-color: rgb(229, 250, 236);"/>
     </linearGradient>
     <radialGradient gradientUnits="userSpaceOnUse" cx="76.272" cy="65.037" r="64" id="gradient-0-1" href="#gradient-0" gradientTransform="matrix(1.102496, 0.9322, -0.847693, 1.002554, 35.142403, -57.534344)"/>
   </defs>
   <rect width="128" height="128" rx="28.315" style="fill: url(&quot;#gradient-0-1&quot;);" ry="28.315"/>
   <path d="M 0 33.231 C 0 11.078 10.667 0 32.001 0 L 96.001 0 C 117.334 0 128 11.078 128 33.231 L 0 33.231 Z" style="fill-rule: nonzero; paint-order: fill; fill: url(&quot;#gradient-1-0&quot;);"/>
-  <rect x="15" y="62" width="98" height="4" rx="3" style="fill: rgb(136, 182, 158);" ry="3"/>
-  <ellipse style="fill: rgb(136, 182, 158);" cx="4.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="11.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="18.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="25.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="39.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="32.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="46.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="53.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="60.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="67.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="81.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="74.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="88.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="95.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="102.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="109.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="116.536" cy="37" rx="2" ry="2"/>
-  <ellipse style="stroke-width: 1; fill: rgb(136, 182, 158);" cx="123.536" cy="37" rx="2" ry="2"/>
-  <rect x="15" y="93" width="98" height="4" rx="3" style="fill: rgb(136, 182, 158); stroke-width: 1;" ry="3"/>
+  <rect x="20" y="60" width="88" height="6" rx="3" style="fill: rgb(35, 198, 96);" ry="3"/>
+  <ellipse style="fill: rgb(35, 198, 96);" cx="4.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="11.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="18.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="25.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="39.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="32.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="46.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="53.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="60.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="67.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="81.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="74.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="88.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="95.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="102.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="109.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="116.536" cy="37" rx="2" ry="2"/>
+  <ellipse style="stroke-width: 1; fill: rgb(35, 198, 96);" cx="123.536" cy="37" rx="2" ry="2"/>
+  <rect x="20" y="91" width="88" height="6" rx="3" style="stroke-width: 1; fill: rgb(35, 198, 96);" ry="3"/>
 </svg>
