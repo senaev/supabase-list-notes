@@ -2,9 +2,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" xmlns:bx="https://boxy-svg.com">
   <defs>
     <linearGradient id="gradient-1" bx:pinned="true">
-      <stop offset="0" style="stop-color: rgb(0, 248, 101);"/>
-      <stop offset="0.607" style="stop-color: rgb(4, 240, 100);"/>
-      <stop offset="1" style="stop-color: rgb(33, 197, 94);"/>
+      <stop offset="0" style="stop-color: rgb(135, 255, 183);"/>
+      <stop offset="0.728" style="stop-color: rgb(92, 241, 149);"/>
+      <stop offset="1" style="stop-color: rgb(38, 221, 106);"/>
     </linearGradient>
     <linearGradient id="gradient-1-0" href="#gradient-1" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="64" y2="33.231" gradientTransform="matrix(1, 0, 0, 0.962956, 0, 0)"/>
     <linearGradient id="gradient-0" bx:pinned="true">
