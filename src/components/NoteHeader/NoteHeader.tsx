@@ -29,7 +29,7 @@ export function NoteHeader({
     <PageHeader homeButtonIcon={<ArrowLeftIcon className="NoteHeader__icon" />}>
       {noteItem ? (
         <input
-          className="list-title"
+          className="NoteHeader__titleInput"
           value={noteItem.title}
           onChange={(event) => {
             handleListTitleChange(event.currentTarget.value);

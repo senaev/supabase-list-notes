@@ -3,10 +3,10 @@ import "./ContextMenu.css";
 
 import { useState } from "react";
 
-type ContextMenuItem = {
+export type ContextMenuItem = {
   label: string;
-  Icon?: React.ComponentType<{ className?: string }>;
   onSelect: VoidFunction;
+  Icon?: React.ComponentType<{ className?: string }>;
 };
 
 export function ContextMenu({ items }: { items: ContextMenuItem[] }) {
@@ -31,7 +31,7 @@ export function ContextMenu({ items }: { items: ContextMenuItem[] }) {
       >
         <EllipsisHorizontalCircleIcon className="MainPageHeader__icon" />
       </button>
-      {isOpen ? (
+      {isOpen && items.length > 0 ? (
         <div className="ContextMenu" role="menu">
           {items.map((item, i) => (
             <button

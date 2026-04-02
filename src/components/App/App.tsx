@@ -16,6 +16,7 @@ import { useToastsContext } from "../../contexts/ToastsContext";
 import { NotesList } from "../../controllers/NotesList";
 import { NoteItemsTable } from "../../tables/NoteItemsTable";
 import { NotesListTable } from "../../tables/NotesListTable";
+import { noop } from "../../utils/noop";
 import { AuthPage } from "../AuthPage/AuthPage";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 import { MainPage } from "../MainPage/MainPage";
@@ -36,7 +37,8 @@ export function NoteRouteElement() {
   if (items === undefined) {
     return (
       <>
-        <MainPageHeader />
+        {/* TODO: implement persistence and remove noop */}
+        <MainPageHeader createNewNote={noop} menu={[]} />
         <LoadingPageContent />
       </>
     );
@@ -112,7 +114,8 @@ export function NotesWithAuthApp() {
   if (supabaseStatusObject.status === "initialization") {
     return (
       <>
-        <MainPageHeader />
+        {/* TODO: implement persistence and remove noop */}
+        <MainPageHeader createNewNote={noop} menu={[]} />
         <LoadingPageContent />
       </>
     );

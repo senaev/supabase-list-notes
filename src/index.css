@@ -2,10 +2,12 @@
   --text-color: rgb(232 234 237);
   --text-color-button: #2c2c2c;
   --background-color: rgb(32 33 36);
-  --textarea-margin-vertical: 6px;
+  --textarea-margin-vertical: 12px;
   --border-color: rgb(95 99 104 / 0.45);
   --supabase-green: rgb(45 206 137);
   --text-color-error: #ff5e3e;
+  --text-color-placeholder: rgb(154 160 166);
+  --title-font-size: 1.3rem;
 }
 
 html,

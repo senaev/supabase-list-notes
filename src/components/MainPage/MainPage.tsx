@@ -1,15 +1,13 @@
 import "./MainPage.css";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UNTITLED_PLACEHOLDER } from "../../const/UNTITLED_PLACEHOLDER";
 import { useNotesListContext } from "../../contexts/NotesListContext";
-import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { FullPageContent } from "../FullPageContent/FullPageContent";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
 import {
-  ArrowDownTrayIcon,
   ArrowLeftOnRectangleIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
@@ -19,10 +17,6 @@ import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTI
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<{ outcome: "accepted" | "dismissed" }>;
-};
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
   const { items } = useNotesListContext();
@@ -95,8 +89,6 @@ export function MainPage() {
   const { showError, showInfoMessage } = useToastsContext();
   const notes = useNotesListContext();
   const statusObject = useSupabaseClientContext();
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     const deleteListId = location.state?.deleteListId;
@@ -111,28 +103,6 @@ export function MainPage() {
       state: null,
     });
   }, [location, navigate, notes]);
-
-  useEffect(() => {
-    function handleBeforeInstallPrompt(event: Event) {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    }
-
-    function handleAppInstalled() {
-      setInstallPrompt(null);
-    }
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt,
-      );
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
 
   if (statusObject.status !== "ready") {
     throw new Error("Supabase client is not ready in MainPage component");
@@ -149,74 +119,44 @@ export function MainPage() {
     <div className="MainPage">
       <MainPageHeader
         createNewNote={createNewNote}
-        menu={
-          <ContextMenu
-            items={[
-              {
-                label: `Share${NBSP}access`,
-                Icon: ShareIcon,
-                onSelect: () => {
-                  const shareUrl = new URL(
-                    APP_BASE_URL,
-                    window.location.origin,
-                  );
-                  Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
-                    ([credentialKey, queryParam]) => {
-                      const credentialValue =
-                        statusObject.credentials[
-                          credentialKey as keyof typeof statusObject.credentials
-                        ];
-                      shareUrl.searchParams.set(queryParam, credentialValue);
-                    },
-                  );
+        menu={[
+          {
+            label: `Share${NBSP}access`,
+            Icon: ShareIcon,
+            onSelect: () => {
+              const shareUrl = new URL(APP_BASE_URL, window.location.origin);
+              Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
+                ([credentialKey, queryParam]) => {
+                  const credentialValue =
+                    statusObject.credentials[
+                      credentialKey as keyof typeof statusObject.credentials
+                    ];
+                  shareUrl.searchParams.set(queryParam, credentialValue);
+                },
+              );
 
-                  navigator.clipboard
-                    .writeText(shareUrl.toString())
-                    .then(() => {
-                      showInfoMessage(
-                        "Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.",
-                      );
-                    })
-                    .catch((error) => {
-                      showError(
-                        `Failed to copy credentials to clipboard. Error: ${error.message}`,
-                      );
-                    });
-                },
-              },
-              {
-                label: `Add${NBSP}to${NBSP}home${NBSP}screen`,
-                Icon: ArrowDownTrayIcon,
-                onSelect: () => {
-                  if (!installPrompt) {
-                    showInfoMessage(
-                      'To install this app, open the browser menu and choose "Add to Home Screen" or "Install App".',
-                    );
-                    return;
-                  }
-
-                  installPrompt
-                    .prompt()
-                    .then(() => {
-                      setInstallPrompt(null);
-                    })
-                    .catch((error) => {
-                      showError(
-                        `Failed to show install prompt. Error: ${error.message}`,
-                      );
-                    });
-                },
-              },
-              {
-                label: "Logout",
-                Icon: ArrowLeftOnRectangleIcon,
-                onSelect: () => {
-                  statusObject.logout();
-                },
-              },
-            ]}
-          />
-        }
+              navigator.clipboard
+                .writeText(shareUrl.toString())
+                .then(() => {
+                  showInfoMessage(
+                    "Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.",
+                  );
+                })
+                .catch((error) => {
+                  showError(
+                    `Failed to copy credentials to clipboard. Error: ${error.message}`,
+                  );
+                });
+            },
+          },
+          {
+            label: "Logout",
+            Icon: ArrowLeftOnRectangleIcon,
+            onSelect: () => {
+              statusObject.logout();
+            },
+          },
+        ]}
       />
       <MainPageContent createNewNote={createNewNote} />
     </div>

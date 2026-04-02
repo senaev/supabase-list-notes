@@ -1,6 +1,6 @@
 import "./NotePage.css";
 
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/solid";
 import {
   KeyboardEvent,
   SyntheticEvent,
@@ -288,7 +288,7 @@ export function NotePage({ noteId }: { noteId: number }) {
               }
 
               const dragElement = event.target as HTMLElement;
-              const dragItemElement = dragElement.closest(".item-row")!;
+              const dragItemElement = dragElement.closest(".NoteItemElement")!;
 
               const dragItemRect = dragItemElement.getBoundingClientRect();
 
@@ -320,7 +320,7 @@ export function NotePage({ noteId }: { noteId: number }) {
 
               const otherItemsVerticalCenters: number[] = [];
               const itemElements = Array.from(
-                itemsContainer.querySelectorAll(".item-row"),
+                itemsContainer.querySelectorAll(".NoteItemElement"),
               );
               let movingItemsHeight = 0;
               itemElements.forEach((otherItemElement, i) => {
@@ -422,7 +422,7 @@ export function NotePage({ noteId }: { noteId: number }) {
           />
         ))}
         <button
-          className="add-item-button"
+          className="NotePage__addItemButton"
           onClick={() => {
             list.createNewItemAtTheEnd();
           }}

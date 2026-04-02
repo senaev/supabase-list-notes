@@ -1,4 +1,18 @@
+.NoteHeader__titleInput {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  display: block;
+  width: calc(100% - 48px);
+  font-size: var(--title-font-size);
+  font-weight: 700;
+}
+
 .NoteHeader__icon {
-    width: 32px;
-    height: 32px;
+  width: 32px;
+  height: 32px;
 }
