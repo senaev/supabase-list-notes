@@ -8,8 +8,8 @@
     </linearGradient>
     <linearGradient id="gradient-1-0" href="#gradient-1" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="64" y2="33.231" gradientTransform="matrix(1, 0, 0, 0.962956, 0, 0)"/>
     <linearGradient id="gradient-0" bx:pinned="true">
-      <stop offset="0" style="stop-color: rgb(242, 255, 160);"/>
-      <stop offset="1" style="stop-color: rgb(212, 255, 223);"/>
+      <stop offset="0" style="stop-color: rgb(238, 255, 131);"/>
+      <stop offset="1" style="stop-color: rgb(175, 234, 190);"/>
     </linearGradient>
     <linearGradient id="gradient-3" bx:pinned="true">
       <stop offset="0" style="stop-color: rgb(78, 142, 101);"/>
