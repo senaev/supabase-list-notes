@@ -36,8 +36,8 @@ export default defineConfig(({ mode }) => {
           short_name: "List Notes",
           description:
             "Supabase List Notes is a lightweight notes app powered by Supabase.",
-          theme_color: "#3ecf8e",
-          background_color: "#ffffff",
+          theme_color: "#202124",
+          background_color: "#202124",
           display: "standalone",
           start_url: basePath,
           scope: basePath,

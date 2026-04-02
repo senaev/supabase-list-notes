@@ -1,12 +1,12 @@
 :root {
-  --text-color: rgb(232 234 237);
+  --text-color: #e8eaed;
   --text-color-button: #2c2c2c;
-  --background-color: rgb(32 33 36);
+  --background-color: #202124;
   --textarea-margin-vertical: 12px;
-  --border-color: rgb(95 99 104 / 0.45);
-  --supabase-green: rgb(45 206 137);
+  --border-color: #5f636873;
+  --supabase-green: #2dce89;
   --text-color-error: #ff5e3e;
-  --text-color-placeholder: rgb(154 160 166);
+  --text-color-placeholder: #9aa0a6;
   --title-font-size: 1.3rem;
 }
 
