@@ -10,10 +10,14 @@
     inset 0 -1px 0 var(--border-color);
 }
 
-.NoteItemElement:hover .item-remove,
-.NoteItemElement:focus-within .item-remove {
+.NoteItemElement:hover .NoteItemElement__remove,
+.NoteItemElement:focus-within .NoteItemElement__remove {
   opacity: 1;
   pointer-events: auto;
+}
+
+.NoteItemElement:hover .NoteItemElement__remove__visual {
+  background-color: rgb(154 160 166 / 0.16);
 }
 
 .NoteItemElement_dragSource {
@@ -160,10 +164,6 @@
   background-position: center;
   background-repeat: no-repeat;
   background-size: 18px 18px;
-}
-
-.NoteItemElement__remove:hover .NoteItemElement__remove__visual {
-  background-color: rgb(154 160 166 / 0.16);
 }
 
 .NoteItemElement__textareaLabel {

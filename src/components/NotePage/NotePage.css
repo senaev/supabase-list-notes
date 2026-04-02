@@ -24,7 +24,7 @@
   height: 18px;
 }
 
-.drag-overlay {
+.NotePage__dragOverlay {
   position: absolute;
   top: 0;
   left: 0;

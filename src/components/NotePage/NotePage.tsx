@@ -434,7 +434,7 @@ export function NotePage({ noteId }: { noteId: number }) {
 
         {dragState ? (
           <div
-            className={"drag-overlay"}
+            className={"NotePage__dragOverlay"}
             style={{
               transform: `translateY(${dragState.y}px)`,
             }}
