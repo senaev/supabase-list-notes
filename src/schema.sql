@@ -5,6 +5,8 @@ create table if not exists public.notes (
     updated timestamptz not null default timezone('utc', now())
 );
 
+alter table public.notes enable row level security;
+
 create or replace function public.handle_notes_update()
 returns trigger
 language plpgsql
@@ -33,7 +35,10 @@ create table if not exists public.notes_items (
     update_index bigint not null
 );
 
-create or replace view public.notes_with_counts as
+alter table public.notes_items enable row level security;
+
+create or replace view public.notes_with_counts
+with (security_invoker = true) as
 select
     notes.id,
     notes.title,
@@ -80,3 +85,61 @@ create trigger handle_notes_items_update
     before update on public.notes_items
     for each row
     execute procedure public.handle_notes_items_update();
+
+drop policy if exists notes_select on public.notes;
+create policy notes_select
+    on public.notes
+    for select
+    to anon, authenticated
+    using (true);
+
+drop policy if exists notes_insert on public.notes;
+create policy notes_insert
+    on public.notes
+    for insert
+    to anon, authenticated
+    with check (true);
+
+drop policy if exists notes_update on public.notes;
+create policy notes_update
+    on public.notes
+    for update
+    to anon, authenticated
+    using (true)
+    with check (true);
+
+drop policy if exists notes_delete on public.notes;
+create policy notes_delete
+    on public.notes
+    for delete
+    to anon, authenticated
+    using (true);
+
+drop policy if exists notes_items_select on public.notes_items;
+create policy notes_items_select
+    on public.notes_items
+    for select
+    to anon, authenticated
+    using (true);
+
+drop policy if exists notes_items_insert on public.notes_items;
+create policy notes_items_insert
+    on public.notes_items
+    for insert
+    to anon, authenticated
+    with check (true);
+
+drop policy if exists notes_items_update on public.notes_items;
+create policy notes_items_update
+    on public.notes_items
+    for update
+    to anon, authenticated
+    using (true)
+    with check (true);
+
+drop policy if exists notes_items_delete on public.notes_items;
+create policy notes_items_delete
+    on public.notes_items
+    for delete
+    to anon, authenticated
+    using (true);
