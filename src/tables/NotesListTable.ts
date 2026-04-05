@@ -3,25 +3,27 @@ import { NOTES_LIST_TABLE_NAME } from "../const/NOTES_LIST_TABLE_NAME";
 import { NoteRecord } from "../controllers/NotesList";
 import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
 
-const TABLE_COLUMNS = "id, title, created, updated";
+const TABLE_COLUMNS = "id, title, created_at, updated_at";
 type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
 
-const VIEW_NAME = "notes_with_counts";
+const VIEW_NAME = "notes_with_counts_temp";
 const VIEW_COLUMNS =
-  "id, title, created, updated, items_count, undone_items_count";
+  "id, title, created_at, updated_at, items_count, open_items_count";
 type ViewColumns = SplitCommaAndTrim<typeof VIEW_COLUMNS>;
 
 export class NotesListTable {
   constructor(private readonly supabase: SupabaseClient) {}
 
   public async create({
+    id,
     title,
   }: {
+    id: string;
     title: string;
   }): Promise<Pick<NoteRecord, TableColumns>> {
     const { data, error } = await this.supabase
       .from(NOTES_LIST_TABLE_NAME)
-      .insert({ title })
+      .insert({ id, title })
       .select(TABLE_COLUMNS)
       .single();
 
@@ -45,7 +47,7 @@ export class NotesListTable {
   }
 
   public async update(
-    id: number,
+    id: string,
     updates: {
       title?: string;
     },
@@ -62,11 +64,10 @@ export class NotesListTable {
     }
   }
 
-  public async delete(id: number): Promise<void> {
-    const { error } = await this.supabase
-      .from(NOTES_LIST_TABLE_NAME)
-      .delete()
-      .eq("id", id);
+  public async delete(id: string): Promise<void> {
+    const { error } = await this.supabase.rpc("soft_delete_note_temp", {
+      note_id_to_delete: id,
+    });
 
     if (error) {
       throw new Error(`NotesListTable.delete(${id}) error: ${error.message}`);

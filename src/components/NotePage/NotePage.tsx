@@ -16,7 +16,7 @@ import { noop } from "../../utils/noop";
 import { NoteItemElement } from "../NoteItemElement/NoteItemElement";
 import { useNote } from "../hooks/useNote";
 
-const PLACEHOLDER_ITEM_ID = -1_000_000_000;
+const PLACEHOLDER_ITEM_ID_PREFIX = "placeholder:";
 
 const CHILD_OFFSET = 25;
 
@@ -24,16 +24,16 @@ type DragState = {
   sourceIndex: number;
   sourceCount: number;
   dropIndex: number;
-  child: boolean;
+  isChild: boolean;
   x: number;
   y: number;
 };
 
-export function NotePage({ noteId }: { noteId: number }) {
+export function NotePage({ noteId }: { noteId: string }) {
   const { showError } = useToastsContext();
   const [itemsVer, list] = useNote({ listId: noteId, showError });
   const [dragState, setDragState] = useState<DragState | null>(null);
-  const inputRefs = useRef(new Map<number, HTMLTextAreaElement>());
+  const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const desiredCaretPositionRef = useRef(0);
   const ignoreNextSelectionRef = useRef(false);
   const itemsContainerRef = useRef<HTMLDivElement>(null);
@@ -76,7 +76,7 @@ export function NotePage({ noteId }: { noteId: number }) {
     id,
     direction,
   }: {
-    id: number;
+    id: string;
     direction: "up" | "down";
   }) {
     const parentGroups = list.getItemGroupsSplit();
@@ -173,7 +173,7 @@ export function NotePage({ noteId }: { noteId: number }) {
       event.key.toLowerCase() === "l"
     ) {
       event.preventDefault();
-      list.toggleChecked(item.id, !item.check_time);
+      list.toggleChecked(item.id, !item.completed_at);
     }
 
     if (event.key === "ArrowUp" || event.key === "ArrowDown") {
@@ -207,7 +207,7 @@ export function NotePage({ noteId }: { noteId: number }) {
     }
   }
 
-  function handleItemChange(id: number, title: string) {
+  function handleItemChange(id: string, title: string) {
     list.changeItemLocally(id, { title, persisted: false });
     list.persistItem(id, { title });
   }
@@ -224,7 +224,7 @@ export function NotePage({ noteId }: { noteId: number }) {
       Array.from({ length: sourceCount }).forEach((_, i) => {
         const placeholder: ListItemWithSortedIndex = {
           ...unchecked[sourceIndex + i],
-          id: PLACEHOLDER_ITEM_ID - i,
+          id: `${PLACEHOLDER_ITEM_ID_PREFIX}${i}`,
           sortedIndex: -1,
         };
         const placeholderIndex =
@@ -239,7 +239,7 @@ export function NotePage({ noteId }: { noteId: number }) {
       <div className="NotePage__items" ref={itemsContainerRef}>
         {sortedItemsWithPlaceholders.map((item) => (
           <NoteItemElement
-            key={list.getItemClientKey(item)}
+            key={item.id}
             item={item}
             toggleChecked={(checked) => {
               list.toggleChecked(item.id, checked);
@@ -259,7 +259,7 @@ export function NotePage({ noteId }: { noteId: number }) {
                 return undefined;
               }
 
-              if (item.id <= PLACEHOLDER_ITEM_ID) {
+              if (item.id.startsWith(PLACEHOLDER_ITEM_ID_PREFIX)) {
                 return "placeholder";
               }
 
@@ -308,9 +308,9 @@ export function NotePage({ noteId }: { noteId: number }) {
 
               const sourceIndex = unchecked.findIndex((i) => i.id === item.id);
               let sourceCount = 1;
-              if (!item.child) {
+              if (!item.is_child) {
                 for (let i = sourceIndex + 1; i < unchecked.length; i++) {
-                  if (unchecked[i].child) {
+                  if (unchecked[i].is_child) {
                     sourceCount++;
                   } else {
                     break;
@@ -344,7 +344,7 @@ export function NotePage({ noteId }: { noteId: number }) {
                 sourceIndex,
                 sourceCount,
                 dropIndex: sourceIndex,
-                child: item.child,
+                isChild: item.is_child,
                 x: dragItemRect.left - itemsContainerRect.left,
                 y: dragItemRect.top - itemsContainerRect.top,
               };
@@ -354,13 +354,13 @@ export function NotePage({ noteId }: { noteId: number }) {
                 if (isStop) {
                   setDragState(null);
 
-                  const { dropIndex, child } = dragState;
+                  const { dropIndex, isChild } = dragState;
                   list.moveItems(item.id, {
                     dropIndex:
                       dropIndex > sourceIndex
                         ? dropIndex + sourceCount
                         : dropIndex,
-                    child,
+                    isChild,
                     count: sourceCount,
                   });
 
@@ -391,7 +391,7 @@ export function NotePage({ noteId }: { noteId: number }) {
                 })();
 
                 const dragRight = offset.x - cursorToDragElementOffset.x;
-                const child: boolean = (() => {
+                const isChild: boolean = (() => {
                   if (dragRight >= CHILD_OFFSET) {
                     return true;
                   }
@@ -400,14 +400,14 @@ export function NotePage({ noteId }: { noteId: number }) {
                     return false;
                   }
 
-                  return item.child;
+                  return item.is_child;
                 })();
 
                 const nextDragState: DragState = {
                   sourceIndex,
                   sourceCount,
                   dropIndex,
-                  child,
+                  isChild,
                   x: offset.x - cursorToDragElementOffset.x,
                   y: offset.y - cursorToDragElementOffset.y,
                 };
@@ -443,7 +443,7 @@ export function NotePage({ noteId }: { noteId: number }) {
               ...Array.from({ length: dragState.sourceCount }, (_, i) => i),
             ].map((i) => {
               const item = unchecked[dragState.sourceIndex + i];
-              const child: boolean = (() => {
+              const is_child: boolean = (() => {
                 if (i > 0) {
                   return true;
                 }
@@ -452,7 +452,7 @@ export function NotePage({ noteId }: { noteId: number }) {
                   return false;
                 }
 
-                if (dragState.child) {
+                if (dragState.isChild) {
                   return true;
                 }
 
@@ -466,7 +466,7 @@ export function NotePage({ noteId }: { noteId: number }) {
                   inputRefs={inputRefs}
                   item={{
                     ...item,
-                    child,
+                    is_child,
                   }}
                   onChange={noop}
                   onKeyDown={noop}
@@ -488,7 +488,7 @@ export function NotePage({ noteId }: { noteId: number }) {
             <hr className="items-separator" />
             {checked.map((item) => (
               <NoteItemElement
-                key={list.getItemClientKey(item)}
+                key={item.id}
                 item={item}
                 toggleChecked={(checked) => {
                   list.toggleChecked(item.id, checked);

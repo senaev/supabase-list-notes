@@ -58,7 +58,16 @@ export function AuthPage({
 
   return (
     <>
-      <MainPageHeader />
+      <MainPageHeader
+        createNewNote={() => {
+          // TODO: implement createNewNote on AuthPage instead of passing noop
+        }}
+        menu={
+          [
+            // TODO: implement menu on AuthPage instead of passing empty array
+          ]
+        }
+      />
       <form
         onSubmit={(event) => {
           event.preventDefault();

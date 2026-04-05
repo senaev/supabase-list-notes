@@ -3,7 +3,7 @@ import { NoteItem } from "../types/NoteItem";
 import { shiftItemsToInsertOnPosition } from "../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition";
 
 export type PendingFocus = {
-  id: number;
+  id: string;
   selectionStart: number;
   selectionEnd: number;
 };
@@ -17,6 +17,8 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
   }, []);
 }
 
+const PENDING_COMPLETED_AT = "__pending__";
+
 export class Note {
   pendingFocus: PendingFocus | null = null;
 
@@ -25,7 +27,8 @@ export class Note {
   public constructor(
     private readonly params: {
       noteItemsTable: NoteItemsTable;
-      listId: number;
+      // TODO: rename to noteId
+      listId: string;
       onChange: () => void;
       showError: (message: string) => void;
     },
@@ -41,15 +44,11 @@ export class Note {
       });
   }
 
-  // Temp ids are used for optimistic rendering of newly created items
-  // They are also used when rendering items to avoid rerendering after getting real id
-  private nextTempId = -1;
-  private readonly generateNextItemId = () => this.nextTempId--;
-  private readonly tempIdsMap = new Map<number, number>();
-  private readonly tempIdsRemovedSet = new Set<number>();
-  private readonly tempUpdatesMap = new Map<
-    number,
-    Partial<Pick<NoteItem, "title" | "position" | "check_time">>
+  // TODO: remove these properties, use internal state to track pending changes instead of relying on NotePage to pass correct data for non-persisted items
+  private readonly pendingRemovedIds = new Set<string>();
+  private readonly pendingUpdatesMap = new Map<
+    string,
+    Partial<Pick<NoteItem, "title" | "position" | "completed_at" | "is_child">>
   >();
 
   public getItemsSorted(): NoteItem[] {
@@ -64,7 +63,7 @@ export class Note {
     const grouped: ItemParentGroup[] = [];
     let currentGroup: ItemParentGroup | null = null;
     for (const item of sorted) {
-      if (item.child && currentGroup) {
+      if (item.is_child && currentGroup) {
         currentGroup.children.push(item);
       } else {
         currentGroup = { parent: item, children: [] };
@@ -86,7 +85,10 @@ export class Note {
 
     for (const group of groupedByParent) {
       const { parent, children } = group;
-      if (parent.check_time && children.every((child) => child.check_time)) {
+      if (
+        parent.completed_at &&
+        children.every((child) => child.completed_at)
+      ) {
         checked.push(group);
       } else {
         unchecked.push(group);
@@ -94,17 +96,13 @@ export class Note {
     }
 
     checked.sort((first, second) => {
-      const firstCheckTime = new Date(first.parent.check_time!).getTime();
-      const secondCheckTime = new Date(second.parent.check_time!).getTime();
+      const firstCheckTime = new Date(first.parent.completed_at!).getTime();
+      const secondCheckTime = new Date(second.parent.completed_at!).getTime();
 
       return secondCheckTime - firstCheckTime;
     });
 
     return { checked, unchecked };
-  }
-
-  public getItemClientKey(item: NoteItem): number {
-    return this.tempIdsMap.get(item.id) || item.id;
   }
 
   public getItems() {
@@ -123,7 +121,7 @@ export class Note {
     }
   }
 
-  public changeItemLocally(id: number, updates: Partial<NoteItem>): void {
+  public changeItemLocally(id: string, updates: Partial<NoteItem>): void {
     this.setItems(
       this.items.map((item) =>
         item.id === id ? { ...item, ...updates } : item,
@@ -131,7 +129,7 @@ export class Note {
     );
   }
 
-  public removeItemLocally(id: number): void {
+  public removeItemLocally(id: string): void {
     const itemToRemove = this.items.find((item) => item.id === id);
 
     if (!itemToRemove) {
@@ -142,10 +140,10 @@ export class Note {
     this.setItems(this.items.filter((item) => item.id !== id));
   }
 
-  public removeItemRemotely(id: number): void {
-    if (id < 0) {
+  public removeItemRemotely(id: string, persisted: boolean): void {
+    if (!persisted) {
       // Item has NOT been persisted yet, add to list to remove after persistence
-      this.tempIdsRemovedSet.add(id);
+      this.pendingRemovedIds.add(id);
       return;
     }
 
@@ -154,15 +152,21 @@ export class Note {
     });
   }
 
-  public removeItem(id: number) {
+  public removeItem(id: string) {
+    const item = this.items.find((candidate) => candidate.id === id);
+    if (!item) {
+      this.params.showError(`removeItem: item with id ${id} not found`);
+      return;
+    }
+
     this.removeItemLocally(id);
-    this.removeItemRemotely(id);
+    this.removeItemRemotely(id, item.persisted);
   }
 
   public persistItem(
-    id: number,
+    id: string,
     updates: Partial<
-      Pick<NoteItem, "title" | "position" | "check_time" | "child">
+      Pick<NoteItem, "title" | "position" | "completed_at" | "is_child">
     >,
   ): void {
     const itemToUpdate = this.items.find((item) => item.id === id);
@@ -171,31 +175,47 @@ export class Note {
       return;
     }
 
-    const update_index = itemToUpdate.update_index + 1;
-    const updated = new Date().toISOString();
-    this.changeItemLocally(id, { update_index, updated, persisted: false });
+    const updated_at = new Date().toISOString();
+    this.changeItemLocally(id, { updated_at, persisted: false });
 
-    if (id < 0) {
-      this.tempUpdatesMap.set(id, {
-        ...this.tempUpdatesMap.get(id),
+    if (!itemToUpdate.persisted) {
+      this.pendingUpdatesMap.set(id, {
+        ...this.pendingUpdatesMap.get(id),
         ...updates,
       });
       return;
     }
 
-    this.params.noteItemsTable
-      .update(id, { ...updates, update_index })
-      .then((result) => {
-        if (result === "update_index_conflict") {
-          // Ignore conflicts, persistent state will be delivered through server-push
-          return;
-        }
+    if (updates.completed_at === PENDING_COMPLETED_AT) {
+      this.params.noteItemsTable
+        .setCompleted(id, true)
+        .then((result) => {
+          const localItem = this.items.find((item) => item.id === id);
+          if (localItem) {
+            this.changeItemLocally(id, {
+              completed_at: result.completed_at,
+              updated_at: result.updated_at,
+              persisted: true,
+            });
+          }
+        })
+        .catch((error) => {
+          const itemStillExists = this.items.some((item) => item.id === id);
+          this.params.showError(
+            `persistItem(setCompleted): error id=[${id}] [${error.message}] itemStillExists=[${itemStillExists}]`,
+          );
+        });
+      return;
+    }
 
+    this.params.noteItemsTable
+      .update(id, updates)
+      .then((result) => {
         // Check that local item has not been removed during update
         const localItem = this.items.find((item) => item.id === id);
         if (localItem) {
           this.changeItemLocally(id, {
-            updated: result.updated,
+            updated_at: result.updated_at,
             persisted: true,
           });
         }
@@ -214,14 +234,14 @@ export class Note {
   }
 
   public moveItems(
-    id: number,
+    id: string,
     {
       dropIndex,
-      child,
+      isChild,
       count,
     }: {
       dropIndex: number;
-      child: boolean;
+      isChild: boolean;
       count: number;
     },
   ) {
@@ -243,7 +263,7 @@ export class Note {
       return;
     }
 
-    if (sourceIndex === dropIndex && sourceItem.child === child) {
+    if (sourceIndex === dropIndex && sourceItem.is_child === isChild) {
       return;
     }
 
@@ -262,7 +282,7 @@ export class Note {
 
       startPosition = previousItem.position + 1;
 
-      if (child) {
+      if (isChild) {
         firstItemIsChild = true;
       }
     }
@@ -273,19 +293,19 @@ export class Note {
       const item = itemsToMove[i];
 
       const position = startPosition + i;
-      const child = i === 0 ? firstItemIsChild : true;
+      const is_child = i === 0 ? firstItemIsChild : true;
 
       this.changeItemLocally(item.id, {
         position,
-        child,
+        is_child,
         persisted: false,
       });
-      this.persistItem(item.id, { position, child });
+      this.persistItem(item.id, { position, is_child });
     }
   }
 
   private shiftElementsToInsertOnPosition(position: number, count: number) {
-    const shiftedItems: Map<number, number> = shiftItemsToInsertOnPosition(
+    const shiftedItems = shiftItemsToInsertOnPosition(
       this.items,
       position,
       count,
@@ -303,36 +323,33 @@ export class Note {
 
   public insertItem({
     title,
-    check_time,
+    completed_at,
     position,
-    child,
+    is_child,
   }: {
     title: string;
-    check_time: string | null;
+    completed_at: string | null;
     position: number;
-    child: boolean;
+    is_child: boolean;
   }) {
     this.shiftElementsToInsertOnPosition(position, 1);
 
-    const tempId = this.generateNextItemId();
-
     const newItem: NoteItem = {
-      id: tempId,
-      list_id: this.params.listId,
+      id: crypto.randomUUID(),
+      note_id: this.params.listId,
       title,
-      created: "",
-      updated: "",
+      created_at: "",
+      updated_at: "",
       position,
-      check_time,
-      update_index: 0,
+      completed_at,
       persisted: false,
-      child,
+      is_child,
     };
 
     this.setItems([...this.items, newItem]);
 
     this.setPendingFocus({
-      id: tempId,
+      id: newItem.id,
       selectionStart: 0,
       selectionEnd: 0,
     });
@@ -341,23 +358,20 @@ export class Note {
       .create(newItem)
       .then((data) => {
         // Item was deleted on the client
-        if (this.tempIdsRemovedSet.delete(tempId)) {
-          this.removeItemRemotely(data.id);
+        if (this.pendingRemovedIds.delete(data.id)) {
+          this.removeItemRemotely(data.id, true);
           return;
         }
 
-        this.tempIdsMap.set(data.id, tempId);
-
-        const tempUpdate = this.tempUpdatesMap.get(tempId);
-        this.changeItemLocally(tempId, {
-          id: data.id,
-          created: data.created,
-          updated: data.updated,
-          persisted: !tempUpdate,
+        const pendingUpdate = this.pendingUpdatesMap.get(data.id);
+        this.changeItemLocally(data.id, {
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          persisted: !pendingUpdate,
         });
-        if (tempUpdate) {
-          this.tempUpdatesMap.delete(tempId);
-          this.persistItem(data.id, tempUpdate);
+        if (pendingUpdate) {
+          this.pendingUpdatesMap.delete(data.id);
+          this.persistItem(data.id, pendingUpdate);
         }
       })
       .catch((error) => {
@@ -373,9 +387,9 @@ export class Note {
     const nextPosition = this.getPositionAtTheEnd();
     this.insertItem({
       title: "",
-      check_time: null,
+      completed_at: null,
       position: nextPosition,
-      child: false,
+      is_child: false,
     });
   }
 
@@ -384,7 +398,7 @@ export class Note {
     selectionStart,
     selectionEnd,
   }: {
-    id: number;
+    id: string;
     selectionStart: number;
     selectionEnd: number;
   }) {
@@ -405,13 +419,13 @@ export class Note {
     const nextPosition = currentItem.position + 1;
     this.insertItem({
       title: titleNew,
-      child: currentItem.child,
-      check_time: currentItem.check_time,
+      is_child: currentItem.is_child,
+      completed_at: currentItem.completed_at,
       position: nextPosition,
     });
   }
 
-  public toggleChecked(id: number, checked: boolean): void {
+  public toggleChecked(id: string, checked: boolean): void {
     const itemsSorted = this.getItemsSorted();
 
     const itemIndex = itemsSorted.findIndex((item) => item.id === id);
@@ -426,17 +440,39 @@ export class Note {
       return;
     }
 
-    const check_time = checked ? new Date().toISOString() : null;
     this.changeItemLocally(id, {
-      check_time,
+      completed_at: checked ? PENDING_COMPLETED_AT : null,
       persisted: false,
     });
-    this.persistItem(id, { check_time });
 
-    if (item.child) {
+    if (!item.persisted) {
+      this.persistItem(id, {
+        completed_at: checked ? PENDING_COMPLETED_AT : null,
+      });
+    } else {
+      this.params.noteItemsTable
+        .setCompleted(id, checked)
+        .then((result) => {
+          const localItem = this.items.find((item) => item.id === id);
+          if (localItem) {
+            this.changeItemLocally(id, {
+              completed_at: result.completed_at,
+              updated_at: result.updated_at,
+              persisted: true,
+            });
+          }
+        })
+        .catch((error) => {
+          this.params.showError(
+            `toggleChecked: error id=[${id}] [${error.message}]`,
+          );
+        });
+    }
+
+    if (item.is_child) {
       let parentItem: NoteItem | undefined;
       for (let i = itemIndex - 1; i >= 0; i--) {
-        const isParent = !itemsSorted[i].child;
+        const isParent = !itemsSorted[i].is_child;
         if (isParent) {
           parentItem = itemsSorted[i];
           break;
@@ -454,7 +490,7 @@ export class Note {
     }
   }
 
-  public mergeItemWithPrevious(id: number) {
+  public mergeItemWithPrevious(id: string) {
     const sortedItems = [...this.items].sort(
       (first, second) => first.position - second.position,
     );
@@ -481,7 +517,7 @@ export class Note {
 
     this.persistItem(previousItem.id, { title: mergedTitle });
     this.removeItemLocally(currentItem.id);
-    this.removeItemRemotely(currentItem.id);
+    this.removeItemRemotely(currentItem.id, currentItem.persisted);
     this.setPendingFocus({
       id: previousItem.id,
       selectionStart: cursorPosition,

@@ -12,7 +12,7 @@ export function NoteHeader({
   noteId,
   jumpToEdit,
 }: {
-  noteId: number;
+  noteId: string;
   jumpToEdit: VoidFunction;
 }) {
   const navigate = useNavigate();

@@ -1,13 +1,12 @@
 export type NoteItem = {
-  id: number;
-  list_id: number;
+  id: string;
+  note_id: string;
   title: string;
   position: number;
-  created: string;
-  updated: string;
-  update_index: number;
-  check_time: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
   // TODO: finish persisting logic and local/remote synchronization
   persisted: boolean;
-  child: boolean;
+  is_child: boolean;
 };

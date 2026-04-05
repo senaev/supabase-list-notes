@@ -29,8 +29,7 @@ export function NoteRouteElement() {
   const { noteId } = useParams<{ noteId: string }>();
   const { items } = useNotesListContext();
 
-  const numberNoteId = Number(noteId);
-  if (!Number.isInteger(numberNoteId) || numberNoteId <= 0) {
+  if (!noteId) {
     return <Page404 />;
   }
 
@@ -44,20 +43,20 @@ export function NoteRouteElement() {
     );
   }
 
-  const listExists = items.some((list) => list.id === numberNoteId);
-  if (!listExists) {
+  const noteExists = items.some((list) => list.id === noteId);
+  if (!noteExists) {
     return <Page404 />;
   }
 
   return (
     <>
       <NoteHeader
-        noteId={numberNoteId}
+        noteId={noteId}
         jumpToEdit={() => {
           // TODO: implement
         }}
       />
-      <NotePage noteId={numberNoteId} />
+      <NotePage noteId={noteId} />
     </>
   );
 }

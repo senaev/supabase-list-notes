@@ -1,13 +1,13 @@
 import { NotesListTable } from "../tables/NotesListTable";
 
 export type NoteRecord = {
-  id: number;
+  id: string;
   title: string;
-  created: string;
-  updated: string;
+  created_at: string;
+  updated_at: string;
   // TODO: automatically update these counts when note items are changed
   items_count: number;
-  undone_items_count: number;
+  open_items_count: number;
 };
 
 export class NotesList {
@@ -26,10 +26,10 @@ export class NotesList {
         this.items = data.map((item) => ({
           id: item.id,
           title: item.title,
-          created: item.created,
-          updated: item.updated,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
           items_count: item.items_count,
-          undone_items_count: item.undone_items_count,
+          open_items_count: item.open_items_count,
         }));
         this.params.onChange();
       })
@@ -39,7 +39,10 @@ export class NotesList {
   }
 
   public async createNewNote(): Promise<NoteRecord> {
-    const newNote = await this.params.notesListTable.create({ title: "" });
+    const newNote = await this.params.notesListTable.create({
+      id: crypto.randomUUID(),
+      title: "",
+    });
 
     this.items = [
       // TODO: remove workaround after fixing items persistence
@@ -47,18 +50,18 @@ export class NotesList {
       {
         ...newNote,
         items_count: 0,
-        undone_items_count: 0,
+        open_items_count: 0,
       },
     ];
 
     return {
       ...newNote,
       items_count: 0,
-      undone_items_count: 0,
+      open_items_count: 0,
     };
   }
 
-  public changeTitleLocally(id: number, title: string): void {
+  public changeTitleLocally(id: string, title: string): void {
     this.items = this.items!.map((item) => {
       if (item.id !== id) {
         return item;
@@ -69,7 +72,7 @@ export class NotesList {
     this.params.onChange();
   }
 
-  public async persistTitle(id: number, title: string): Promise<void> {
+  public async persistTitle(id: string, title: string): Promise<void> {
     try {
       await this.params.notesListTable.update(id, { title });
     } catch (err) {
@@ -78,7 +81,7 @@ export class NotesList {
     }
   }
 
-  public async delete(id: number): Promise<void> {
+  public async delete(id: string): Promise<void> {
     const { items } = this;
 
     if (!items) {

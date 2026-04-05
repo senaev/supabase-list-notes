@@ -40,7 +40,7 @@ export function NoteItemElement({
   dragState: DragState | undefined;
   onDragStart: DragStartCallback | undefined;
   resizeTextarea: (input: HTMLTextAreaElement) => void;
-  inputRefs: React.RefObject<Map<number, HTMLTextAreaElement>>;
+  inputRefs: React.RefObject<Map<string, HTMLTextAreaElement>>;
   readonlyText: boolean;
   onTextSelectionChange: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
 }) {
@@ -50,8 +50,8 @@ export function NoteItemElement({
         "NoteItemElement",
         DRAG_STATE_CLASSES[dragState as DragState],
         {
-          NoteItemElement_child: item.child,
-          NoteItemElement_isChecked: Boolean(item.check_time),
+          NoteItemElement_child: item.is_child,
+          NoteItemElement_isChecked: Boolean(item.completed_at),
         },
       )}
     >
@@ -71,7 +71,7 @@ export function NoteItemElement({
       <label className="NoteItemElement__checkboxLabel">
         <input
           aria-label={`Mark ${item.title || "item"} as checked`}
-          checked={Boolean(item.check_time)}
+          checked={Boolean(item.completed_at)}
           className="NoteItemElement__checkbox"
           onChange={(event) => {
             toggleChecked(event.target.checked);
@@ -124,13 +124,6 @@ export function NoteItemElement({
           </span>
           <span
             style={{
-              color: "#989AFF",
-            }}
-          >
-            upd=[{item.update_index}]
-          </span>
-          <span
-            style={{
               color: "#98FFAE",
             }}
           >
@@ -141,7 +134,7 @@ export function NoteItemElement({
               color: "#C1FF98",
             }}
           >
-            updated=[{new Date(item.updated).getTime()}]
+            updated=[{new Date(item.updated_at).getTime()}]
           </span>
           <span>{item.persisted ? "✅" : "⏳"}</span>
         </span>

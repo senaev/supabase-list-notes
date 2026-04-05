@@ -2,34 +2,34 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { NoteItem } from "../types/NoteItem";
 import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
 
-const TABLE_NAME = "notes_items";
+const TABLE_NAME = "note_items_temp";
 const TABLE_COLUMNS =
-  "id, list_id, child, title, position, created, updated, update_index, check_time";
+  "id, note_id, is_child, title, position, created_at, updated_at, completed_at";
 type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
 
 export class NoteItemsTable {
   constructor(private readonly supabase: SupabaseClient) {}
 
   public async create({
-    list_id,
+    id,
+    note_id,
     title,
     position,
-    check_time,
-    update_index,
-    child,
+    completed_at,
+    is_child,
   }: Pick<
     NoteItem,
-    "list_id" | "title" | "position" | "check_time" | "update_index" | "child"
+    "id" | "note_id" | "title" | "position" | "completed_at" | "is_child"
   >): Promise<Pick<NoteItem, TableColumns>> {
     const { data, error } = await this.supabase
       .from(TABLE_NAME)
       .insert({
-        list_id,
+        id,
+        note_id,
         title,
         position,
-        check_time,
-        update_index,
-        child,
+        completed_at,
+        is_child,
       })
       .select(TABLE_COLUMNS)
       .single();
@@ -42,16 +42,17 @@ export class NoteItemsTable {
   }
 
   public async readAll(
-    listId: number,
+    noteId: string,
   ): Promise<Pick<NoteItem, TableColumns>[]> {
     const { error, data } = await this.supabase
       .from(TABLE_NAME)
       .select(TABLE_COLUMNS)
-      .eq("list_id", listId);
+      .eq("note_id", noteId)
+      .is("deleted_at", null);
 
     if (error) {
       throw new Error(
-        `NoteItemsTable.readAll: Error loading list items for id=[${listId}] error=[${error.message}]`,
+        `NoteItemsTable.readAll: Error loading list items for id=[${noteId}] error=[${error.message}]`,
       );
     }
 
@@ -59,16 +60,11 @@ export class NoteItemsTable {
   }
 
   public async update(
-    itemId: number,
-    updates: Partial<Pick<NoteItem, "title" | "position" | "check_time">> & {
-      update_index: number;
-    },
-  ): Promise<
-    | "update_index_conflict"
-    | {
-        updated: string;
-      }
-  > {
+    itemId: string,
+    updates: Partial<
+      Pick<NoteItem, "title" | "position" | "completed_at" | "is_child">
+    >,
+  ): Promise<{ updated_at: string }> {
     const { error, data } = await this.supabase
       .from(TABLE_NAME)
       .update(updates)
@@ -77,29 +73,51 @@ export class NoteItemsTable {
       .single();
 
     if (error) {
-      try {
-        const json = JSON.parse(error.message);
-
-        if (json.id === "update_index_conflict") {
-          return "update_index_conflict";
-        }
-      } catch (e) {}
-
       throw new Error(
         `NoteItemsTable.update(${itemId}) error: ${error.message}`,
       );
     }
 
     return {
-      updated: data.updated,
+      updated_at: data.updated_at,
     };
   }
 
-  public async delete(itemId: number): Promise<void> {
-    const { error } = await this.supabase
-      .from(TABLE_NAME)
-      .delete()
-      .eq("id", itemId);
+  public async setCompleted(
+    itemId: string,
+    checked: boolean,
+  ): Promise<Pick<NoteItem, "completed_at" | "updated_at">> {
+    const { error, data } = await this.supabase.rpc(
+      "set_note_item_completed_temp",
+      {
+        note_item_id_to_update: itemId,
+        next_checked: checked,
+      },
+    );
+
+    if (error) {
+      throw new Error(
+        `NoteItemsTable.setCompleted(${itemId}) error: ${error.message}`,
+      );
+    }
+
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result) {
+      throw new Error(
+        `NoteItemsTable.setCompleted(${itemId}) error: empty response`,
+      );
+    }
+
+    return {
+      completed_at: result.completed_at,
+      updated_at: result.updated_at,
+    };
+  }
+
+  public async delete(itemId: string): Promise<void> {
+    const { error } = await this.supabase.rpc("soft_delete_note_item_temp", {
+      note_item_id_to_delete: itemId,
+    });
 
     if (error) {
       throw new Error(

@@ -45,8 +45,8 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
   }
 
   const itemsSorted = [...items].sort((a, b) => {
-    const aUpdated = new Date(a.updated).getTime();
-    const bUpdated = new Date(b.updated).getTime();
+    const aUpdated = new Date(a.updated_at).getTime();
+    const bUpdated = new Date(b.updated_at).getTime();
 
     return bUpdated - aUpdated;
   });
@@ -75,7 +75,7 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
             </span>
           )}
           <span className="MainPage__itemMeta">
-            <span>{`${list.items_count - list.undone_items_count}/${list.items_count}`}</span>
+            <span>{`${list.items_count - list.open_items_count}/${list.items_count}`}</span>
           </span>
         </button>
       ))}
