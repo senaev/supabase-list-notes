@@ -10,48 +10,6 @@ begin
 end;
 $$;
 
-create or replace function public.soft_delete_note_temp(note_id_to_delete text)
-returns void
-language sql
-as $$
-    update public.notes_temp
-    set deleted_at = now()
-    where id = note_id_to_delete
-        and deleted_at is null;
-$$;
-
-create or replace function public.soft_delete_note_item_temp(note_item_id_to_delete text)
-returns void
-language sql
-as $$
-    update public.note_items_temp
-    set deleted_at = now()
-    where id = note_item_id_to_delete
-        and deleted_at is null;
-$$;
-
-create or replace function public.set_note_item_completed_temp(
-    note_item_id_to_update text,
-    next_checked boolean
-)
-returns table (
-    completed_at timestamptz,
-    updated_at timestamptz
-)
-language sql
-as $$
-    update public.note_items_temp
-    set completed_at = case
-            when next_checked then now()
-            else null
-        end
-    where id = note_item_id_to_update
-        and deleted_at is null
-    returning
-        public.note_items_temp.completed_at,
-        public.note_items_temp.updated_at;
-$$;
-
 -- TODO: remove temp postfix
 create table if not exists public.notes_temp (
     id text primary key,
@@ -93,23 +51,47 @@ create trigger note_items_temp_set_updated_at
     for each row
     execute procedure public.set_updated_at_temp();
 
-create or replace view public.notes_with_counts_temp
-with (security_invoker = true) as
-select
-    notes_temp.id,
-    notes_temp.title,
-    notes_temp.created_at,
-    notes_temp.updated_at,
-    count(note_items_temp.id) filter (where note_items_temp.deleted_at is null)::int as items_count,
-    count(note_items_temp.id) filter (
-        where note_items_temp.deleted_at is null
-            and note_items_temp.completed_at is null
-    )::int as open_items_count
-from public.notes_temp
-left join public.note_items_temp
-    on note_items_temp.note_id = notes_temp.id
-where notes_temp.deleted_at is null
-group by notes_temp.id, notes_temp.title, notes_temp.created_at, notes_temp.updated_at;
+create or replace function public.soft_delete_note_temp(note_id_to_delete text)
+returns void
+language sql
+as $$
+    update public.notes_temp
+    set deleted_at = now()
+    where id = note_id_to_delete
+        and deleted_at is null;
+$$;
+
+create or replace function public.soft_delete_note_item_temp(note_item_id_to_delete text)
+returns void
+language sql
+as $$
+    update public.note_items_temp
+    set deleted_at = now()
+    where id = note_item_id_to_delete
+        and deleted_at is null;
+$$;
+
+create or replace function public.set_note_item_completed_temp(
+    note_item_id_to_update text,
+    next_checked boolean
+)
+returns table (
+    completed_at timestamptz,
+    updated_at timestamptz
+)
+language sql
+as $$
+    update public.note_items_temp
+    set completed_at = case
+            when next_checked then now()
+            else null
+        end
+    where id = note_item_id_to_update
+        and deleted_at is null
+    returning
+        public.note_items_temp.completed_at,
+        public.note_items_temp.updated_at;
+$$;
 
 drop policy if exists notes_temp_select on public.notes_temp;
 create policy notes_temp_select

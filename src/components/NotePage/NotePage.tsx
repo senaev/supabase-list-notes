@@ -31,7 +31,7 @@ type DragState = {
 
 export function NotePage({ noteId }: { noteId: string }) {
   const { showError } = useToastsContext();
-  const [itemsVer, list] = useNote({ listId: noteId, showError });
+  const [itemsVer, list] = useNote({ noteId, showError });
   const [dragState, setDragState] = useState<DragState | null>(null);
   const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const desiredCaretPositionRef = useRef(0);

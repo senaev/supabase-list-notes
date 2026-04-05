@@ -1,9 +1,10 @@
 import "./MainPage.css";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UNTITLED_PLACEHOLDER } from "../../const/UNTITLED_PLACEHOLDER";
 import { useNotesListContext } from "../../contexts/NotesListContext";
+import { useTablesContext } from "../../contexts/TablesContext";
 import { FullPageContent } from "../FullPageContent/FullPageContent";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
@@ -20,7 +21,39 @@ import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
   const { items } = useNotesListContext();
+  const { noteItemsTable } = useTablesContext();
   const navigate = useNavigate();
+  const [countsByNoteId, setCountsByNoteId] = useState<
+    Map<string, { items_count: number; open_items_count: number }>
+  >(new Map());
+
+  useEffect(() => {
+    noteItemsTable
+      .readAllNotes()
+      .then((noteItems) => {
+        const nextCountsByNoteId = new Map<
+          string,
+          { items_count: number; open_items_count: number }
+        >();
+
+        noteItems.forEach((item) => {
+          const current = nextCountsByNoteId.get(item.note_id) ?? {
+            items_count: 0,
+            open_items_count: 0,
+          };
+          current.items_count += 1;
+          if (item.completed_at == null) {
+            current.open_items_count += 1;
+          }
+          nextCountsByNoteId.set(item.note_id, current);
+        });
+
+        setCountsByNoteId(nextCountsByNoteId);
+      })
+      .catch(() => {
+        setCountsByNoteId(new Map());
+      });
+  }, [items, noteItemsTable]);
 
   if (items === undefined) {
     return <LoadingPageContent />;
@@ -53,7 +86,13 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
 
   return (
     <div className="MainPage__items">
-      {itemsSorted.map((list) => (
+      {itemsSorted.map((list) => {
+        const counts = countsByNoteId.get(list.id) ?? {
+          items_count: 0,
+          open_items_count: 0,
+        };
+
+        return (
         <button
           key={list.id}
           type="button"
@@ -75,10 +114,10 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
             </span>
           )}
           <span className="MainPage__itemMeta">
-            <span>{`${list.items_count - list.open_items_count}/${list.items_count}`}</span>
+            <span>{`${counts.items_count - counts.open_items_count}/${counts.items_count}`}</span>
           </span>
         </button>
-      ))}
+      )})}
     </div>
   );
 }
@@ -91,12 +130,12 @@ export function MainPage() {
   const statusObject = useSupabaseClientContext();
 
   useEffect(() => {
-    const deleteListId = location.state?.deleteListId;
-    if (deleteListId == null) {
+    const deleteNoteId = location.state?.deleteNoteId;
+    if (deleteNoteId == null) {
       return;
     }
 
-    notes.delete(deleteListId);
+    notes.delete(deleteNoteId);
 
     navigate(location.pathname, {
       replace: true,

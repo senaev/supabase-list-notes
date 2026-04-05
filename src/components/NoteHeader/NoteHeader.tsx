@@ -52,7 +52,7 @@ export function NoteHeader({
             Icon: TrashIcon,
             onSelect: () => {
               navigate(ROUTES.home, {
-                state: { deleteListId: noteId },
+                state: { deleteNoteId: noteId },
               });
             },
           },

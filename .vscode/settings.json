@@ -1,6 +1,6 @@
 {
   "cSpell.language": "en,ru",
-  "cSpell.words": ["Supabase"],
+  "cSpell.words": ["Dexie", "Supabase"],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {

@@ -3,18 +3,17 @@ import { useTablesContext } from "../../contexts/TablesContext";
 import { Note } from "../../controllers/Note";
 
 export function useNote(params: {
-  // TODO: rename to noteId
-  listId: string;
+  noteId: string;
   showError: (message: string) => void;
 }): [number, Note] {
   const [ver, setVer] = useState<number>(0);
 
   const { noteItemsTable } = useTablesContext();
 
-  const ref = useRef<{ listId: string; note: Note } | null>(null);
-  if (!ref.current || ref.current.listId !== params.listId) {
+  const ref = useRef<{ noteId: string; note: Note } | null>(null);
+  if (!ref.current || ref.current.noteId !== params.noteId) {
     ref.current = {
-      listId: params.listId,
+      noteId: params.noteId,
       note: new Note({
         ...params,
         noteItemsTable,

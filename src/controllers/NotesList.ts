@@ -5,9 +5,6 @@ export type NoteRecord = {
   title: string;
   created_at: string;
   updated_at: string;
-  // TODO: automatically update these counts when note items are changed
-  items_count: number;
-  open_items_count: number;
 };
 
 export class NotesList {
@@ -28,8 +25,6 @@ export class NotesList {
           title: item.title,
           created_at: item.created_at,
           updated_at: item.updated_at,
-          items_count: item.items_count,
-          open_items_count: item.open_items_count,
         }));
         this.params.onChange();
       })
@@ -47,18 +42,10 @@ export class NotesList {
     this.items = [
       // TODO: remove workaround after fixing items persistence
       ...this.items!,
-      {
-        ...newNote,
-        items_count: 0,
-        open_items_count: 0,
-      },
+      newNote,
     ];
 
-    return {
-      ...newNote,
-      items_count: 0,
-      open_items_count: 0,
-    };
+    return newNote;
   }
 
   public changeTitleLocally(id: string, title: string): void {

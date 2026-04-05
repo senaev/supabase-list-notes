@@ -27,14 +27,13 @@ export class Note {
   public constructor(
     private readonly params: {
       noteItemsTable: NoteItemsTable;
-      // TODO: rename to noteId
-      listId: string;
+      noteId: string;
       onChange: () => void;
       showError: (message: string) => void;
     },
   ) {
     this.params.noteItemsTable
-      .readAll(this.params.listId)
+      .readAll(this.params.noteId)
       .then((data) => {
         this.setItems(data.map((item) => ({ ...item, persisted: true })));
         this.params.onChange();
@@ -336,7 +335,7 @@ export class Note {
 
     const newItem: NoteItem = {
       id: crypto.randomUUID(),
-      note_id: this.params.listId,
+      note_id: this.params.noteId,
       title,
       created_at: "",
       updated_at: "",
