@@ -1,3 +1,4 @@
+import { NoteItemsStore } from "./NoteItemsStore";
 import { NoteItemsTable } from "../tables/NoteItemsTable";
 import { NoteItem } from "../types/NoteItem";
 import { shiftItemsToInsertOnPosition } from "../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition";
@@ -21,26 +22,35 @@ const PENDING_COMPLETED_AT = "__pending__";
 
 export class Note {
   pendingFocus: PendingFocus | null = null;
+  private unsubscribeStore: (() => void) | null = null;
 
   private items: NoteItem[] = [];
 
   public constructor(
     private readonly params: {
+      noteItemsStore: NoteItemsStore;
       noteItemsTable: NoteItemsTable;
       noteId: string;
       onChange: () => void;
       showError: (message: string) => void;
     },
-  ) {
-    this.params.noteItemsTable
-      .readAll(this.params.noteId)
-      .then((data) => {
-        this.setItems(data.map((item) => ({ ...item, persisted: true })));
-        this.params.onChange();
-      })
-      .catch((error) => {
-        this.params.showError(error.message);
-      });
+  ) {}
+
+  public connect(): void {
+    if (this.unsubscribeStore) {
+      return;
+    }
+
+    this.params.noteItemsStore.connect();
+    this.setItems(this.params.noteItemsStore.getItems(this.params.noteId));
+    this.unsubscribeStore = this.params.noteItemsStore.subscribe(() => {
+      this.setItems(this.params.noteItemsStore.getItems(this.params.noteId));
+    });
+  }
+
+  public dispose(): void {
+    this.unsubscribeStore?.();
+    this.unsubscribeStore = null;
   }
 
   // TODO: remove these properties, use internal state to track pending changes instead of relying on NotePage to pass correct data for non-persisted items

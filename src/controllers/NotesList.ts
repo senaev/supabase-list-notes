@@ -1,3 +1,4 @@
+import { Subscription } from "rxjs";
 import { NotesListTable } from "../tables/NotesListTable";
 
 export type NoteRecord = {
@@ -9,6 +10,8 @@ export type NoteRecord = {
 
 export class NotesList {
   public items: NoteRecord[] | undefined = undefined;
+  private subscription: Subscription | null = null;
+  private observePromise: Promise<void> | null = null;
 
   constructor(
     private readonly params: {
@@ -16,10 +19,15 @@ export class NotesList {
       onChange: () => void;
       showError: (message: string) => void;
     },
-  ) {
-    this.params.notesListTable
-      .readAll()
-      .then((data) => {
+  ) {}
+
+  public connect(): void {
+    if (this.subscription || this.observePromise) {
+      return;
+    }
+
+    this.observePromise = this.params.notesListTable
+      .observeAll((data) => {
         this.items = data.map((item) => ({
           id: item.id,
           title: item.title,
@@ -28,9 +36,21 @@ export class NotesList {
         }));
         this.params.onChange();
       })
+      .then((subscription) => {
+        this.subscription = subscription;
+      })
       .catch((err) => {
         this.params.showError(`Failed to load notes: ${err.message}`);
+      })
+      .finally(() => {
+        this.observePromise = null;
       });
+  }
+
+  public dispose(): void {
+    this.subscription?.unsubscribe();
+    this.subscription = null;
+    this.observePromise = null;
   }
 
   public async createNewNote(): Promise<NoteRecord> {

@@ -1,12 +1,12 @@
 import { createRxDatabase, RxCollection, RxDatabase, RxDocument } from "rxdb";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
+import { Subscription } from "rxjs";
 
 export type LocalNoteRow = {
   id: string;
   title: string;
   created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  _modified: string;
 };
 
 export type LocalNoteItemRow = {
@@ -16,9 +16,8 @@ export type LocalNoteItemRow = {
   title: string;
   position: number;
   created_at: string;
-  updated_at: string;
+  _modified: string;
   completed_at: string | null;
-  deleted_at: string | null;
 };
 
 type LocalMetaRow = {
@@ -35,12 +34,14 @@ type LocalCollections = {
 type LocalTable<T> = {
   bulkPut: (rows: T[]) => Promise<void>;
   get: (id: string) => Promise<T | undefined>;
+  observeAll: (onChange: (rows: T[]) => void) => Promise<Subscription>;
   put: (row: T) => Promise<void>;
+  remove: (id: string) => Promise<void>;
   toArray: () => Promise<T[]>;
 };
 
 const LOCAL_BOOTSTRAP_KEY = "supabase_bootstrap_v1";
-const DATABASE_NAME = "supabase-list-notes-local-db";
+const DATABASE_NAME = "supabase-list-notes-local-db-v2";
 
 const noteSchema = {
   title: "notes_temp schema",
@@ -61,16 +62,12 @@ const noteSchema = {
       type: "string",
       maxLength: 64,
     },
-    updated_at: {
+    _modified: {
       type: "string",
       maxLength: 64,
     },
-    deleted_at: {
-      type: ["string", "null"],
-      maxLength: 64,
-    },
   },
-  required: ["id", "title", "created_at", "updated_at", "deleted_at"],
+  required: ["id", "title", "created_at", "_modified"],
 } as const;
 
 const noteItemSchema = {
@@ -105,15 +102,11 @@ const noteItemSchema = {
       type: "string",
       maxLength: 64,
     },
-    updated_at: {
+    _modified: {
       type: "string",
       maxLength: 64,
     },
     completed_at: {
-      type: ["string", "null"],
-      maxLength: 64,
-    },
-    deleted_at: {
       type: ["string", "null"],
       maxLength: 64,
     },
@@ -125,9 +118,8 @@ const noteItemSchema = {
     "title",
     "position",
     "created_at",
-    "updated_at",
+    "_modified",
     "completed_at",
-    "deleted_at",
   ],
 } as const;
 
@@ -209,9 +201,31 @@ function createTable<T>(
       return mapDocument(document);
     },
 
+    async observeAll(onChange): Promise<Subscription> {
+      const database = await getDatabase();
+      const query = getCollection(database).find();
+      const initialDocuments = await query.exec();
+
+      onChange(initialDocuments.map((document) => mapDocument(document)));
+
+      return query.$.subscribe((documents) => {
+        onChange(documents.map((document) => mapDocument(document)));
+      });
+    },
+
     async put(row): Promise<void> {
       const database = await getDatabase();
       await getCollection(database).incrementalUpsert(row);
+    },
+
+    async remove(id): Promise<void> {
+      const database = await getDatabase();
+      const document = await getCollection(database).findOne(id).exec();
+      if (!document) {
+        return;
+      }
+
+      await document.incrementalRemove();
     },
 
     async toArray(): Promise<T[]> {
@@ -229,6 +243,11 @@ class LocalDbFacade {
     (database) => database.note_items_temp,
   );
   public readonly meta = createTable((database) => database.meta);
+
+  public async getCollections(): Promise<LocalCollections> {
+    const database = await getDatabase();
+    return database.collections;
+  }
 
   public async isBootstrapComplete(): Promise<boolean> {
     const row = await this.meta.get(LOCAL_BOOTSTRAP_KEY);

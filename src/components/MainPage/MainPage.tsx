@@ -21,39 +21,44 @@ import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
   const { items } = useNotesListContext();
-  const { noteItemsTable } = useTablesContext();
+  const { noteItemsStore } = useTablesContext();
   const navigate = useNavigate();
   const [countsByNoteId, setCountsByNoteId] = useState<
     Map<string, { items_count: number; open_items_count: number }>
   >(new Map());
 
   useEffect(() => {
-    noteItemsTable
-      .readAllNotes()
-      .then((noteItems) => {
-        const nextCountsByNoteId = new Map<
-          string,
-          { items_count: number; open_items_count: number }
-        >();
+    const updateCounts = () => {
+      const noteItems = noteItemsStore.getAllItems();
+      const nextCountsByNoteId = new Map<
+        string,
+        { items_count: number; open_items_count: number }
+      >();
 
-        noteItems.forEach((item) => {
-          const current = nextCountsByNoteId.get(item.note_id) ?? {
-            items_count: 0,
-            open_items_count: 0,
-          };
-          current.items_count += 1;
-          if (item.completed_at == null) {
-            current.open_items_count += 1;
-          }
-          nextCountsByNoteId.set(item.note_id, current);
-        });
-
-        setCountsByNoteId(nextCountsByNoteId);
-      })
-      .catch(() => {
-        setCountsByNoteId(new Map());
+      noteItems.forEach((item) => {
+        const current = nextCountsByNoteId.get(item.note_id) ?? {
+          items_count: 0,
+          open_items_count: 0,
+        };
+        current.items_count += 1;
+        if (item.completed_at == null) {
+          current.open_items_count += 1;
+        }
+        nextCountsByNoteId.set(item.note_id, current);
       });
-  }, [items, noteItemsTable]);
+
+      setCountsByNoteId(nextCountsByNoteId);
+    };
+
+    updateCounts();
+    const unsubscribe = noteItemsStore.subscribe(() => {
+      updateCounts();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [noteItemsStore]);
 
   if (items === undefined) {
     return <LoadingPageContent />;
@@ -93,31 +98,32 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
         };
 
         return (
-        <button
-          key={list.id}
-          type="button"
-          className="MainPage__item"
-          onClick={() => {
-            navigate(`/${list.id}`);
-          }}
-        >
-          {list.title.trim() ? (
-            <span className="MainPage__itemTitle">{list.title}</span>
-          ) : (
-            <span
-              className="MainPage__itemTitle"
-              style={{
-                opacity: 0.5,
-              }}
-            >
-              {UNTITLED_PLACEHOLDER}
+          <button
+            key={list.id}
+            type="button"
+            className="MainPage__item"
+            onClick={() => {
+              navigate(`/${list.id}`);
+            }}
+          >
+            {list.title.trim() ? (
+              <span className="MainPage__itemTitle">{list.title}</span>
+            ) : (
+              <span
+                className="MainPage__itemTitle"
+                style={{
+                  opacity: 0.5,
+                }}
+              >
+                {UNTITLED_PLACEHOLDER}
+              </span>
+            )}
+            <span className="MainPage__itemMeta">
+              <span>{`${counts.items_count - counts.open_items_count}/${counts.items_count}`}</span>
             </span>
-          )}
-          <span className="MainPage__itemMeta">
-            <span>{`${counts.items_count - counts.open_items_count}/${counts.items_count}`}</span>
-          </span>
-        </button>
-      )})}
+          </button>
+        );
+      })}
     </div>
   );
 }

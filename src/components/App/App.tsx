@@ -1,21 +1,18 @@
 import "./App.css";
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { useRef, useState } from "react";
+import React from "react";
 import { Route, Routes, useParams } from "react-router-dom";
 import {
-  NotesListContext,
+  NotesListContextProvider,
   useNotesListContext,
 } from "../../contexts/NotesListContext";
 import {
   SupabaseClientContextProvider,
   useSupabaseClientContext,
 } from "../../contexts/SupabaseClientContext";
-import { TablesContext, TablesContextType } from "../../contexts/TablesContext";
+import { TablesContextProvider } from "../../contexts/TablesContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
-import { NotesList } from "../../controllers/NotesList";
-import { NoteItemsTable } from "../../tables/NoteItemsTable";
-import { NotesListTable } from "../../tables/NotesListTable";
 import { noop } from "../../utils/noop";
 import { AuthPage } from "../AuthPage/AuthPage";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
@@ -68,38 +65,19 @@ export function NotesApp({
 }) {
   const { showError } = useToastsContext();
 
-  const tablesRef = useRef<TablesContextType | null>(null);
-  if (!tablesRef.current) {
-    tablesRef.current = {
-      notesListTable: new NotesListTable(supabaseClient),
-      noteItemsTable: new NoteItemsTable(supabaseClient),
-    };
-  }
-  const tables = tablesRef.current;
-
-  const [, setNotesListVer] = useState<number>(0);
-  const notesListRef = useRef<NotesList | null>(null);
-  if (!notesListRef.current) {
-    notesListRef.current = new NotesList({
-      notesListTable: tables.notesListTable,
-      showError,
-      onChange: () => {
-        setNotesListVer((prev) => prev + 1);
-      },
-    });
-  }
-  const notesList = notesListRef.current;
-
   return (
-    <TablesContext.Provider value={tables}>
-      <NotesListContext.Provider value={notesList}>
+    <TablesContextProvider
+      supabaseClient={supabaseClient}
+      showError={showError}
+    >
+      <NotesListContextProvider showError={showError}>
         <Routes>
           <Route path="/" element={<MainPage />} />
           <Route path="/:noteId" element={<NoteRouteElement />} />
           <Route path="*" element={<Page404 />} />
         </Routes>
-      </NotesListContext.Provider>
-    </TablesContext.Provider>
+      </NotesListContextProvider>
+    </TablesContextProvider>
   );
 }
 
@@ -125,12 +103,14 @@ export function NotesWithAuthApp() {
 
 export function App() {
   return (
-    <div className="App__page">
-      <main className="App__main">
-        <SupabaseClientContextProvider>
-          <NotesWithAuthApp />
-        </SupabaseClientContextProvider>
-      </main>
-    </div>
+    <React.StrictMode>
+      <div className="App__page">
+        <main className="App__main">
+          <SupabaseClientContextProvider>
+            <NotesWithAuthApp />
+          </SupabaseClientContextProvider>
+        </main>
+      </div>
+    </React.StrictMode>
   );
 }
