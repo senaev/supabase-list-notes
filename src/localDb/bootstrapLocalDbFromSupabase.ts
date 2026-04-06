@@ -1,7 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import {
-  localDb,
-} from "./localDb";
+import { localDb } from "./localDb";
 
 const NOTES_TABLE_NAME = "notes_temp";
 const NOTE_ITEMS_TABLE_NAME = "note_items_temp";
@@ -33,17 +31,9 @@ async function runBootstrapFromSupabase(
     );
   }
 
-      await localDb.transaction(
-        "rw",
-        localDb.notes_temp,
-        localDb.note_items_temp,
-        localDb.meta,
-        async () => {
-          await localDb.notes_temp.bulkPut(notes ?? []);
-          await localDb.note_items_temp.bulkPut(noteItems ?? []);
-          await localDb.markBootstrapComplete();
-        },
-      );
+  await localDb.notes_temp.bulkPut(notes ?? []);
+  await localDb.note_items_temp.bulkPut(noteItems ?? []);
+  await localDb.markBootstrapComplete();
 }
 
 let bootstrapPromise: Promise<void> | null = null;
