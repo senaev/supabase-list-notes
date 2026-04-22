@@ -11,7 +11,6 @@ import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 import { ReplicationStatus } from '../components/ReplicationStatusIndicator/ReplicationStatusIndicator';
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
-import { NotesStore } from '../controllers/NotesStore';
 import { LocalDbFacade } from '../localDb/LocalDbFacade';
 import { ensureReplicationReady } from '../localDb/replication';
 import { NoteItemsTable } from '../tables/NoteItemsTable';
@@ -20,7 +19,6 @@ import { NotesListTable } from '../tables/NotesListTable';
 export type TablesContextType = {
     notesListTable: NotesListTable;
     noteItemsTable: NoteItemsTable;
-    notesStore: NotesStore;
     noteItemsStore: NoteItemsStore;
     replicationStatus: ReplicationStatus;
 };
@@ -53,10 +51,6 @@ export const TablesContextProvider = ({
         tablesRef.current = {
             notesListTable,
             noteItemsTable,
-            notesStore: new NotesStore({
-                notesListTable,
-                showError,
-            }),
             noteItemsStore: new NoteItemsStore({
                 noteItemsTable,
                 showError,
@@ -70,11 +64,9 @@ export const TablesContextProvider = ({
     tables.replicationStatus = replicationStatus;
 
     useEffect(() => {
-        tables.notesStore.connect();
         tables.noteItemsStore.connect();
 
         return () => {
-            tables.notesStore.dispose();
             tables.noteItemsStore.dispose();
         };
     }, [tables]);

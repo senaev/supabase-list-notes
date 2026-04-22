@@ -61,8 +61,6 @@ export function NoteRouteElement() {
     </>;
 }
 
-const localDbFacade = new LocalDbFacade();
-
 export function NotesApp({
     supabaseClient,
 }: {
@@ -136,6 +134,8 @@ export function NotesWithAuthApp() {
         />
     </>;
 }
+
+const localDbFacade = new LocalDbFacade();
 
 export function App() {
     return <div className={'App__page'}>

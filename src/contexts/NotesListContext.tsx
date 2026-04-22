@@ -2,7 +2,6 @@ import {
     createContext,
     PropsWithChildren,
     useContext,
-    useEffect,
     useRef,
     useState,
 } from 'react';
@@ -32,7 +31,6 @@ export const NotesListContextProvider = ({
 
     if (!notesListRef.current) {
         notesListRef.current = new NotesList({
-            notesStore: tables.notesStore,
             notesListTable: tables.notesListTable,
             showError,
             onChange: () => {
@@ -42,14 +40,6 @@ export const NotesListContextProvider = ({
     }
 
     const notesList = notesListRef.current;
-
-    useEffect(() => {
-        notesList.connect();
-
-        return () => {
-            notesList.dispose();
-        };
-    }, [notesList]);
 
     return <NotesListContext.Provider value={notesList}>
         {children}
