@@ -1,7 +1,7 @@
 import "./App.css";
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import React from "react";
+import { Navigate } from "react-router-dom";
 import { Route, Routes, useParams } from "react-router-dom";
 import {
   NotesListContextProvider,
@@ -61,18 +61,20 @@ export function NoteRouteElement() {
 export function NotesApp({
   supabaseClient,
 }: {
-  supabaseClient: SupabaseClient;
+  supabaseClient?: SupabaseClient;
 }) {
   const { showError } = useToastsContext();
 
   return (
     <TablesContextProvider
+      key={supabaseClient ? "tables-with-supabase" : "tables-local-only"}
       supabaseClient={supabaseClient}
       showError={showError}
     >
       <NotesListContextProvider showError={showError}>
         <Routes>
           <Route path="/" element={<MainPage />} />
+          <Route path="/auth" element={<AuthRouteElement />} />
           <Route path="/:noteId" element={<NoteRouteElement />} />
           <Route path="*" element={<Page404 />} />
         </Routes>
@@ -81,11 +83,11 @@ export function NotesApp({
   );
 }
 
-export function NotesWithAuthApp() {
+function AuthRouteElement() {
   const supabaseStatusObject = useSupabaseClientContext();
 
   if (supabaseStatusObject.status === "ready") {
-    return <NotesApp supabaseClient={supabaseStatusObject.client} />;
+    return <Navigate to="/" replace />;
   }
 
   if (supabaseStatusObject.status === "initialization") {
@@ -101,16 +103,30 @@ export function NotesWithAuthApp() {
   return <AuthPage statusObject={supabaseStatusObject} />;
 }
 
+export function NotesWithAuthApp() {
+  const supabaseStatusObject = useSupabaseClientContext();
+
+  return (
+    <>
+      <NotesApp
+        supabaseClient={
+          supabaseStatusObject.status === "ready"
+            ? supabaseStatusObject.client
+            : undefined
+        }
+      />
+    </>
+  );
+}
+
 export function App() {
   return (
-    <React.StrictMode>
-      <div className="App__page">
-        <main className="App__main">
-          <SupabaseClientContextProvider>
-            <NotesWithAuthApp />
-          </SupabaseClientContextProvider>
-        </main>
-      </div>
-    </React.StrictMode>
+    <div className="App__page">
+      <main className="App__main">
+        <SupabaseClientContextProvider>
+          <NotesWithAuthApp />
+        </SupabaseClientContextProvider>
+      </main>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
-import { NoteItemsStore } from "./NoteItemsStore";
 import { NoteItemsTable } from "../tables/NoteItemsTable";
 import { NoteItem } from "../types/NoteItem";
 import { shiftItemsToInsertOnPosition } from "../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition";
+import { NoteItemsStore } from "./NoteItemsStore";
 
 export type PendingFocus = {
   id: string;
@@ -52,13 +52,6 @@ export class Note {
     this.unsubscribeStore?.();
     this.unsubscribeStore = null;
   }
-
-  // TODO: remove these properties, use internal state to track pending changes instead of relying on NotePage to pass correct data for non-persisted items
-  private readonly pendingRemovedIds = new Set<string>();
-  private readonly pendingUpdatesMap = new Map<
-    string,
-    Partial<Pick<NoteItem, "title" | "position" | "completed_at" | "is_child">>
-  >();
 
   public getItemsSorted(): NoteItem[] {
     return [...this.items].sort(
@@ -149,13 +142,7 @@ export class Note {
     this.setItems(this.items.filter((item) => item.id !== id));
   }
 
-  public removeItemRemotely(id: string, persisted: boolean): void {
-    if (!persisted) {
-      // Item has NOT been persisted yet, add to list to remove after persistence
-      this.pendingRemovedIds.add(id);
-      return;
-    }
-
+  public removeItemRemotely(id: string): void {
     this.params.noteItemsTable.delete(id).catch((error) => {
       this.params.showError(error.message);
     });
@@ -169,7 +156,7 @@ export class Note {
     }
 
     this.removeItemLocally(id);
-    this.removeItemRemotely(id, item.persisted);
+    this.removeItemRemotely(id);
   }
 
   public persistItem(
@@ -184,16 +171,8 @@ export class Note {
       return;
     }
 
-    const updated_at = new Date().toISOString();
-    this.changeItemLocally(id, { updated_at, persisted: false });
-
-    if (!itemToUpdate.persisted) {
-      this.pendingUpdatesMap.set(id, {
-        ...this.pendingUpdatesMap.get(id),
-        ...updates,
-      });
-      return;
-    }
+    const modified_at = new Date().toISOString();
+    this.changeItemLocally(id, { modified_at });
 
     if (updates.completed_at === PENDING_COMPLETED_AT) {
       this.params.noteItemsTable
@@ -203,8 +182,7 @@ export class Note {
           if (localItem) {
             this.changeItemLocally(id, {
               completed_at: result.completed_at,
-              updated_at: result.updated_at,
-              persisted: true,
+              modified_at: result.modified_at,
             });
           }
         })
@@ -224,8 +202,7 @@ export class Note {
         const localItem = this.items.find((item) => item.id === id);
         if (localItem) {
           this.changeItemLocally(id, {
-            updated_at: result.updated_at,
-            persisted: true,
+            modified_at: result.modified_at,
           });
         }
       })
@@ -307,7 +284,6 @@ export class Note {
       this.changeItemLocally(item.id, {
         position,
         is_child,
-        persisted: false,
       });
       this.persistItem(item.id, { position, is_child });
     }
@@ -323,7 +299,6 @@ export class Note {
     shiftedItems.forEach((nextPosition, id) => {
       this.changeItemLocally(id, {
         position: nextPosition,
-        persisted: false,
       });
 
       this.persistItem(id, { position: nextPosition });
@@ -348,10 +323,9 @@ export class Note {
       note_id: this.params.noteId,
       title,
       created_at: "",
-      updated_at: "",
+      modified_at: "",
       position,
       completed_at,
-      persisted: false,
       is_child,
     };
 
@@ -365,24 +339,7 @@ export class Note {
 
     this.params.noteItemsTable
       .create(newItem)
-      .then((data) => {
-        // Item was deleted on the client
-        if (this.pendingRemovedIds.delete(data.id)) {
-          this.removeItemRemotely(data.id, true);
-          return;
-        }
-
-        const pendingUpdate = this.pendingUpdatesMap.get(data.id);
-        this.changeItemLocally(data.id, {
-          created_at: data.created_at,
-          updated_at: data.updated_at,
-          persisted: !pendingUpdate,
-        });
-        if (pendingUpdate) {
-          this.pendingUpdatesMap.delete(data.id);
-          this.persistItem(data.id, pendingUpdate);
-        }
-      })
+      .then(() => {})
       .catch((error) => {
         this.params.showError(error.message);
       });
@@ -422,7 +379,7 @@ export class Note {
     const titleNew = currentItem.title.slice(selectionEnd);
 
     const previousParams = { title: titlePrevious };
-    this.changeItemLocally(id, { ...previousParams, persisted: false });
+    this.changeItemLocally(id, previousParams);
     this.persistItem(id, previousParams);
 
     const nextPosition = currentItem.position + 1;
@@ -451,32 +408,24 @@ export class Note {
 
     this.changeItemLocally(id, {
       completed_at: checked ? PENDING_COMPLETED_AT : null,
-      persisted: false,
     });
 
-    if (!item.persisted) {
-      this.persistItem(id, {
-        completed_at: checked ? PENDING_COMPLETED_AT : null,
+    this.params.noteItemsTable
+      .setCompleted(id, checked)
+      .then((result) => {
+        const localItem = this.items.find((item) => item.id === id);
+        if (localItem) {
+          this.changeItemLocally(id, {
+            completed_at: result.completed_at,
+            modified_at: result.modified_at,
+          });
+        }
+      })
+      .catch((error) => {
+        this.params.showError(
+          `toggleChecked: error id=[${id}] [${error.message}]`,
+        );
       });
-    } else {
-      this.params.noteItemsTable
-        .setCompleted(id, checked)
-        .then((result) => {
-          const localItem = this.items.find((item) => item.id === id);
-          if (localItem) {
-            this.changeItemLocally(id, {
-              completed_at: result.completed_at,
-              updated_at: result.updated_at,
-              persisted: true,
-            });
-          }
-        })
-        .catch((error) => {
-          this.params.showError(
-            `toggleChecked: error id=[${id}] [${error.message}]`,
-          );
-        });
-    }
 
     if (item.is_child) {
       let parentItem: NoteItem | undefined;
@@ -526,7 +475,7 @@ export class Note {
 
     this.persistItem(previousItem.id, { title: mergedTitle });
     this.removeItemLocally(currentItem.id);
-    this.removeItemRemotely(currentItem.id, currentItem.persisted);
+    this.removeItemRemotely(currentItem.id);
     this.setPendingFocus({
       id: previousItem.id,
       selectionStart: cursorPosition,

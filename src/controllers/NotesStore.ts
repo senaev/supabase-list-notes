@@ -1,18 +1,18 @@
 import { Subscription } from "rxjs";
-import { NoteItemsTable } from "../tables/NoteItemsTable";
-import { NoteItem } from "../types/NoteItem";
+import { NoteRecord } from "./NotesList";
+import { NotesListTable } from "../tables/NotesListTable";
 
 type Listener = () => void;
 
-export class NoteItemsStore {
-  private items: NoteItem[] = [];
+export class NotesStore {
+  private items: NoteRecord[] = [];
   private listeners = new Set<Listener>();
   private subscription: Subscription | null = null;
   private observePromise: Promise<void> | null = null;
 
   constructor(
     private readonly params: {
-      noteItemsTable: NoteItemsTable;
+      notesListTable: NotesListTable;
       showError: (message: string) => void;
     },
   ) {}
@@ -22,8 +22,8 @@ export class NoteItemsStore {
       return;
     }
 
-    this.observePromise = this.params.noteItemsTable
-      .observeAllNotes((items) => {
+    this.observePromise = this.params.notesListTable
+      .observeAll((items) => {
         this.items = items;
         this.emitChange();
       })
@@ -45,11 +45,7 @@ export class NoteItemsStore {
     this.listeners.clear();
   }
 
-  public getItems(noteId: string): NoteItem[] {
-    return this.items.filter((item) => item.note_id === noteId);
-  }
-
-  public getAllItems(): NoteItem[] {
+  public getItems(): NoteRecord[] {
     return this.items;
   }
 

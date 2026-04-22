@@ -1,56 +1,46 @@
-import { Subscription } from "rxjs";
-import { NotesListTable } from "../tables/NotesListTable";
+import { NotesStore } from "./NotesStore";
 
 export type NoteRecord = {
   id: string;
   title: string;
   created_at: string;
-  updated_at: string;
+  modified_at: string;
 };
 
 export class NotesList {
   public items: NoteRecord[] | undefined = undefined;
-  private subscription: Subscription | null = null;
-  private observePromise: Promise<void> | null = null;
+  private unsubscribeStore: (() => void) | null = null;
 
   constructor(
     private readonly params: {
-      notesListTable: NotesListTable;
+      notesStore: NotesStore;
+      notesListTable: {
+        create: (note: { id: string; title: string }) => Promise<NoteRecord>;
+        update: (id: string, updates: { title?: string }) => Promise<void>;
+        delete: (id: string) => Promise<void>;
+      };
       onChange: () => void;
       showError: (message: string) => void;
     },
   ) {}
 
   public connect(): void {
-    if (this.subscription || this.observePromise) {
+    if (this.unsubscribeStore) {
       return;
     }
 
-    this.observePromise = this.params.notesListTable
-      .observeAll((data) => {
-        this.items = data.map((item) => ({
-          id: item.id,
-          title: item.title,
-          created_at: item.created_at,
-          updated_at: item.updated_at,
-        }));
-        this.params.onChange();
-      })
-      .then((subscription) => {
-        this.subscription = subscription;
-      })
-      .catch((err) => {
-        this.params.showError(`Failed to load notes: ${err.message}`);
-      })
-      .finally(() => {
-        this.observePromise = null;
-      });
+    this.params.notesStore.connect();
+    this.items = this.params.notesStore.getItems();
+    this.params.onChange();
+    this.unsubscribeStore = this.params.notesStore.subscribe(() => {
+      this.items = this.params.notesStore.getItems();
+      this.params.onChange();
+    });
   }
 
   public dispose(): void {
-    this.subscription?.unsubscribe();
-    this.subscription = null;
-    this.observePromise = null;
+    this.unsubscribeStore?.();
+    this.unsubscribeStore = null;
   }
 
   public async createNewNote(): Promise<NoteRecord> {

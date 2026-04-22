@@ -1,0 +1,36 @@
+.ReplicationStatusIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ReplicationStatusIndicator--local-only {
+  background: rgba(196, 204, 255, 0.16);
+  color: #c4ccff;
+}
+
+.ReplicationStatusIndicator--initializing {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ReplicationStatusIndicator--syncing {
+  background: rgba(255, 202, 152, 0.18);
+  color: #ffca98;
+}
+
+.ReplicationStatusIndicator--idle {
+  background: rgba(152, 255, 174, 0.16);
+  color: #98ffae;
+}
+
+.ReplicationStatusIndicator--error {
+  background: rgba(255, 152, 152, 0.18);
+  color: #ff9898;
+}

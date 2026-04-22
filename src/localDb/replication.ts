@@ -1,18 +1,15 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { replicateSupabase, RxSupabaseReplicationState } from "rxdb/plugins/replication-supabase";
 import { WithDeleted } from "rxdb";
 import {
-  LocalNoteItemRow,
-  LocalNoteRow,
-  localDb,
-} from "./localDb";
+  replicateSupabase,
+  RxSupabaseReplicationState,
+} from "rxdb/plugins/replication-supabase";
+import { localDb, LocalNoteItemRow, LocalNoteRow } from "./localDb";
 
 type ReplicationState = {
   notes: RxSupabaseReplicationState<LocalNoteRow>;
   noteItems: RxSupabaseReplicationState<LocalNoteItemRow>;
 };
-
-let replicationPromise: Promise<ReplicationState> | null = null;
 
 function normalizeNoteItemPosition<T extends { position: number | string }>(
   item: T,
@@ -26,6 +23,7 @@ function normalizeNoteItemPosition<T extends { position: number | string }>(
 async function startReplication(
   supabase: SupabaseClient,
 ): Promise<ReplicationState> {
+  console.log("Starting replication");
   const collections = await localDb.getCollections();
 
   const notes = replicateSupabase<LocalNoteRow>({
@@ -74,6 +72,7 @@ async function startReplication(
   return { notes, noteItems };
 }
 
+let replicationPromise: Promise<ReplicationState> | null = null;
 export async function ensureReplicationReady(
   supabase: SupabaseClient,
 ): Promise<ReplicationState> {

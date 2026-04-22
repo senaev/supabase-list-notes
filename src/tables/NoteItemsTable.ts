@@ -6,11 +6,11 @@ import { NoteItem } from "../types/NoteItem";
 import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
 
 const TABLE_COLUMNS =
-  "id, note_id, is_child, title, position, created_at, updated_at, completed_at";
+  "id, note_id, is_child, title, position, created_at, modified_at, completed_at";
 type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
 
 export class NoteItemsTable {
-  constructor(private readonly supabase: SupabaseClient) {}
+  constructor(private readonly supabase?: SupabaseClient) {}
 
   public async create({
     id,
@@ -43,7 +43,9 @@ export class NoteItemsTable {
   public async readAll(
     noteId: string,
   ): Promise<Pick<NoteItem, TableColumns>[]> {
-    await ensureReplicationReady(this.supabase);
+    if (this.supabase) {
+      await ensureReplicationReady(this.supabase);
+    }
 
     const items = await localDb.note_items_temp.toArray();
     return items
@@ -56,7 +58,9 @@ export class NoteItemsTable {
     noteId: string,
     onChange: (items: Pick<NoteItem, TableColumns>[]) => void,
   ): Promise<Subscription> {
-    await ensureReplicationReady(this.supabase);
+    if (this.supabase) {
+      await ensureReplicationReady(this.supabase);
+    }
 
     return localDb.note_items_temp.observeAll((items) => {
       onChange(
@@ -69,7 +73,9 @@ export class NoteItemsTable {
   }
 
   public async readAllNotes(): Promise<Pick<NoteItem, TableColumns>[]> {
-    await ensureReplicationReady(this.supabase);
+    if (this.supabase) {
+      await ensureReplicationReady(this.supabase);
+    }
 
     const items = await localDb.note_items_temp.toArray();
     return items
@@ -80,7 +86,9 @@ export class NoteItemsTable {
   public async observeAllNotes(
     onChange: (items: Pick<NoteItem, TableColumns>[]) => void,
   ): Promise<Subscription> {
-    await ensureReplicationReady(this.supabase);
+    if (this.supabase) {
+      await ensureReplicationReady(this.supabase);
+    }
 
     return localDb.note_items_temp.observeAll((items) => {
       onChange(
@@ -96,7 +104,7 @@ export class NoteItemsTable {
     updates: Partial<
       Pick<NoteItem, "title" | "position" | "completed_at" | "is_child">
     >,
-  ): Promise<{ updated_at: string }> {
+  ): Promise<{ modified_at: string }> {
     const localRow = await localDb.note_items_temp.get(itemId);
     if (!localRow) {
       throw new Error(
@@ -104,20 +112,20 @@ export class NoteItemsTable {
       );
     }
 
-    const updated_at = new Date().toISOString();
+    const modified_at = new Date().toISOString();
     await localDb.note_items_temp.put({
       ...localRow,
       ...updates,
-      _modified: updated_at,
+      _modified: modified_at,
     });
 
-    return { updated_at };
+    return { modified_at };
   }
 
   public async setCompleted(
     itemId: string,
     checked: boolean,
-  ): Promise<Pick<NoteItem, "completed_at" | "updated_at">> {
+  ): Promise<Pick<NoteItem, "completed_at" | "modified_at">> {
     const localRow = await localDb.note_items_temp.get(itemId);
     if (!localRow) {
       throw new Error(
@@ -125,15 +133,15 @@ export class NoteItemsTable {
       );
     }
 
-    const updated_at = new Date().toISOString();
-    const completed_at = checked ? updated_at : null;
+    const modified_at = new Date().toISOString();
+    const completed_at = checked ? modified_at : null;
     await localDb.note_items_temp.put({
       ...localRow,
       completed_at,
-      _modified: updated_at,
+      _modified: modified_at,
     });
 
-    return { completed_at, updated_at };
+    return { completed_at, modified_at };
   }
 
   public async delete(itemId: string): Promise<void> {
@@ -148,7 +156,7 @@ export class NoteItemsTable {
       title: row.title,
       position: row.position,
       created_at: row.created_at,
-      updated_at: row._modified,
+      modified_at: row._modified,
       completed_at: row.completed_at,
     };
   }

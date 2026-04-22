@@ -26,6 +26,7 @@ export const NotesListContextProvider = ({
   const notesListRef = useRef<NotesList | null>(null);
   if (!notesListRef.current) {
     notesListRef.current = new NotesList({
+      notesStore: tables.notesStore,
       notesListTable: tables.notesListTable,
       showError,
       onChange: () => {

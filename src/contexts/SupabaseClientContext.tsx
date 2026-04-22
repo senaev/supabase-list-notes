@@ -17,7 +17,7 @@ const SupabaseClientContext = createContext<SupabaseControllerStatus>(
 SupabaseClientContext.displayName = "SupabaseClientContext";
 
 export function SupabaseClientContextProvider({ children }: PropsWithChildren) {
-  const [, setVer] = useState<number>(0);
+  const [ver, setVer] = useState<number>(0);
 
   const ref = useRef<SupabaseController | null>(null);
   if (!ref.current) {

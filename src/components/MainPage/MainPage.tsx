@@ -10,10 +10,12 @@ import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
 
 import {
   ArrowLeftOnRectangleIcon,
+  ArrowTopRightOnSquareIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
 import { APP_BASE_URL } from "../../const/APP_BASE_URL";
 import { NBSP } from "../../const/NBSP";
+import { ROUTES } from "../../const/ROUTES";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
@@ -83,8 +85,8 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
   }
 
   const itemsSorted = [...items].sort((a, b) => {
-    const aUpdated = new Date(a.updated_at).getTime();
-    const bUpdated = new Date(b.updated_at).getTime();
+    const aUpdated = new Date(a.modified_at).getTime();
+    const bUpdated = new Date(b.modified_at).getTime();
 
     return bUpdated - aUpdated;
   });
@@ -149,10 +151,6 @@ export function MainPage() {
     });
   }, [location, navigate, notes]);
 
-  if (statusObject.status !== "ready") {
-    throw new Error("Supabase client is not ready in MainPage component");
-  }
-
   const createNewNote = async () => {
     // TODO: handle errors and show error message to user
     const { id } = await notes.createNewNote();
@@ -165,42 +163,54 @@ export function MainPage() {
       <MainPageHeader
         createNewNote={createNewNote}
         menu={[
-          {
-            label: `Share${NBSP}access`,
-            Icon: ShareIcon,
-            onSelect: () => {
-              const shareUrl = new URL(APP_BASE_URL, window.location.origin);
-              Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
-                ([credentialKey, queryParam]) => {
-                  const credentialValue =
-                    statusObject.credentials[
-                      credentialKey as keyof typeof statusObject.credentials
-                    ];
-                  shareUrl.searchParams.set(queryParam, credentialValue);
-                },
-              );
+          ...(statusObject.status === "ready"
+            ? [
+                {
+                  label: `Share${NBSP}access`,
+                  Icon: ShareIcon,
+                  onSelect: () => {
+                    const shareUrl = new URL(APP_BASE_URL, window.location.origin);
+                    Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
+                      ([credentialKey, queryParam]) => {
+                        const credentialValue =
+                          statusObject.credentials[
+                            credentialKey as keyof typeof statusObject.credentials
+                          ];
+                        shareUrl.searchParams.set(queryParam, credentialValue);
+                      },
+                    );
 
-              navigator.clipboard
-                .writeText(shareUrl.toString())
-                .then(() => {
-                  showInfoMessage(
-                    "Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.",
-                  );
-                })
-                .catch((error) => {
-                  showError(
-                    `Failed to copy credentials to clipboard. Error: ${error.message}`,
-                  );
-                });
-            },
-          },
-          {
-            label: "Logout",
-            Icon: ArrowLeftOnRectangleIcon,
-            onSelect: () => {
-              statusObject.logout();
-            },
-          },
+                    navigator.clipboard
+                      .writeText(shareUrl.toString())
+                      .then(() => {
+                        showInfoMessage(
+                          "Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.",
+                        );
+                      })
+                      .catch((error) => {
+                        showError(
+                          `Failed to copy credentials to clipboard. Error: ${error.message}`,
+                        );
+                      });
+                  },
+                },
+                {
+                  label: "Logout",
+                  Icon: ArrowLeftOnRectangleIcon,
+                  onSelect: () => {
+                    statusObject.logout();
+                  },
+                },
+              ]
+            : [
+                {
+                  label: "Connect Supabase",
+                  Icon: ArrowTopRightOnSquareIcon,
+                  onSelect: () => {
+                    navigate(ROUTES.auth);
+                  },
+                },
+              ]),
         ]}
       />
       <MainPageContent createNewNote={createNewNote} />

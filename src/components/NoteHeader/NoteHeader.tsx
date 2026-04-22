@@ -1,11 +1,14 @@
 import { ArrowLeftIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { NBSP } from "../../const/NBSP";
 import { ROUTES } from "../../const/ROUTES";
 import { UNTITLED_PLACEHOLDER } from "../../const/UNTITLED_PLACEHOLDER";
 import { useNotesListContext } from "../../contexts/NotesListContext";
+import { TablesContext } from "../../contexts/TablesContext";
 import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { PageHeader } from "../PageHeader/PageHeader";
+import { ReplicationStatusIndicator } from "../ReplicationStatusIndicator/ReplicationStatusIndicator";
 import "./NoteHeader.css";
 
 export function NoteHeader({
@@ -18,6 +21,8 @@ export function NoteHeader({
   const navigate = useNavigate();
 
   const notes = useNotesListContext();
+  const tables = useContext(TablesContext);
+  const replicationStatus = tables?.replicationStatus;
 
   function handleListTitleChange(title: string) {
     notes.changeTitleLocally(noteId, title);
@@ -44,6 +49,9 @@ export function NoteHeader({
           placeholder={UNTITLED_PLACEHOLDER}
           autoFocus={!noteItem.title.trim()}
         />
+      ) : null}
+      {replicationStatus ? (
+        <ReplicationStatusIndicator status={replicationStatus} />
       ) : null}
       <ContextMenu
         items={[

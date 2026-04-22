@@ -134,9 +134,8 @@ export function NoteItemElement({
               color: "#C1FF98",
             }}
           >
-            updated=[{new Date(item.updated_at).getTime()}]
+            modified=[{new Date(item.modified_at).getTime()}]
           </span>
-          <span>{item.persisted ? "✅" : "⏳"}</span>
         </span>
       )}
       <div

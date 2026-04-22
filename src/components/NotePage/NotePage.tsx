@@ -208,7 +208,7 @@ export function NotePage({ noteId }: { noteId: string }) {
   }
 
   function handleItemChange(id: string, title: string) {
-    list.changeItemLocally(id, { title, persisted: false });
+    list.changeItemLocally(id, { title });
     list.persistItem(id, { title });
   }
 

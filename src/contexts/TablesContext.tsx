@@ -1,13 +1,25 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import React, { PropsWithChildren, useContext, useEffect, useRef } from "react";
+import React, {
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Subscription } from "rxjs";
+import { ReplicationStatus } from "../components/ReplicationStatusIndicator/ReplicationStatusIndicator";
 import { NoteItemsStore } from "../controllers/NoteItemsStore";
+import { NotesStore } from "../controllers/NotesStore";
+import { ensureReplicationReady } from "../localDb/replication";
 import { NoteItemsTable } from "../tables/NoteItemsTable";
 import { NotesListTable } from "../tables/NotesListTable";
 
 export type TablesContextType = {
   notesListTable: NotesListTable;
   noteItemsTable: NoteItemsTable;
+  notesStore: NotesStore;
   noteItemsStore: NoteItemsStore;
+  replicationStatus: ReplicationStatus;
 };
 
 export const TablesContext = React.createContext<TablesContextType | null>(
@@ -20,30 +32,127 @@ export const TablesContextProvider = ({
   supabaseClient,
   showError,
 }: PropsWithChildren & {
-  supabaseClient: SupabaseClient;
+  supabaseClient?: SupabaseClient;
   showError: (message: string) => void;
 }) => {
+  const [replicationStatus, setReplicationStatus] = useState<ReplicationStatus>(
+    {
+      state: "initializing",
+    },
+  );
   const tablesRef = useRef<TablesContextType | null>(null);
   if (!tablesRef.current) {
+    const notesListTable = new NotesListTable(supabaseClient);
     const noteItemsTable = new NoteItemsTable(supabaseClient);
     tablesRef.current = {
-      notesListTable: new NotesListTable(supabaseClient),
+      notesListTable,
       noteItemsTable,
+      notesStore: new NotesStore({
+        notesListTable,
+        showError,
+      }),
       noteItemsStore: new NoteItemsStore({
         noteItemsTable,
         showError,
       }),
+      replicationStatus,
     };
   }
   const tables = tablesRef.current;
+  tables.replicationStatus = replicationStatus;
 
   useEffect(() => {
+    tables.notesStore.connect();
     tables.noteItemsStore.connect();
 
     return () => {
+      tables.notesStore.dispose();
       tables.noteItemsStore.dispose();
     };
   }, [tables]);
+
+  useEffect(() => {
+    if (!supabaseClient) {
+      setReplicationStatus({
+        state: "local-only",
+      });
+      return;
+    }
+
+    let cancelled = false;
+    const subscriptions: Subscription[] = [];
+    let latestError: string | undefined;
+    const activeByName = {
+      notes: false,
+      noteItems: false,
+    };
+
+    const publish = () => {
+      if (cancelled) {
+        return;
+      }
+
+      if (latestError) {
+        setReplicationStatus({
+          state: "error",
+          message: latestError,
+        });
+        return;
+      }
+
+      const isSyncing = Object.values(activeByName).some(Boolean);
+      setReplicationStatus({
+        state: isSyncing ? "syncing" : "idle",
+      });
+    };
+
+    setReplicationStatus({ state: "initializing" });
+
+    ensureReplicationReady(supabaseClient)
+      .then(({ notes, noteItems }) => {
+        if (cancelled) {
+          return;
+        }
+
+        subscriptions.push(
+          notes.active$.subscribe((active) => {
+            activeByName.notes = active;
+            publish();
+          }),
+          noteItems.active$.subscribe((active) => {
+            activeByName.noteItems = active;
+            publish();
+          }),
+          notes.error$.subscribe((error) => {
+            latestError = error.message;
+            publish();
+          }),
+          noteItems.error$.subscribe((error) => {
+            latestError = error.message;
+            publish();
+          }),
+        );
+
+        publish();
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setReplicationStatus({
+          state: "error",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+      subscriptions.forEach((subscription) => {
+        subscription.unsubscribe();
+      });
+    };
+  }, [supabaseClient]);
 
   return (
     <TablesContext.Provider value={tables}>{children}</TablesContext.Provider>

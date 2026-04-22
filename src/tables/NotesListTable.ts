@@ -5,11 +5,11 @@ import { ensureReplicationReady } from "../localDb/replication";
 import { LocalNoteRow, localDb } from "../localDb/localDb";
 import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
 
-const TABLE_COLUMNS = "id, title, created_at, updated_at";
+const TABLE_COLUMNS = "id, title, created_at, modified_at";
 type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
 
 export class NotesListTable {
-  constructor(private readonly supabase: SupabaseClient) {}
+  constructor(private readonly supabase?: SupabaseClient) {}
 
   public async create({
     id,
@@ -32,7 +32,9 @@ export class NotesListTable {
   }
 
   public async readAll(): Promise<Pick<NoteRecord, TableColumns>[]> {
-    await ensureReplicationReady(this.supabase);
+    if (this.supabase) {
+      await ensureReplicationReady(this.supabase);
+    }
 
     const notes = await localDb.notes_temp.toArray();
 
@@ -42,7 +44,9 @@ export class NotesListTable {
   public async observeAll(
     onChange: (notes: Pick<NoteRecord, TableColumns>[]) => void,
   ): Promise<Subscription> {
-    await ensureReplicationReady(this.supabase);
+    if (this.supabase) {
+      await ensureReplicationReady(this.supabase);
+    }
 
     return localDb.notes_temp.observeAll((notes) => {
       onChange(notes.map((note) => this.toNoteRecord(note)));
@@ -78,7 +82,7 @@ export class NotesListTable {
       id: row.id,
       title: row.title,
       created_at: row.created_at,
-      updated_at: row._modified,
+      modified_at: row._modified,
     };
   }
 }
