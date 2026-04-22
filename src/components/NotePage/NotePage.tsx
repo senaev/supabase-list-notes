@@ -54,7 +54,7 @@ export function NotePage({ noteId }: { noteId: string }) {
     const checked = flattenGroups(parentGroups.checked);
 
     useEffect(() => {
-        if (list.pendingFocus === null) {
+        if (list.pendingFocus == null) {
             return;
         }
 

@@ -23,7 +23,7 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
 const PENDING_COMPLETED_AT = '__pending__';
 
 export class Note {
-    private pendingFocus: PendingFocus | null = null;
+    public pendingFocus: PendingFocus | null = null;
     private unsubscribeStore: (() => void) | null = null;
 
     private items: NoteItem[] = [];
