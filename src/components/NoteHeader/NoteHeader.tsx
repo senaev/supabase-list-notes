@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { NBSP } from '../../const/NBSP';
 import { ROUTES } from '../../const/ROUTES';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
-import { useNotesListContext } from '../../contexts/NotesListContext';
+import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
 import { TablesContext } from '../../contexts/TablesContext';
 import { ContextMenu } from '../ContextMenu/ContextMenu';
 import { PageHeader } from '../PageHeader/PageHeader';
@@ -21,16 +21,17 @@ export function NoteHeader({
 }) {
     const navigate = useNavigate();
 
-    const notes = useNotesListContext();
+    const notesList = useNotesListContext();
+    const notes = useNoteRecords();
     const tables = useContext(TablesContext);
     const replicationStatus = tables?.replicationStatus;
 
     function handleListTitleChange(title: string) {
-        notes.changeTitleLocally(noteId, title);
-        notes.persistTitle(noteId, title);
+        notesList.changeTitleLocally(noteId, title);
+        notesList.persistTitle(noteId, title);
     }
 
-    const noteItem = notes.items?.find((list) => list.id === noteId);
+    const noteItem = notes?.find((list) => list.id === noteId);
 
     return <PageHeader homeButtonIcon={<ArrowLeftIcon className={'NoteHeader__icon'}/>}>
         {noteItem

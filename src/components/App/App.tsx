@@ -8,7 +8,7 @@ import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 import {
     NotesListContextProvider,
-    useNotesListContext,
+    useNoteRecords,
 } from '../../contexts/NotesListContext';
 import {
     SupabaseControllerContextProvider,
@@ -27,13 +27,13 @@ import { Page404 } from '../Page404/Page404';
 
 export function NoteRouteElement() {
     const { noteId } = useParams<{ noteId: string }>();
-    const { items } = useNotesListContext();
+    const notes = useNoteRecords();
 
     if (!noteId) {
         return <Page404/>;
     }
 
-    if (items === undefined) {
+    if (notes === undefined) {
         return <>
             {/* TODO: implement persistence and remove noop */}
             <MainPageHeader
@@ -44,7 +44,7 @@ export function NoteRouteElement() {
         </>;
     }
 
-    const noteExists = items.some((list) => list.id === noteId);
+    const noteExists = notes.some((list) => list.id === noteId);
 
     if (!noteExists) {
         return <Page404/>;

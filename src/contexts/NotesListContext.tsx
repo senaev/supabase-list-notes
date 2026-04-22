@@ -3,10 +3,10 @@ import {
     PropsWithChildren,
     useContext,
     useRef,
-    useState,
 } from 'react';
+import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
-import { NotesList } from '../controllers/NotesList';
+import { NoteRecord, NotesList } from '../controllers/NotesList';
 
 import { useTablesContext } from './TablesContext';
 
@@ -23,25 +23,16 @@ export const NotesListContextProvider = ({
     showError: (message: string) => void;
 }) => {
     const tables = useTablesContext();
-
-    const [
-        , setNotesListVer,
-    ] = useState<number>(0);
     const notesListRef = useRef<NotesList | null>(null);
 
     if (!notesListRef.current) {
         notesListRef.current = new NotesList({
             notesListTable: tables.notesListTable,
             showError,
-            onChange: () => {
-                setNotesListVer((prev) => prev + 1);
-            },
         });
     }
 
-    const notesList = notesListRef.current;
-
-    return <NotesListContext.Provider value={notesList}>
+    return <NotesListContext.Provider value={notesListRef.current}>
         {children}
     </NotesListContext.Provider>;
 };
@@ -54,4 +45,12 @@ export const useNotesListContext = (): NotesList => {
     }
 
     return notesList;
+};
+
+export const useNoteRecords = (): NoteRecord[] | undefined => {
+    const { recordsSignal } = useNotesListContext();
+
+    const items = useSignal(recordsSignal);
+
+    return items;
 };

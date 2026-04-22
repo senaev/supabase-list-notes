@@ -13,7 +13,7 @@ import { NBSP } from '../../const/NBSP';
 import { ROUTES } from '../../const/ROUTES';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
-import { useNotesListContext } from '../../contexts/NotesListContext';
+import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
 import { useSupabaseController } from '../../contexts/SupabaseControllerContext';
 import { useTablesContext } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
@@ -22,7 +22,7 @@ import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 
 function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
-    const { items } = useNotesListContext();
+    const notes = useNoteRecords();
     const { noteItemsStore } = useTablesContext();
     const navigate = useNavigate();
     const [
@@ -67,11 +67,11 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
         };
     }, [noteItemsStore]);
 
-    if (items === undefined) {
+    if (notes === undefined) {
         return <LoadingPageContent/>;
     }
 
-    if (items.length === 0) {
+    if (notes.length === 0) {
         return <FullPageContent>
             <button
                 type={'button'}
@@ -89,7 +89,7 @@ function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
         </FullPageContent>;
     }
 
-    const itemsSorted = [...items].sort((a, b) => {
+    const itemsSorted = [...notes].sort((a, b) => {
         const aUpdated = new Date(a.modified_at).getTime();
         const bUpdated = new Date(b.modified_at).getTime();
 
@@ -137,7 +137,7 @@ export function MainPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showError, showInfoMessage } = useToastsContext();
-    const notes = useNotesListContext();
+    const notesList = useNotesListContext();
     const supabaseController = useSupabaseController();
 
     useEffect(() => {
@@ -147,7 +147,7 @@ export function MainPage() {
             return;
         }
 
-        notes.delete(deleteNoteId);
+        notesList.delete(deleteNoteId);
 
         navigate(location.pathname, {
             replace: true,
@@ -156,12 +156,12 @@ export function MainPage() {
     }, [
         location,
         navigate,
-        notes,
+        notesList,
     ]);
 
     const createNewNote = async () => {
-    // TODO: handle errors and show error message to user
-        const { id } = await notes.createNewNote();
+        // TODO: handle errors and show error message to user
+        const { id } = await notesList.createNewNote();
 
         navigate(`/${id}`);
     };

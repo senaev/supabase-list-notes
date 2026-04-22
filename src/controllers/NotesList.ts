@@ -1,3 +1,6 @@
+import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+
 import { NotesListTable } from '../tables/NotesListTable';
 
 export type NoteRecord = {
@@ -8,17 +11,15 @@ export type NoteRecord = {
 };
 
 export class NotesList {
-    public items: NoteRecord[] | undefined = undefined;
+    public readonly recordsSignal = new Signal<NoteRecord[] | undefined>(undefined, deepEqual);
 
     public constructor(private readonly params: {
         notesListTable: NotesListTable;
-        onChange: () => void;
         showError: (message: string) => void;
     }) {
         this.params.notesListTable
             .observeAll((items) => {
-                this.items = items;
-                this.params.onChange();
+                this.recordsSignal.next(items);
             })
             .catch((error) => {
                 this.params.showError(error.message);
@@ -31,17 +32,17 @@ export class NotesList {
             title: '',
         });
 
-        this.items = [
+        this.recordsSignal.next([
             // TODO: remove workaround after fixing items persistence
-            ...this.items!,
+            ...this.recordsSignal.value()!,
             newNote,
-        ];
+        ]);
 
         return newNote;
     }
 
     public changeTitleLocally(id: string, title: string): void {
-        this.items = this.items!.map((item) => {
+        this.recordsSignal.next(this.recordsSignal.value()!.map((item) => {
             if (item.id !== id) {
                 return item;
             }
@@ -50,8 +51,7 @@ export class NotesList {
                 ...item,
                 title,
             };
-        });
-        this.params.onChange();
+        }));
     }
 
     public async persistTitle(id: string, title: string): Promise<void> {
@@ -65,7 +65,7 @@ export class NotesList {
     }
 
     public async delete(id: string): Promise<void> {
-        const { items } = this;
+        const { recordsSignal: items } = this;
 
         if (!items) {
             this.params.showError('Notes are not loaded yet');
@@ -74,8 +74,7 @@ export class NotesList {
         }
 
         try {
-            this.items = items.filter((item) => item.id !== id);
-            this.params.onChange();
+            this.recordsSignal.next(this.recordsSignal.value()!.filter((item) => item.id !== id));
 
             await this.params.notesListTable.delete(id);
         } catch (err) {
