@@ -1,9 +1,9 @@
-import { SupabaseCredentials } from "../controllers/SupabaseController";
+import { SupabaseCredentials } from '../controllers/SupabaseController';
 
 export const SUPABASE_CREDENTIALS_QUERY_PARAMS: Record<
-  keyof SupabaseCredentials,
-  string
+    keyof SupabaseCredentials,
+    string
 > = {
-  projectUrl: "pu",
-  publishableKey: "pk",
+    projectUrl: 'pu',
+    publishableKey: 'pk',
 };

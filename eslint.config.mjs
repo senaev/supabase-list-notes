@@ -10,6 +10,9 @@ const INDENT = 4;
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+    {
+        ignores: ['dist/**'],
+    },
     { files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'] },
     { languageOptions: { globals: globals.browser } },
     pluginJs.configs.recommended,
@@ -21,8 +24,6 @@ export default [
             'import-x': pluginImportX,
             'no-only-tests': pluginNoOnlyTests,
         },
-        ignores: [],
-
         rules: {
             'one-var': [
                 'error',

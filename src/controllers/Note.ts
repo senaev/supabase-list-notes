@@ -23,7 +23,7 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
 const PENDING_COMPLETED_AT = '__pending__';
 
 export class Note {
-    pendingFocus: PendingFocus | null = null;
+    private pendingFocus: PendingFocus | null = null;
     private unsubscribeStore: (() => void) | null = null;
 
     private items: NoteItem[] = [];
@@ -310,22 +310,6 @@ export class Note {
         }
     }
 
-    private shiftElementsToInsertOnPosition(position: number, count: number) {
-        const shiftedItems = shiftItemsToInsertOnPosition(
-            this.items,
-            position,
-            count
-        );
-
-        shiftedItems.forEach((nextPosition, id) => {
-            this.changeItemLocally(id, {
-                position: nextPosition,
-            });
-
-            this.persistItem(id, { position: nextPosition });
-        });
-    }
-
     public insertItem({
         title,
     completed_at,
@@ -445,7 +429,7 @@ export class Note {
         this.params.noteItemsTable
             .setCompleted(id, checked)
             .then((result) => {
-                const localItem = this.items.find((item) => item.id === id);
+                const localItem = this.items.find((currentItem) => currentItem.id === id);
 
                 if (localItem) {
                     this.changeItemLocally(id, {
@@ -511,6 +495,22 @@ export class Note {
             id: previousItem.id,
             selectionStart: cursorPosition,
             selectionEnd: cursorPosition,
+        });
+    }
+
+    private shiftElementsToInsertOnPosition(position: number, count: number) {
+        const shiftedItems = shiftItemsToInsertOnPosition(
+            this.items,
+            position,
+            count
+        );
+
+        shiftedItems.forEach((nextPosition, id) => {
+            this.changeItemLocally(id, {
+                position: nextPosition,
+            });
+
+            this.persistItem(id, { position: nextPosition });
         });
     }
 }

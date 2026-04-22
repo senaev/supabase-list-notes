@@ -1,32 +1,31 @@
-import "./ReplicationStatusIndicator.css";
+import './ReplicationStatusIndicator.css';
 
 export type ReplicationStatus = {
-  state: "local-only" | "initializing" | "syncing" | "idle" | "error";
-  message?: string;
+    state: 'local-only' | 'initializing' | 'syncing' | 'idle' | 'error';
+    message?: string;
 };
 
 export function ReplicationStatusIndicator({
-  status,
+    status,
 }: {
-  status: ReplicationStatus;
+    status: ReplicationStatus;
 }) {
-  const label =
-    status.state === "local-only"
-      ? "Local only"
-      : status.state === "initializing"
-      ? "Connecting"
-      : status.state === "syncing"
-        ? "Syncing"
-        : status.state === "error"
-          ? "Sync error"
-          : "Live";
+    let label = 'Live';
 
-  return (
-    <span
-      className={`ReplicationStatusIndicator ReplicationStatusIndicator--${status.state}`}
-      title={status.message}
+    if (status.state === 'local-only') {
+        label = 'Local only';
+    } else if (status.state === 'initializing') {
+        label = 'Connecting';
+    } else if (status.state === 'syncing') {
+        label = 'Syncing';
+    } else if (status.state === 'error') {
+        label = 'Sync error';
+    }
+
+    return <span
+        className={`ReplicationStatusIndicator ReplicationStatusIndicator--${status.state}`}
+        title={status.message}
     >
-      {label}
-    </span>
-  );
+        {label}
+    </span>;
 }
