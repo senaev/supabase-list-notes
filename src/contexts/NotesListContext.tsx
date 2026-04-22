@@ -1,63 +1,67 @@
 import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { NotesList } from "../controllers/NotesList";
-import { useTablesContext } from "./TablesContext";
+    createContext,
+    PropsWithChildren,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
+
+import { NotesList } from '../controllers/NotesList';
+
+import { useTablesContext } from './TablesContext';
 
 type NotesListContextType = NotesList | undefined;
 
 const NotesListContext = createContext<NotesListContextType>(undefined);
-NotesListContext.displayName = "NotesListContext";
+
+NotesListContext.displayName = 'NotesListContext';
 
 export const NotesListContextProvider = ({
-  children,
-  showError,
+    children,
+    showError,
 }: PropsWithChildren & {
-  showError: (message: string) => void;
+    showError: (message: string) => void;
 }) => {
-  const tables = useTablesContext();
+    const tables = useTablesContext();
 
-  const [, setNotesListVer] = useState<number>(0);
-  const notesListRef = useRef<NotesList | null>(null);
-  if (!notesListRef.current) {
-    notesListRef.current = new NotesList({
-      notesStore: tables.notesStore,
-      notesListTable: tables.notesListTable,
-      showError,
-      onChange: () => {
-        setNotesListVer((prev) => prev + 1);
-      },
-    });
-  }
-  const notesList = notesListRef.current;
+    const [
+        , setNotesListVer,
+    ] = useState<number>(0);
+    const notesListRef = useRef<NotesList | null>(null);
 
-  useEffect(() => {
-    notesList.connect();
+    if (!notesListRef.current) {
+        notesListRef.current = new NotesList({
+            notesStore: tables.notesStore,
+            notesListTable: tables.notesListTable,
+            showError,
+            onChange: () => {
+                setNotesListVer((prev) => prev + 1);
+            },
+        });
+    }
 
-    return () => {
-      notesList.dispose();
-    };
-  }, [notesList]);
+    const notesList = notesListRef.current;
 
-  return (
-    <NotesListContext.Provider value={notesList}>
-      {children}
-    </NotesListContext.Provider>
-  );
+    useEffect(() => {
+        notesList.connect();
+
+        return () => {
+            notesList.dispose();
+        };
+    }, [notesList]);
+
+    return <NotesListContext.Provider value={notesList}>
+        {children}
+    </NotesListContext.Provider>;
 };
 
 export const useNotesListContext = (): NotesList => {
-  const notesList = useContext(NotesListContext);
-  if (!notesList) {
-    throw new Error(
-      "useNotesListContext must be used inside NotesListContext.Provider",
-    );
-  }
+    const notesList = useContext(NotesListContext);
 
-  return notesList;
+    if (!notesList) {
+        throw new Error('useNotesListContext must be used inside NotesListContext.Provider');
+    }
+
+    return notesList;
 };

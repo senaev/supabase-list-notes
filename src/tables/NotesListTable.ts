@@ -1,88 +1,91 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import { Subscription } from "rxjs";
-import { NoteRecord } from "../controllers/NotesList";
-import { ensureReplicationReady } from "../localDb/replication";
-import { LocalNoteRow, localDb } from "../localDb/localDb";
-import { SplitCommaAndTrim } from "../utils/SplitCommaAndTrim";
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Subscription } from 'rxjs';
 
-const TABLE_COLUMNS = "id, title, created_at, modified_at";
-type TableColumns = SplitCommaAndTrim<typeof TABLE_COLUMNS>;
+import { NoteRecord } from '../controllers/NotesList';
+import {
+    LocalDbFacade, LocalNoteRow,
+} from '../localDb/LocalDbFacade';
+import { ensureReplicationReady } from '../localDb/replication';
+import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
+
+const _TABLE_COLUMNS = 'id, title, created_at, modified_at';
+
+type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
+
+function toNoteRecord(row: LocalNoteRow): Pick<NoteRecord, TableColumns> {
+    return {
+        id: row.id,
+        title: row.title,
+        created_at: row.created_at,
+        modified_at: row._modified,
+    };
+}
 
 export class NotesListTable {
-  constructor(private readonly supabase?: SupabaseClient) {}
+    public constructor(private readonly localDbFacade: LocalDbFacade, private readonly supabase?: SupabaseClient) {}
 
-  public async create({
-    id,
+    public async create({
+        id,
     title,
-  }: {
-    id: string;
-    title: string;
-  }): Promise<Pick<NoteRecord, TableColumns>> {
-    const now = new Date().toISOString();
-    const localRow: LocalNoteRow = {
-      id,
-      title,
-      created_at: now,
-      _modified: now,
-    };
+    }: {
+        id: string;
+        title: string;
+    }): Promise<Pick<NoteRecord, TableColumns>> {
+        const now = new Date().toISOString();
+        const localRow: LocalNoteRow = {
+            id,
+            title,
+            created_at: now,
+            _modified: now,
+        };
 
-    await localDb.notes_temp.put(localRow);
+        await this.localDbFacade.notes_temp.put(localRow);
 
-    return this.toNoteRecord(localRow);
-  }
-
-  public async readAll(): Promise<Pick<NoteRecord, TableColumns>[]> {
-    if (this.supabase) {
-      await ensureReplicationReady(this.supabase);
+        return toNoteRecord(localRow);
     }
 
-    const notes = await localDb.notes_temp.toArray();
+    public async readAll(): Promise<Pick<NoteRecord, TableColumns>[]> {
+        if (this.supabase) {
+            await ensureReplicationReady(this.supabase, this.localDbFacade);
+        }
 
-    return notes.map((note) => this.toNoteRecord(note));
-  }
+        const notes = await this.localDbFacade.notes_temp.toArray();
 
-  public async observeAll(
-    onChange: (notes: Pick<NoteRecord, TableColumns>[]) => void,
-  ): Promise<Subscription> {
-    if (this.supabase) {
-      await ensureReplicationReady(this.supabase);
+        return notes.map(toNoteRecord);
     }
 
-    return localDb.notes_temp.observeAll((notes) => {
-      onChange(notes.map((note) => this.toNoteRecord(note)));
-    });
-  }
+    public async observeAll(onChange: (notes: Pick<NoteRecord, TableColumns>[]) => void): Promise<Subscription> {
+        if (this.supabase) {
+            await ensureReplicationReady(this.supabase, this.localDbFacade);
+        }
 
-  public async update(
-    id: string,
-    updates: {
-      title?: string;
-    },
-  ): Promise<void> {
-    const localRow = await localDb.notes_temp.get(id);
-    if (!localRow) {
-      throw new Error(`NotesListTable.update(${id}) error: note not found`);
+        return this.localDbFacade.notes_temp.observeAll((notes) => {
+            onChange(notes.map(toNoteRecord));
+        });
     }
 
-    const updatedLocalRow: LocalNoteRow = {
-      ...localRow,
-      ...updates,
-      _modified: new Date().toISOString(),
-    };
+    public async update(
+        id: string,
+        updates: {
+            title?: string;
+        }
+    ): Promise<void> {
+        const localRow = await this.localDbFacade.notes_temp.get(id);
 
-    await localDb.notes_temp.put(updatedLocalRow);
-  }
+        if (!localRow) {
+            throw new Error(`NotesListTable.update(${id}) error: note not found`);
+        }
 
-  public async delete(id: string): Promise<void> {
-    await localDb.notes_temp.remove(id);
-  }
+        const updatedLocalRow: LocalNoteRow = {
+            ...localRow,
+            ...updates,
+            _modified: new Date().toISOString(),
+        };
 
-  private toNoteRecord(row: LocalNoteRow): Pick<NoteRecord, TableColumns> {
-    return {
-      id: row.id,
-      title: row.title,
-      created_at: row.created_at,
-      modified_at: row._modified,
-    };
-  }
+        await this.localDbFacade.notes_temp.put(updatedLocalRow);
+    }
+
+    public async delete(id: string): Promise<void> {
+        await this.localDbFacade.notes_temp.remove(id);
+    }
 }
