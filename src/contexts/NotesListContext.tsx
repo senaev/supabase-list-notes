@@ -8,7 +8,7 @@ import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
 import { NoteRecord, NotesList } from '../controllers/NotesList';
 
-import { useTablesContext } from './TablesContext';
+import { useNotesListTableLocal } from './NotesListTableLocalContext';
 
 type NotesListContextType = NotesList | undefined;
 
@@ -22,12 +22,12 @@ export const NotesListContextProvider = ({
 }: PropsWithChildren & {
     showError: (message: string) => void;
 }) => {
-    const tables = useTablesContext();
+    const notesListTableLocal = useNotesListTableLocal();
     const notesListRef = useRef<NotesList | null>(null);
 
     if (!notesListRef.current) {
         notesListRef.current = new NotesList({
-            notesListTableLocal: tables.notesListTableLocal,
+            notesListTableLocal,
             showError,
         });
     }

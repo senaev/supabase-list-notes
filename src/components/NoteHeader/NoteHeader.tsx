@@ -1,13 +1,10 @@
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NBSP } from 'senaev-utils/src/const/chars/NBSP';
 
 import { ROUTES } from '../../const/ROUTES';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
 import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
-import { TablesContext } from '../../contexts/TablesContext';
-import { ConnectionStatusIndicator } from '../ConnectionStatusIndicator/ConnectionStatusIndicator';
 import { ContextMenu } from '../ContextMenu/ContextMenu';
 import { PageHeader } from '../PageHeader/PageHeader';
 import './NoteHeader.css';
@@ -23,8 +20,6 @@ export function NoteHeader({
 
     const notesList = useNotesListContext();
     const notes = useNoteRecords();
-    const tables = useContext(TablesContext);
-    const replicationStatus = tables?.replicationStatus;
 
     const noteItem = notes?.find((list) => list.id === noteId);
 
@@ -48,9 +43,6 @@ export function NoteHeader({
                 placeholder={UNTITLED_PLACEHOLDER}
                 autoFocus={!noteItem.title.trim()}
             />
-            : null}
-        {replicationStatus
-            ? <ConnectionStatusIndicator status={replicationStatus}/>
             : null}
         <ContextMenu
             items={[

@@ -167,45 +167,47 @@ export function MainPage() {
     return <div className={'MainPage'}>
         <MainPageHeader
             createNewNote={createNewNote}
-            menu={[
-                {
-                    label: `Share${NBSP}access`,
-                    Icon: ShareIcon,
-                    onSelect: () => {
-                        const shareUrl = new URL(
-                            APP_BASE_URL,
-                            window.location.origin
-                        );
+            menu={supabaseControllerStatus.status === 'ready'
+                ? [
+                    {
+                        label: `Share${NBSP}access`,
+                        Icon: ShareIcon,
+                        onSelect: () => {
+                            const shareUrl = new URL(
+                                APP_BASE_URL,
+                                window.location.origin
+                            );
 
-                        Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(([
-                            credentialKey,
-                            queryParam,
-                        ]) => {
-                            const credentialValue = supabaseControllerStatus.credentials[
-                                credentialKey as keyof typeof supabaseControllerStatus.credentials
-                            ];
+                            Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(([
+                                credentialKey,
+                                queryParam,
+                            ]) => {
+                                const credentialValue = supabaseControllerStatus.credentials[
+                                    credentialKey as keyof typeof supabaseControllerStatus.credentials
+                                ];
 
-                            shareUrl.searchParams.set(queryParam, credentialValue);
-                        });
-
-                        navigator.clipboard
-                            .writeText(shareUrl.toString())
-                            .then(() => {
-                                showInfoMessage('Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.');
-                            })
-                            .catch((error) => {
-                                showError(`Failed to copy credentials to clipboard. Error: ${error.message}`);
+                                shareUrl.searchParams.set(queryParam, credentialValue);
                             });
+
+                            navigator.clipboard
+                                .writeText(shareUrl.toString())
+                                .then(() => {
+                                    showInfoMessage('Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.');
+                                })
+                                .catch((error) => {
+                                    showError(`Failed to copy credentials to clipboard. Error: ${error.message}`);
+                                });
+                        },
                     },
-                },
-                {
-                    label: 'Logout',
-                    Icon: ArrowLeftOnRectangleIcon,
-                    onSelect: () => {
-                        supabaseControllerStatus.logout();
+                    {
+                        label: 'Logout',
+                        Icon: ArrowLeftOnRectangleIcon,
+                        onSelect: () => {
+                            supabaseControllerStatus.logout();
+                        },
                     },
-                },
-            ]}
+                ]
+                : []}
         />
         <MainPageContent createNewNote={createNewNote}/>
     </div>;

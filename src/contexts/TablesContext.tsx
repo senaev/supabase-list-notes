@@ -4,12 +4,10 @@ import React, {
     useContext,
     useEffect,
     useRef,
-    useState,
 } from 'react';
 import { Subscription } from 'rxjs';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
 
-import { ConnectionStatus } from '../components/ConnectionStatusIndicator/ConnectionStatusIndicator';
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
 import { ensureReplicationReady } from '../localDb/replication';
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
@@ -20,7 +18,6 @@ import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 export type TablesContextType = {
     noteItemsTableLocal: NoteItemsTableLocal;
     noteItemsStore: NoteItemsStore;
-    replicationStatus: ConnectionStatus;
 };
 
 export const TablesContext = React.createContext<TablesContextType | null>(null);
@@ -32,10 +29,6 @@ export const TablesContextProvider = ({
 }: PropsWithChildren & {
     showError: (message: string) => void;
 }) => {
-    const [
-        replicationStatus,
-        setReplicationStatus,
-    ] = useState<ConnectionStatus>('initializing');
     const tablesRef = useRef<TablesContextType | null>(null);
 
     const { clientReadyLatch } = useSupabaseControllerStatus();
@@ -52,13 +45,10 @@ export const TablesContextProvider = ({
                 noteItemsTable: noteItemsTableLocal,
                 showError,
             }),
-            replicationStatus,
         };
     }
 
     const tables = tablesRef.current;
-
-    tables.replicationStatus = replicationStatus;
 
     useEffect(() => {
         tables.noteItemsStore.connect();
@@ -70,8 +60,6 @@ export const TablesContextProvider = ({
 
     useEffect(() => {
         if (!supabaseClient) {
-            setReplicationStatus('localOnly');
-
             return noop;
         }
 
@@ -90,17 +78,12 @@ export const TablesContextProvider = ({
 
             if (latestError) {
                 // TODO: handle errors more gracefully
-                setReplicationStatus('error');
 
                 return;
             }
 
             const isSyncing = Object.values(activeByName).some(Boolean);
-
-            setReplicationStatus(isSyncing ? 'syncing' : 'idle');
         };
-
-        setReplicationStatus('initializing');
 
         ensureReplicationReady(supabaseClient, localDbFacade)
             .then(({ notes, noteItems }) => {
@@ -130,12 +113,8 @@ export const TablesContextProvider = ({
                 publish();
             })
             .catch((error) => {
-                if (cancelled) {
-                    return;
-                }
 
                 // TODO: handle errors more gracefully
-                setReplicationStatus('error');
             });
 
         return () => {
