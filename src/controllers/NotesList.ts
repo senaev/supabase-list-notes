@@ -41,8 +41,8 @@ export class NotesList {
         return newNote;
     }
 
-    public changeTitleLocally(id: string, title: string): void {
-        this.recordsSignal.next(this.recordsSignal.value()!.map((item) => {
+    public changeTitle(id: string, title: string): Promise<void> {
+        const nextRecords = this.recordsSignal.value()!.map((item) => {
             if (item.id !== id) {
                 return item;
             }
@@ -51,17 +51,11 @@ export class NotesList {
                 ...item,
                 title,
             };
-        }));
-    }
+        });
 
-    public async persistTitle(id: string, title: string): Promise<void> {
-        try {
-            await this.params.notesListTable.update(id, { title });
-        } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
+        this.recordsSignal.next(nextRecords);
 
-            this.params.showError(`Failed to update note title: ${message}`);
-        }
+        return this.params.notesListTable.update(id, { title });
     }
 
     public async delete(id: string): Promise<void> {

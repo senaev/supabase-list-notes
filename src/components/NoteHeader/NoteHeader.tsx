@@ -26,11 +26,6 @@ export function NoteHeader({
     const tables = useContext(TablesContext);
     const replicationStatus = tables?.replicationStatus;
 
-    function handleListTitleChange(title: string) {
-        notesList.changeTitleLocally(noteId, title);
-        notesList.persistTitle(noteId, title);
-    }
-
     const noteItem = notes?.find((list) => list.id === noteId);
 
     return <PageHeader homeButtonIcon={<ArrowLeftIcon className={'NoteHeader__icon'}/>}>
@@ -39,7 +34,9 @@ export function NoteHeader({
                 className={'NoteHeader__titleInput'}
                 value={noteItem.title}
                 onChange={(event) => {
-                    handleListTitleChange(event.currentTarget.value);
+                    const title = event.currentTarget.value;
+
+                    notesList.changeTitle(noteId, title);
                 }}
                 onKeyDown={(event) => {
                     if (event.key === 'Enter' && !event.shiftKey) {
