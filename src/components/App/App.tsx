@@ -6,31 +6,34 @@ import {
 } from 'react-router-dom';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
 
+import { LocalDbFacadeContextProvider } from '../../contexts/LocalDbFacadeContext';
 import {
     NotesListContextProvider,
     useNoteRecords,
 } from '../../contexts/NotesListContext';
 import {
-    SupabaseControllerContextProvider,
-    useSupabaseController,
+    SupabaseControllerStatusContextProvider,
+    useSupabaseControllerStatus,
 } from '../../contexts/SupabaseControllerContext';
 import { TablesContextProvider } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
+import { SupabaseController } from '../../controllers/SupabaseController';
 import { LocalDbFacade } from '../../localDb/LocalDbFacade';
 import { AuthPage } from '../AuthPage/AuthPage';
+import { ErrorPage } from '../ErrorPage/ErrorPage';
 import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
 import { MainPage } from '../MainPage/MainPage';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NoteHeader } from '../NoteHeader/NoteHeader';
 import { NotePage } from '../NotePage/NotePage';
-import { Page404 } from '../Page404/Page404';
+import { ROUTES } from '../../const/ROUTES';
 
 export function NoteRouteElement() {
     const { noteId } = useParams<{ noteId: string }>();
     const notes = useNoteRecords();
 
     if (!noteId) {
-        return <Page404/>;
+        return <ErrorPage errorMessage={'404: Note id absent'}/>;
     }
 
     if (notes === undefined) {
@@ -47,7 +50,7 @@ export function NoteRouteElement() {
     const noteExists = notes.some((list) => list.id === noteId);
 
     if (!noteExists) {
-        return <Page404/>;
+        return <ErrorPage errorMessage={'404: Note not found'}/>;
     }
 
     return <>
@@ -70,7 +73,6 @@ export function NotesApp({
 
     return <TablesContextProvider
         key={supabaseClient ? 'tables-with-supabase' : 'tables-local-only'}
-        localDbFacade={localDbFacade}
         supabaseClient={supabaseClient}
         showError={showError}
     >
@@ -81,7 +83,7 @@ export function NotesApp({
                     element={<MainPage/>}
                 />
                 <Route
-                    path={'/auth'}
+                    path={ROUTES.auth}
                     element={<AuthRouteElement/>}
                 />
                 <Route
@@ -90,7 +92,7 @@ export function NotesApp({
                 />
                 <Route
                     path={'*'}
-                    element={<Page404/>}
+                    element={<ErrorPage errorMessage={'404: Page not found'}/>}
                 />
             </Routes>
         </NotesListContextProvider>
@@ -98,16 +100,16 @@ export function NotesApp({
 }
 
 function AuthRouteElement() {
-    const supabaseStatusObject = useSupabaseController().status;
+    const supabaseControllerStatus = useSupabaseControllerStatus();
 
-    if (supabaseStatusObject.status === 'ready') {
+    if (supabaseControllerStatus.status === 'ready') {
         return <Navigate
             to={'/'}
             replace={true}
         />;
     }
 
-    if (supabaseStatusObject.status === 'initialization') {
+    if (supabaseControllerStatus.status === 'initialization') {
         return <>
             {/* TODO: implement persistence and remove noop */}
             <MainPageHeader
@@ -118,31 +120,37 @@ function AuthRouteElement() {
         </>;
     }
 
-    return <AuthPage statusObject={supabaseStatusObject}/>;
+    return <AuthPage statusObject={supabaseControllerStatus}/>;
 }
 
 export function NotesWithAuthApp() {
-    const supabaseStatusObject = useSupabaseController().status;
+    const supabaseControllerStatus = useSupabaseControllerStatus();
 
     return <>
         <NotesApp
             supabaseClient={
-                supabaseStatusObject.status === 'ready'
-                    ? supabaseStatusObject.client
+                supabaseControllerStatus.status === 'ready'
+                    ? supabaseControllerStatus.client
                     : undefined
             }
         />
     </>;
 }
 
+// TODO: move somewhere else
 const localDbFacade = new LocalDbFacade();
+
+// TODO: move somewhere else
+const supabaseController = new SupabaseController();
 
 export function App() {
     return <div className={'App__page'}>
         <main className={'App__main'}>
-            <SupabaseControllerContextProvider>
-                <NotesWithAuthApp/>
-            </SupabaseControllerContextProvider>
+            <SupabaseControllerStatusContextProvider supabaseController={supabaseController}>
+                <LocalDbFacadeContextProvider localDbFacade={localDbFacade}>
+                    <NotesWithAuthApp/>
+                </LocalDbFacadeContextProvider>
+            </SupabaseControllerStatusContextProvider>
         </main>
     </div>;
 }

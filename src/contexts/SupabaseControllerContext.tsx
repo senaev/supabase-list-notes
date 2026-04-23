@@ -2,45 +2,34 @@ import {
     createContext,
     PropsWithChildren,
     useContext,
-    useRef,
-    useState,
 } from 'react';
+import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
 import {
     SupabaseController,
+    SupabaseControllerStatus,
 } from '../controllers/SupabaseController';
 
-const SupabaseControllerContext = createContext<SupabaseController | undefined>(undefined);
+const SupabaseControllerStatusContext = createContext<SupabaseControllerStatus | undefined>(undefined);
 
-SupabaseControllerContext.displayName = 'SupabaseControllerContext';
+SupabaseControllerStatusContext.displayName = 'SupabaseControllerStatusContext';
 
-export function SupabaseControllerContextProvider({ children }: PropsWithChildren) {
-    const [
-        _ver,
-        setVer,
-    ] = useState<number>(0);
+export function SupabaseControllerStatusContextProvider({ children, supabaseController }: PropsWithChildren & {
+    supabaseController: SupabaseController;
+}) {
+    const status = useSignal(supabaseController.statusSignal);
 
-    const ref = useRef<SupabaseController | null>(null);
-
-    if (!ref.current) {
-        ref.current = new SupabaseController({
-            onChange: () => {
-                setVer((prev) => prev + 1);
-            },
-        });
-    }
-
-    return <SupabaseControllerContext.Provider value={ref.current}>
+    return <SupabaseControllerStatusContext.Provider value={status}>
         {children}
-    </SupabaseControllerContext.Provider>;
+    </SupabaseControllerStatusContext.Provider>;
 }
 
-export const useSupabaseController = (): SupabaseController => {
-    const controller = useContext(SupabaseControllerContext);
+export const useSupabaseControllerStatus = (): SupabaseControllerStatus => {
+    const status = useContext(SupabaseControllerStatusContext);
 
-    if (!controller) {
-        throw new Error('useSupabaseController must be used within a SupabaseClientContextProvider');
+    if (!status) {
+        throw new Error('useSupabaseControllerStatus must be used within a SupabaseClientContextProvider');
     }
 
-    return controller;
+    return status;
 };

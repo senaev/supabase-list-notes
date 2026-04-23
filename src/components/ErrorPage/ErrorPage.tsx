@@ -1,9 +1,13 @@
-import './Page404.css';
+import './ErrorPage.css';
 
 import { FullPageContent } from '../FullPageContent/FullPageContent';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 
-export function Page404() {
+export function ErrorPage({
+    errorMessage,
+}: {
+    errorMessage: string;
+}) {
     return <div>
         <MainPageHeader
             createNewNote={() => {
@@ -16,11 +20,11 @@ export function Page404() {
         />
 
         <FullPageContent>
-            <span className={'Page404__content_emoji'}>
+            <span className={'ErrorPage__content_emoji'}>
                 {'🤷'}
             </span>
             <h1>
-                {'404: Not found'}
+                {errorMessage}
             </h1>
         </FullPageContent>
     </div>;

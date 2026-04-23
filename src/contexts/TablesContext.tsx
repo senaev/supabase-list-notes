@@ -9,18 +9,19 @@ import React, {
 import { Subscription } from 'rxjs';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
 
-import { ReplicationStatus } from '../components/ReplicationStatusIndicator/ReplicationStatusIndicator';
+import { ConnectionStatus } from '../components/ConnectionStatusIndicator/ConnectionStatusIndicator';
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
-import { LocalDbFacade } from '../localDb/LocalDbFacade';
 import { ensureReplicationReady } from '../localDb/replication';
 import { NoteItemsTable } from '../tables/NoteItemsTable';
 import { NotesListTable } from '../tables/NotesListTable';
+
+import { useLocalDbFacade } from './LocalDbFacadeContext';
 
 export type TablesContextType = {
     notesListTable: NotesListTable;
     noteItemsTable: NoteItemsTable;
     noteItemsStore: NoteItemsStore;
-    replicationStatus: ReplicationStatus;
+    replicationStatus: ConnectionStatus;
 };
 
 export const TablesContext = React.createContext<TablesContextType | null>(null);
@@ -28,21 +29,19 @@ TablesContext.displayName = 'TablesContext';
 
 export const TablesContextProvider = ({
     children,
-    localDbFacade,
     supabaseClient,
     showError,
 }: PropsWithChildren & {
-    localDbFacade: LocalDbFacade;
     supabaseClient?: SupabaseClient;
     showError: (message: string) => void;
 }) => {
     const [
         replicationStatus,
         setReplicationStatus,
-    ] = useState<ReplicationStatus>({
-        state: 'initializing',
-    });
+    ] = useState<ConnectionStatus>('initializing');
     const tablesRef = useRef<TablesContextType | null>(null);
+
+    const localDbFacade = useLocalDbFacade();
 
     if (!tablesRef.current) {
         const notesListTable = new NotesListTable(localDbFacade, supabaseClient);
@@ -73,9 +72,7 @@ export const TablesContextProvider = ({
 
     useEffect(() => {
         if (!supabaseClient) {
-            setReplicationStatus({
-                state: 'local-only',
-            });
+            setReplicationStatus('localOnly');
 
             return noop;
         }
@@ -94,22 +91,18 @@ export const TablesContextProvider = ({
             }
 
             if (latestError) {
-                setReplicationStatus({
-                    state: 'error',
-                    message: latestError,
-                });
+                // TODO: handle errors more gracefully
+                setReplicationStatus('error');
 
                 return;
             }
 
             const isSyncing = Object.values(activeByName).some(Boolean);
 
-            setReplicationStatus({
-                state: isSyncing ? 'syncing' : 'idle',
-            });
+            setReplicationStatus(isSyncing ? 'syncing' : 'idle');
         };
 
-        setReplicationStatus({ state: 'initializing' });
+        setReplicationStatus('initializing');
 
         ensureReplicationReady(supabaseClient, localDbFacade)
             .then(({ notes, noteItems }) => {
@@ -143,10 +136,8 @@ export const TablesContextProvider = ({
                     return;
                 }
 
-                setReplicationStatus({
-                    state: 'error',
-                    message: error instanceof Error ? error.message : String(error),
-                });
+                // TODO: handle errors more gracefully
+                setReplicationStatus('error');
             });
 
         return () => {

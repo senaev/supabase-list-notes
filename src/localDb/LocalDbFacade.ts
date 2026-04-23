@@ -186,10 +186,14 @@ export class LocalDbFacade {
     public readonly note_items_temp = this.createTable((database) => database.note_items_temp);
     public readonly meta = this.createTable((database) => database.meta);
 
-    private databasePromise: Promise<RxDatabase<LocalCollections>> | null = null;
+    public readonly databasePromise: Promise<RxDatabase<LocalCollections>>;
+
+    public constructor() {
+        this.databasePromise = createLocalDatabase();
+    }
 
     public async getCollections(): Promise<LocalCollections> {
-        const database = await this.getDatabase();
+        const database = await this.databasePromise;
 
         return database.collections;
     }
@@ -207,14 +211,6 @@ export class LocalDbFacade {
         });
     }
 
-    private getDatabase(): Promise<RxDatabase<LocalCollections>> {
-        if (!this.databasePromise) {
-            this.databasePromise = createLocalDatabase();
-        }
-
-        return this.databasePromise;
-    }
-
     private createTable<T>(getCollection: (database: RxDatabase<LocalCollections>) => RxCollection<T>): LocalTable<T> {
         return {
             bulkPut: async (rows): Promise<void> => {
@@ -222,13 +218,13 @@ export class LocalDbFacade {
                     return;
                 }
 
-                const database = await this.getDatabase();
+                const database = await this.databasePromise;
 
                 await getCollection(database).bulkUpsert(rows);
             },
 
             get: async (id): Promise<T | undefined> => {
-                const database = await this.getDatabase();
+                const database = await this.databasePromise;
                 const document = await getCollection(database).findOne(id).exec();
 
                 if (!document) {
@@ -239,7 +235,7 @@ export class LocalDbFacade {
             },
 
             observeAll: async (onChange): Promise<Subscription> => {
-                const database = await this.getDatabase();
+                const database = await this.databasePromise;
                 const query = getCollection(database).find();
                 const initialDocuments = await query.exec();
 
@@ -251,13 +247,13 @@ export class LocalDbFacade {
             },
 
             put: async (row): Promise<void> => {
-                const database = await this.getDatabase();
+                const database = await this.databasePromise;
 
                 await getCollection(database).incrementalUpsert(row);
             },
 
             remove: async (id): Promise<void> => {
-                const database = await this.getDatabase();
+                const database = await this.databasePromise;
                 const document = await getCollection(database).findOne(id).exec();
 
                 if (!document) {
@@ -268,7 +264,7 @@ export class LocalDbFacade {
             },
 
             toArray: async (): Promise<T[]> => {
-                const database = await this.getDatabase();
+                const database = await this.databasePromise;
                 const documents = await getCollection(database).find().exec();
 
                 return documents.map((document) => mapDocument(document));

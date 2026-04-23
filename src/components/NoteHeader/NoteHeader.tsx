@@ -7,9 +7,9 @@ import { ROUTES } from '../../const/ROUTES';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
 import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
 import { TablesContext } from '../../contexts/TablesContext';
+import { ConnectionStatusIndicator } from '../ConnectionStatusIndicator/ConnectionStatusIndicator';
 import { ContextMenu } from '../ContextMenu/ContextMenu';
 import { PageHeader } from '../PageHeader/PageHeader';
-import { ReplicationStatusIndicator } from '../ReplicationStatusIndicator/ReplicationStatusIndicator';
 import './NoteHeader.css';
 
 export function NoteHeader({
@@ -50,7 +50,7 @@ export function NoteHeader({
             />
             : null}
         {replicationStatus
-            ? <ReplicationStatusIndicator status={replicationStatus}/>
+            ? <ConnectionStatusIndicator status={replicationStatus}/>
             : null}
         <ContextMenu
             items={[

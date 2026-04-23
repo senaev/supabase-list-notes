@@ -14,7 +14,7 @@ import { ROUTES } from '../../const/ROUTES';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
 import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
-import { useSupabaseController } from '../../contexts/SupabaseControllerContext';
+import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerContext';
 import { useTablesContext } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { FullPageContent } from '../FullPageContent/FullPageContent';
@@ -138,7 +138,7 @@ export function MainPage() {
     const location = useLocation();
     const { showError, showInfoMessage } = useToastsContext();
     const notesList = useNotesListContext();
-    const supabaseController = useSupabaseController();
+    const supabaseControllerStatus = useSupabaseControllerStatus();
 
     useEffect(() => {
         const deleteNoteId = location.state?.deleteNoteId;
@@ -166,13 +166,11 @@ export function MainPage() {
         navigate(`/${id}`);
     };
 
-    const supabaseStatus = supabaseController.status;
-
     return <div className={'MainPage'}>
         <MainPageHeader
             createNewNote={createNewNote}
             menu={[
-                ...(supabaseStatus.status === 'ready'
+                ...(supabaseControllerStatus.status === 'ready'
                     ? [
                         {
                             label: `Share${NBSP}access`,
@@ -187,8 +185,8 @@ export function MainPage() {
                                     credentialKey,
                                     queryParam,
                                 ]) => {
-                                    const credentialValue = supabaseStatus.credentials[
-                                        credentialKey as keyof typeof supabaseStatus.credentials
+                                    const credentialValue = supabaseControllerStatus.credentials[
+                                        credentialKey as keyof typeof supabaseControllerStatus.credentials
                                     ];
 
                                     shareUrl.searchParams.set(queryParam, credentialValue);
@@ -208,7 +206,7 @@ export function MainPage() {
                             label: 'Logout',
                             Icon: ArrowLeftOnRectangleIcon,
                             onSelect: () => {
-                                supabaseStatus.logout();
+                                supabaseControllerStatus.logout();
                             },
                         },
                     ]

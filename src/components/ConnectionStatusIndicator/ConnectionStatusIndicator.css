@@ -1,4 +1,4 @@
-.ReplicationStatusIndicator {
+.ConnectionStatusIndicator {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -10,27 +10,27 @@
   white-space: nowrap;
 }
 
-.ReplicationStatusIndicator--local-only {
+.ConnectionStatusIndicator__localOnly {
   background: rgba(196, 204, 255, 0.16);
   color: #c4ccff;
 }
 
-.ReplicationStatusIndicator--initializing {
+.ConnectionStatusIndicator__initializing {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.85);
 }
 
-.ReplicationStatusIndicator--syncing {
+.ConnectionStatusIndicator__syncing {
   background: rgba(255, 202, 152, 0.18);
   color: #ffca98;
 }
 
-.ReplicationStatusIndicator--idle {
+.ConnectionStatusIndicator__idle {
   background: rgba(152, 255, 174, 0.16);
   color: #98ffae;
 }
 
-.ReplicationStatusIndicator--error {
+.ConnectionStatusIndicator__error {
   background: rgba(255, 152, 152, 0.18);
   color: #ff9898;
 }

@@ -1,7 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Latch } from 'senaev-utils/src/utils/Latch/Latch';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { NOTES_LIST_TABLE_NAME } from '../const/NOTES_LIST_TABLE_NAME';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
+
+export type SupabaseClientReadyLatch = Latch<SupabaseClient>;
 
 export type SupabaseCredentials = {
     projectUrl: string;
@@ -17,18 +21,17 @@ export type SupabaseControllerStatusObjectNotReady =
       status: 'wrong-credentials';
       authenticate: SupabaseControllerAuthenticateFunction;
       message: string;
+      clientReadyLatch: SupabaseClientReadyLatch;
   }
   | {
       status: 'require-credentials';
       authenticate: SupabaseControllerAuthenticateFunction;
+      clientReadyLatch: SupabaseClientReadyLatch;
   };
 
 export type SupabaseControllerStatusObjectInitialization = {
     status: 'initialization';
-};
-
-export const SUPABASE_CONTROLLER_STATUS_INITIALIZATION: SupabaseControllerStatusObjectInitialization = {
-    status: 'initialization',
+    clientReadyLatch: SupabaseClientReadyLatch;
 };
 
 export type SupabaseControllerStatusObjectReady = {
@@ -69,16 +72,14 @@ function parseLocalStorageCredentials(value: string | null): SupabaseCredentials
 }
 
 export class SupabaseController {
-    public status: SupabaseControllerStatus = SUPABASE_CONTROLLER_STATUS_INITIALIZATION;
-    private client?: SupabaseClient;
+    public clientReadyLatch: SupabaseClientReadyLatch = new Latch();
 
-    public constructor(private readonly params: {
-        onChange: VoidFunction;
-    }) {
-        this.initialize();
-    }
+    public readonly statusSignal = new Signal<SupabaseControllerStatus>({
+        status: 'initialization',
+        clientReadyLatch: this.clientReadyLatch,
+    });
 
-    private initialize() {
+    public constructor() {
         const localStorageCredentials = localStorage.getItem(LOCAL_STORAGE_KEY);
 
         let credentials: SupabaseCredentials | null = null;
@@ -121,11 +122,11 @@ export class SupabaseController {
         }
 
         if (!credentials) {
-            this.status = {
+            this.statusSignal.next({
                 status: 'require-credentials',
                 authenticate: this.authenticate,
-            };
-            this.params.onChange();
+                clientReadyLatch: this.clientReadyLatch,
+            });
 
             return;
         }
@@ -133,13 +134,24 @@ export class SupabaseController {
         this.authenticate(credentials);
     }
 
+    private destroyOldClient(): void {
+        const oldClient = this.clientReadyLatch.getValue();
+
+        if (oldClient) {
+            oldClient.removeAllChannels();
+            this.clientReadyLatch = new Latch();
+        }
+    }
+
     private authenticate: SupabaseControllerAuthenticateFunction = async (credentials) => {
-        this.client = createClient(
+        this.destroyOldClient();
+
+        const nextClient = createClient(
             credentials.projectUrl,
             credentials.publishableKey
         );
 
-        const { error } = await this.client
+        const { error } = await nextClient
             .from(NOTES_LIST_TABLE_NAME)
             .select('id')
             .limit(1);
@@ -147,33 +159,34 @@ export class SupabaseController {
         if (error) {
             // eslint-disable-next-line no-console
             console.error('Failed to authenticate with Supabase:', error);
-            this.status = {
+            this.statusSignal.next({
                 status: 'wrong-credentials',
                 authenticate: this.authenticate,
                 message: error.message,
-            };
-            this.params.onChange();
+                clientReadyLatch: this.clientReadyLatch,
+            });
 
             return;
         }
 
-        this.status = {
+        this.statusSignal.next({
             status: 'ready',
-            client: this.client,
+            client: nextClient,
             credentials,
             logout: this.logout,
-        };
-        this.params.onChange();
+        });
+        this.clientReadyLatch.dispatch(nextClient);
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(credentials));
     };
 
     private readonly logout: VoidFunction = () => {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
-        this.status = {
+        this.destroyOldClient();
+        this.statusSignal.next({
             status: 'require-credentials',
             authenticate: this.authenticate,
-        };
-        this.params.onChange();
+            clientReadyLatch: this.clientReadyLatch,
+        });
     };
 }
