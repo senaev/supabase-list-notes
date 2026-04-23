@@ -1,6 +1,5 @@
 import './App.css';
 
-import { SupabaseClient } from '@supabase/supabase-js';
 import {
     Navigate, Route, Routes, useParams,
 } from 'react-router-dom';
@@ -11,6 +10,7 @@ import {
     NotesListContextProvider,
     useNoteRecords,
 } from '../../contexts/NotesListContext';
+import { NotesListTableLocalContextProvider } from '../../contexts/NotesListTableLocalContext';
 import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
@@ -19,6 +19,7 @@ import { TablesContextProvider } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { SupabaseController } from '../../controllers/SupabaseController';
 import { LocalDbFacade } from '../../localDb/LocalDbFacade';
+import { NotesListTableLocal } from '../../tables/NotesListTableLocal';
 import { AuthPage } from '../AuthPage/AuthPage';
 import { ErrorPage } from '../ErrorPage/ErrorPage';
 import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
@@ -63,18 +64,10 @@ export function NoteRouteElement() {
     </>;
 }
 
-export function NotesApp({
-    supabaseClient,
-}: {
-    supabaseClient?: SupabaseClient;
-}) {
+export function NotesApp() {
     const { showError } = useToastsContext();
 
-    return <TablesContextProvider
-        key={supabaseClient ? 'tables-with-supabase' : 'tables-local-only'}
-        supabaseClient={supabaseClient}
-        showError={showError}
-    >
+    return <TablesContextProvider showError={showError}>
         <NotesListContextProvider showError={showError}>
             <Routes>
                 <Route
@@ -126,18 +119,15 @@ export function NotesWithAuthApp() {
     }
 
     return <>
-        <NotesApp
-            supabaseClient={
-                supabaseControllerStatus.status === 'ready'
-                    ? supabaseControllerStatus.client
-                    : undefined
-            }
-        />
+        <NotesApp/>
     </>;
 }
 
 // TODO: move somewhere else
 const localDbFacade = new LocalDbFacade();
+
+// TODO: move somewhere else
+const notesListTableLocal = new NotesListTableLocal(localDbFacade);
 
 // TODO: move somewhere else
 const supabaseController = new SupabaseController();
@@ -147,7 +137,9 @@ export function App() {
         <main className={'App__main'}>
             <SupabaseControllerStatusContextProvider supabaseController={supabaseController}>
                 <LocalDbFacadeContextProvider localDbFacade={localDbFacade}>
-                    <NotesWithAuthApp/>
+                    <NotesListTableLocalContextProvider notesListTableLocal={notesListTableLocal}>
+                        <NotesWithAuthApp/>
+                    </NotesListTableLocalContextProvider>
                 </LocalDbFacadeContextProvider>
             </SupabaseControllerStatusContextProvider>
         </main>

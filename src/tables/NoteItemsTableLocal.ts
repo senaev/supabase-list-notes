@@ -1,8 +1,6 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 import { Subscription } from 'rxjs';
 
 import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
-import { ensureReplicationReady } from '../localDb/replication';
 import { NoteItem } from '../types/NoteItem';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
 
@@ -23,8 +21,8 @@ function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> {
     };
 }
 
-export class NoteItemsTable {
-    public constructor(private readonly localDbFacade: LocalDbFacade, private readonly supabase?: SupabaseClient) {}
+export class NoteItemsTableLocal {
+    public constructor(private readonly localDbFacade: LocalDbFacade) {}
 
     public async create({
         id,
@@ -54,27 +52,10 @@ export class NoteItemsTable {
         return toNoteItem(localRow);
     }
 
-    public async readAll(noteId: string): Promise<Pick<NoteItem, TableColumns>[]> {
-        if (this.supabase) {
-            await ensureReplicationReady(this.supabase, this.localDbFacade);
-        }
-
-        const items = await this.localDbFacade.note_items_temp.toArray();
-
-        return items
-            .filter((item) => item.note_id === noteId)
-            .sort((first, second) => first.position - second.position)
-            .map(toNoteItem);
-    }
-
-    public async observeAll(
+    public observeAll(
         noteId: string,
         onChange: (items: Pick<NoteItem, TableColumns>[]) => void
     ): Promise<Subscription> {
-        if (this.supabase) {
-            await ensureReplicationReady(this.supabase, this.localDbFacade);
-        }
-
         return this.localDbFacade.note_items_temp.observeAll((items) => {
             onChange(items
                 .filter((item) => item.note_id === noteId)
@@ -84,10 +65,6 @@ export class NoteItemsTable {
     }
 
     public async readAllNotes(): Promise<Pick<NoteItem, TableColumns>[]> {
-        if (this.supabase) {
-            await ensureReplicationReady(this.supabase, this.localDbFacade);
-        }
-
         const items = await this.localDbFacade.note_items_temp.toArray();
 
         return items
@@ -95,11 +72,7 @@ export class NoteItemsTable {
             .map(toNoteItem);
     }
 
-    public async observeAllNotes(onChange: (items: Pick<NoteItem, TableColumns>[]) => void): Promise<Subscription> {
-        if (this.supabase) {
-            await ensureReplicationReady(this.supabase, this.localDbFacade);
-        }
-
+    public observeAllNotes(onChange: (items: Pick<NoteItem, TableColumns>[]) => void): Promise<Subscription> {
         return this.localDbFacade.note_items_temp.observeAll((items) => {
             onChange(items
                 .sort((first, second) => first.position - second.position)

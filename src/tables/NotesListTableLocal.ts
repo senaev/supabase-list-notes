@@ -1,11 +1,9 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 import { Subscription } from 'rxjs';
 
 import { NoteRecord } from '../controllers/NotesList';
 import {
     LocalDbFacade, LocalNoteRow,
 } from '../localDb/LocalDbFacade';
-import { ensureReplicationReady } from '../localDb/replication';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
 
 const _TABLE_COLUMNS = 'id, title, created_at, modified_at';
@@ -21,8 +19,8 @@ function toNoteRecord(row: LocalNoteRow): Pick<NoteRecord, TableColumns> {
     };
 }
 
-export class NotesListTable {
-    public constructor(private readonly localDbFacade: LocalDbFacade, private readonly supabase?: SupabaseClient) {}
+export class NotesListTableLocal {
+    public constructor(private readonly localDbFacade: LocalDbFacade) {}
 
     public async create({
         id,
@@ -44,21 +42,7 @@ export class NotesListTable {
         return toNoteRecord(localRow);
     }
 
-    public async readAll(): Promise<Pick<NoteRecord, TableColumns>[]> {
-        if (this.supabase) {
-            await ensureReplicationReady(this.supabase, this.localDbFacade);
-        }
-
-        const notes = await this.localDbFacade.notes_temp.toArray();
-
-        return notes.map(toNoteRecord);
-    }
-
-    public async observeAll(onChange: (notes: Pick<NoteRecord, TableColumns>[]) => void): Promise<Subscription> {
-        if (this.supabase) {
-            await ensureReplicationReady(this.supabase, this.localDbFacade);
-        }
-
+    public observeAll(onChange: (notes: Pick<NoteRecord, TableColumns>[]) => void): Promise<Subscription> {
         return this.localDbFacade.notes_temp.observeAll((notes) => {
             onChange(notes.map(toNoteRecord));
         });

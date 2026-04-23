@@ -1,7 +1,7 @@
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
-import { NotesListTable } from '../tables/NotesListTable';
+import { NotesListTableLocal } from '../tables/NotesListTableLocal';
 
 export type NoteRecord = {
     id: string;
@@ -14,10 +14,10 @@ export class NotesList {
     public readonly recordsSignal = new Signal<NoteRecord[] | undefined>(undefined, deepEqual);
 
     public constructor(private readonly params: {
-        notesListTable: NotesListTable;
+        notesListTableLocal: NotesListTableLocal;
         showError: (message: string) => void;
     }) {
-        this.params.notesListTable
+        this.params.notesListTableLocal
             .observeAll((items) => {
                 this.recordsSignal.next(items);
             })
@@ -27,7 +27,7 @@ export class NotesList {
     }
 
     public async createNewNote(): Promise<NoteRecord> {
-        const newNote = await this.params.notesListTable.create({
+        const newNote = await this.params.notesListTableLocal.create({
             id: crypto.randomUUID(),
             title: '',
         });
@@ -55,7 +55,7 @@ export class NotesList {
 
         this.recordsSignal.next(nextRecords);
 
-        return this.params.notesListTable.update(id, { title });
+        return this.params.notesListTableLocal.update(id, { title });
     }
 
     public async delete(id: string): Promise<void> {
@@ -70,7 +70,7 @@ export class NotesList {
         try {
             this.recordsSignal.next(this.recordsSignal.value()!.filter((item) => item.id !== id));
 
-            await this.params.notesListTable.delete(id);
+            await this.params.notesListTableLocal.delete(id);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
 

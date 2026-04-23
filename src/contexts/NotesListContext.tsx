@@ -27,7 +27,7 @@ export const NotesListContextProvider = ({
 
     if (!notesListRef.current) {
         notesListRef.current = new NotesList({
-            notesListTable: tables.notesListTable,
+            notesListTableLocal: tables.notesListTableLocal,
             showError,
         });
     }

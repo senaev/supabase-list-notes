@@ -12,14 +12,13 @@ import { noop } from 'senaev-utils/src/utils/Function/noop';
 import { ConnectionStatus } from '../components/ConnectionStatusIndicator/ConnectionStatusIndicator';
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
 import { ensureReplicationReady } from '../localDb/replication';
-import { NoteItemsTable } from '../tables/NoteItemsTable';
-import { NotesListTable } from '../tables/NotesListTable';
+import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 
 import { useLocalDbFacade } from './LocalDbFacadeContext';
+import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 export type TablesContextType = {
-    notesListTable: NotesListTable;
-    noteItemsTable: NoteItemsTable;
+    noteItemsTableLocal: NoteItemsTableLocal;
     noteItemsStore: NoteItemsStore;
     replicationStatus: ConnectionStatus;
 };
@@ -29,10 +28,8 @@ TablesContext.displayName = 'TablesContext';
 
 export const TablesContextProvider = ({
     children,
-    supabaseClient,
     showError,
 }: PropsWithChildren & {
-    supabaseClient?: SupabaseClient;
     showError: (message: string) => void;
 }) => {
     const [
@@ -41,17 +38,18 @@ export const TablesContextProvider = ({
     ] = useState<ConnectionStatus>('initializing');
     const tablesRef = useRef<TablesContextType | null>(null);
 
+    const { clientReadyLatch } = useSupabaseControllerStatus();
+    const supabaseClient: SupabaseClient | undefined = clientReadyLatch.getValue();
+
     const localDbFacade = useLocalDbFacade();
 
     if (!tablesRef.current) {
-        const notesListTable = new NotesListTable(localDbFacade, supabaseClient);
-        const noteItemsTable = new NoteItemsTable(localDbFacade, supabaseClient);
+        const noteItemsTableLocal = new NoteItemsTableLocal(localDbFacade);
 
         tablesRef.current = {
-            notesListTable,
-            noteItemsTable,
+            noteItemsTableLocal,
             noteItemsStore: new NoteItemsStore({
-                noteItemsTable,
+                noteItemsTable: noteItemsTableLocal,
                 showError,
             }),
             replicationStatus,

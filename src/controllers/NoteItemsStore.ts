@@ -1,6 +1,6 @@
 import { Subscription } from 'rxjs';
 
-import { NoteItemsTable } from '../tables/NoteItemsTable';
+import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
 
 type Listener = () => void;
@@ -12,7 +12,7 @@ export class NoteItemsStore {
     private observePromise: Promise<void> | null = null;
 
     public constructor(private readonly params: {
-        noteItemsTable: NoteItemsTable;
+        noteItemsTable: NoteItemsTableLocal;
         showError: (message: string) => void;
     }) {}
 

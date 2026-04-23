@@ -14,7 +14,7 @@ export function useNote(params: {
         setVer,
     ] = useState<number>(0);
 
-    const { noteItemsStore, noteItemsTable } = useTablesContext();
+    const { noteItemsStore, noteItemsTableLocal: noteItemsTable } = useTablesContext();
 
     const ref = useRef<{ noteId: string; note: Note } | null>(null);
 

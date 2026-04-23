@@ -36,7 +36,7 @@ export type SupabaseControllerStatusObjectInitialization = {
 
 export type SupabaseControllerStatusObjectReady = {
     status: 'ready';
-    client: SupabaseClient;
+    clientReadyLatch: SupabaseClientReadyLatch;
     credentials: SupabaseCredentials;
     logout: VoidFunction;
 };
@@ -171,7 +171,7 @@ export class SupabaseController {
 
         this.statusSignal.next({
             status: 'ready',
-            client: nextClient,
+            clientReadyLatch: this.clientReadyLatch,
             credentials,
             logout: this.logout,
         });

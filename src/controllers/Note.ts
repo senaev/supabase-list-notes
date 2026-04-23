@@ -1,4 +1,4 @@
-import { NoteItemsTable } from '../tables/NoteItemsTable';
+import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
 
@@ -30,7 +30,7 @@ export class Note {
 
     public constructor(private readonly params: {
         noteItemsStore: NoteItemsStore;
-        noteItemsTable: NoteItemsTable;
+        noteItemsTable: NoteItemsTableLocal;
         noteId: string;
         onChange: () => void;
         showError: (message: string) => void;
