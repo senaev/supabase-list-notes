@@ -2,15 +2,13 @@ import './MainPage.css';
 
 import {
     ArrowLeftOnRectangleIcon,
-    ArrowTopRightOnSquareIcon,
     ShareIcon,
 } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { NBSP } from 'senaev-utils/src/const/chars/NBSP';
 
 import { APP_BASE_URL } from '../../const/APP_BASE_URL';
-import { NBSP } from '../../const/NBSP';
-import { ROUTES } from '../../const/ROUTES';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
 import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
@@ -170,55 +168,43 @@ export function MainPage() {
         <MainPageHeader
             createNewNote={createNewNote}
             menu={[
-                ...(supabaseControllerStatus.status === 'ready'
-                    ? [
-                        {
-                            label: `Share${NBSP}access`,
-                            Icon: ShareIcon,
-                            onSelect: () => {
-                                const shareUrl = new URL(
-                                    APP_BASE_URL,
-                                    window.location.origin
-                                );
+                {
+                    label: `Share${NBSP}access`,
+                    Icon: ShareIcon,
+                    onSelect: () => {
+                        const shareUrl = new URL(
+                            APP_BASE_URL,
+                            window.location.origin
+                        );
 
-                                Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(([
-                                    credentialKey,
-                                    queryParam,
-                                ]) => {
-                                    const credentialValue = supabaseControllerStatus.credentials[
-                                        credentialKey as keyof typeof supabaseControllerStatus.credentials
-                                    ];
+                        Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(([
+                            credentialKey,
+                            queryParam,
+                        ]) => {
+                            const credentialValue = supabaseControllerStatus.credentials[
+                                credentialKey as keyof typeof supabaseControllerStatus.credentials
+                            ];
 
-                                    shareUrl.searchParams.set(queryParam, credentialValue);
-                                });
+                            shareUrl.searchParams.set(queryParam, credentialValue);
+                        });
 
-                                navigator.clipboard
-                                    .writeText(shareUrl.toString())
-                                    .then(() => {
-                                        showInfoMessage('Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.');
-                                    })
-                                    .catch((error) => {
-                                        showError(`Failed to copy credentials to clipboard. Error: ${error.message}`);
-                                    });
-                            },
-                        },
-                        {
-                            label: 'Logout',
-                            Icon: ArrowLeftOnRectangleIcon,
-                            onSelect: () => {
-                                supabaseControllerStatus.logout();
-                            },
-                        },
-                    ]
-                    : [
-                        {
-                            label: 'Connect Supabase',
-                            Icon: ArrowTopRightOnSquareIcon,
-                            onSelect: () => {
-                                navigate(ROUTES.auth);
-                            },
-                        },
-                    ]),
+                        navigator.clipboard
+                            .writeText(shareUrl.toString())
+                            .then(() => {
+                                showInfoMessage('Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.');
+                            })
+                            .catch((error) => {
+                                showError(`Failed to copy credentials to clipboard. Error: ${error.message}`);
+                            });
+                    },
+                },
+                {
+                    label: 'Logout',
+                    Icon: ArrowLeftOnRectangleIcon,
+                    onSelect: () => {
+                        supabaseControllerStatus.logout();
+                    },
+                },
             ]}
         />
         <MainPageContent createNewNote={createNewNote}/>

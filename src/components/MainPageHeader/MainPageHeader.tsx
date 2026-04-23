@@ -12,8 +12,8 @@ export function MainPageHeader({
     createNewNote,
     menu,
 }: {
-    createNewNote: VoidFunction;
-    menu: ContextMenuItem[];
+    createNewNote: VoidFunction | undefined;
+    menu: ContextMenuItem[] | undefined;
 }) {
     return <PageHeader
         homeButtonIcon={
@@ -28,13 +28,13 @@ export function MainPageHeader({
             {APP_TITLE}
         </h1>
         <ConnectionStatusIndicator/>
-        <button
+        {createNewNote && <button
             type={'button'}
             aria-label={'Add note'}
             onClick={createNewNote}
         >
             <PlusCircleIcon className={'MainPageHeader__icon'}/>
-        </button>
-        <ContextMenu items={menu}/>
+        </button>}
+        {menu && <ContextMenu items={menu}/>}
     </PageHeader>;
 }

@@ -26,7 +26,6 @@ import { MainPage } from '../MainPage/MainPage';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NoteHeader } from '../NoteHeader/NoteHeader';
 import { NotePage } from '../NotePage/NotePage';
-import { ROUTES } from '../../const/ROUTES';
 
 export function NoteRouteElement() {
     const { noteId } = useParams<{ noteId: string }>();
@@ -83,10 +82,6 @@ export function NotesApp({
                     element={<MainPage/>}
                 />
                 <Route
-                    path={ROUTES.auth}
-                    element={<AuthRouteElement/>}
-                />
-                <Route
                     path={'/:noteId'}
                     element={<NoteRouteElement/>}
                 />
@@ -125,6 +120,10 @@ function AuthRouteElement() {
 
 export function NotesWithAuthApp() {
     const supabaseControllerStatus = useSupabaseControllerStatus();
+
+    if (supabaseControllerStatus.status === 'require-credentials' || supabaseControllerStatus.status === 'wrong-credentials') {
+        return <AuthRouteElement/>;
+    }
 
     return <>
         <NotesApp

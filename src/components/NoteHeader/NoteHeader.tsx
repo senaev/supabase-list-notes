@@ -1,8 +1,8 @@
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { NBSP } from 'senaev-utils/src/const/chars/NBSP';
 
-import { NBSP } from '../../const/NBSP';
 import { ROUTES } from '../../const/ROUTES';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
 import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';

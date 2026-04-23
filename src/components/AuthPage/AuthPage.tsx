@@ -8,7 +8,6 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { ROUTES } from '../../const/ROUTES';
 import { SQL_SCHEMA_IMPORT_PROMISE } from '../../const/SQL_SCHEMA_IMPORT_PROMISE';
 import { SUPABASE_DASHBOARD_LINK } from '../../const/SUPABASE_DASHBOARD_LINK';
 import { SUPABASE_SQL_REQUEST_LINK } from '../../const/SUPABASE_SQL_REQUEST_LINK';
@@ -69,17 +68,8 @@ export function AuthPage({
 
     return <>
         <MainPageHeader
-            createNewNote={() => {
-                // TODO: implement createNewNote on AuthPage instead of passing noop
-            }}
-            menu={[
-                {
-                    label: 'Back to notes',
-                    onSelect: () => {
-                        navigate(ROUTES.home);
-                    },
-                },
-            ]}
+            createNewNote={undefined}
+            menu={undefined}
         />
         <form
             onSubmit={(event) => {
