@@ -18,8 +18,10 @@ import { useToastsContext } from '../../contexts/ToastsContext';
 import { FullPageContent } from '../FullPageContent/FullPageContent';
 import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
+import { useCreateNewNote } from '../hooks/useCreateNewNote';
 
-function MainPageContent({ createNewNote }: { createNewNote: VoidFunction }) {
+function MainPageContent() {
+    const createNewNote = useCreateNewNote();
     const notes = useNoteRecords();
     const { noteItemsStore } = useTablesContext();
     const navigate = useNavigate();
@@ -137,6 +139,7 @@ export function MainPage() {
     const { showError, showInfoMessage } = useToastsContext();
     const notesList = useNotesListContext();
     const supabaseControllerStatus = useSupabaseControllerStatus();
+    const createNewNote = useCreateNewNote();
 
     useEffect(() => {
         const deleteNoteId = location.state?.deleteNoteId;
@@ -156,13 +159,6 @@ export function MainPage() {
         navigate,
         notesList,
     ]);
-
-    const createNewNote = async () => {
-        // TODO: handle errors and show error message to user
-        const { id } = await notesList.createNewNote();
-
-        navigate(`/${id}`);
-    };
 
     return <div className={'MainPage'}>
         <MainPageHeader
@@ -209,6 +205,6 @@ export function MainPage() {
                 ]
                 : []}
         />
-        <MainPageContent createNewNote={createNewNote}/>
+        <MainPageContent/>
     </div>;
 }
