@@ -1,11 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Latch } from 'senaev-utils/src/utils/Latch/Latch';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { NOTES_LIST_TABLE_NAME } from '../const/NOTES_LIST_TABLE_NAME';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
 
-export type SupabaseClientReadyLatch = Latch<SupabaseClient>;
+export type SupabaseClientSignal = Signal<SupabaseClient | undefined>;
 
 export type SupabaseCredentials = {
     projectUrl: string;
@@ -21,22 +20,22 @@ export type SupabaseControllerStatusObjectNotReady =
       status: 'wrong-credentials';
       authenticate: SupabaseControllerAuthenticateFunction;
       message: string;
-      clientReadyLatch: SupabaseClientReadyLatch;
+      clientSignal: SupabaseClientSignal;
   }
   | {
       status: 'require-credentials';
       authenticate: SupabaseControllerAuthenticateFunction;
-      clientReadyLatch: SupabaseClientReadyLatch;
+      clientSignal: SupabaseClientSignal;
   };
 
 export type SupabaseControllerStatusObjectInitialization = {
     status: 'initialization';
-    clientReadyLatch: SupabaseClientReadyLatch;
+    clientSignal: SupabaseClientSignal;
 };
 
 export type SupabaseControllerStatusObjectReady = {
     status: 'ready';
-    clientReadyLatch: SupabaseClientReadyLatch;
+    clientSignal: SupabaseClientSignal;
     credentials: SupabaseCredentials;
     logout: VoidFunction;
 };
@@ -72,11 +71,11 @@ function parseLocalStorageCredentials(value: string | null): SupabaseCredentials
 }
 
 export class SupabaseController {
-    public clientReadyLatch: SupabaseClientReadyLatch = new Latch();
+    public readonly clientSignal: SupabaseClientSignal = new Signal<SupabaseClient | undefined>(undefined);
 
     public readonly statusSignal = new Signal<SupabaseControllerStatus>({
         status: 'initialization',
-        clientReadyLatch: this.clientReadyLatch,
+        clientSignal: this.clientSignal,
     });
 
     public constructor() {
@@ -125,7 +124,7 @@ export class SupabaseController {
             this.statusSignal.next({
                 status: 'require-credentials',
                 authenticate: this.authenticate,
-                clientReadyLatch: this.clientReadyLatch,
+                clientSignal: this.clientSignal,
             });
 
             return;
@@ -135,11 +134,11 @@ export class SupabaseController {
     }
 
     private destroyOldClient(): void {
-        const oldClient = this.clientReadyLatch.getValue();
+        const oldClient = this.clientSignal.value();
 
         if (oldClient) {
             oldClient.removeAllChannels();
-            this.clientReadyLatch = new Latch();
+            this.clientSignal.next(undefined);
         }
     }
 
@@ -163,7 +162,7 @@ export class SupabaseController {
                 status: 'wrong-credentials',
                 authenticate: this.authenticate,
                 message: error.message,
-                clientReadyLatch: this.clientReadyLatch,
+                clientSignal: this.clientSignal,
             });
 
             return;
@@ -171,11 +170,11 @@ export class SupabaseController {
 
         this.statusSignal.next({
             status: 'ready',
-            clientReadyLatch: this.clientReadyLatch,
+            clientSignal: this.clientSignal,
             credentials,
             logout: this.logout,
         });
-        this.clientReadyLatch.dispatch(nextClient);
+        this.clientSignal.next(nextClient);
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(credentials));
     };
@@ -186,7 +185,7 @@ export class SupabaseController {
         this.statusSignal.next({
             status: 'require-credentials',
             authenticate: this.authenticate,
-            clientReadyLatch: this.clientReadyLatch,
+            clientSignal: this.clientSignal,
         });
     };
 }
