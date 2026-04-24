@@ -1,4 +1,3 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
@@ -16,7 +15,6 @@ export class NotesList {
 
     public constructor(private readonly params: {
         notesListTableLocal: NotesListTableLocal;
-        supabaseClientSignal: Signal<SupabaseClient | undefined>;
         showError: (message: string) => void;
     }) {
         this.params.notesListTableLocal

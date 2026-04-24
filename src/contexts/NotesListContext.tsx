@@ -2,14 +2,13 @@ import {
     createContext,
     PropsWithChildren,
     useContext,
-    useRef,
+    useMemo,
 } from 'react';
 import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
 import { NoteRecord, NotesList } from '../controllers/NotesList';
 
 import { useNotesListTableLocal } from './NotesListTableLocalContext';
-import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 type NotesListContextType = NotesList | undefined;
 
@@ -24,18 +23,16 @@ export const NotesListContextProvider = ({
     showError: (message: string) => void;
 }) => {
     const notesListTableLocal = useNotesListTableLocal();
-    const { clientSignal } = useSupabaseControllerStatus();
-    const notesListRef = useRef<NotesList | null>(null);
 
-    if (!notesListRef.current) {
-        notesListRef.current = new NotesList({
-            notesListTableLocal,
-            supabaseClientSignal: clientSignal,
-            showError,
-        });
-    }
+    const notesList = useMemo(() => new NotesList({
+        notesListTableLocal,
+        showError,
+    }), [
+        notesListTableLocal,
+        showError,
+    ]);
 
-    return <NotesListContext.Provider value={notesListRef.current}>
+    return <NotesListContext.Provider value={notesList}>
         {children}
     </NotesListContext.Provider>;
 };

@@ -2,10 +2,9 @@ import {
     createContext,
     PropsWithChildren,
     useContext,
-    useRef,
+    useMemo,
 } from 'react';
 
-import { LocalDbFacade } from '../localDb/LocalDbFacade';
 import { NotesListTableLocal } from '../tables/NotesListTableLocal';
 
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
@@ -16,19 +15,11 @@ NotesListTableLocalContext.displayName = 'NotesListTableLocalContext';
 
 export function NotesListTableLocalContextProvider({ children }: PropsWithChildren) {
     const localDbFacade = useExistingLocalDbFacade();
-    const notesListTableLocalRef = useRef<{
-        localDbFacade: LocalDbFacade;
-        notesListTableLocal: NotesListTableLocal;
-    } | undefined>(undefined);
 
-    if (notesListTableLocalRef.current === undefined || notesListTableLocalRef.current.localDbFacade !== localDbFacade) {
-        notesListTableLocalRef.current = {
-            localDbFacade,
-            notesListTableLocal: new NotesListTableLocal(localDbFacade),
-        };
-    }
-
-    const { notesListTableLocal } = notesListTableLocalRef.current;
+    const notesListTableLocal = useMemo(
+        () => new NotesListTableLocal(localDbFacade),
+        [localDbFacade]
+    );
 
     return <NotesListTableLocalContext.Provider value={notesListTableLocal}>
         {children}

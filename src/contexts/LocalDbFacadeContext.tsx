@@ -2,7 +2,7 @@ import {
     createContext,
     PropsWithChildren,
     useContext,
-    useRef,
+    useMemo,
 } from 'react';
 import { RxDatabase } from 'rxdb';
 import { usePromise, UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
@@ -23,29 +23,19 @@ const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabas
 export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
     const localDbPromiseResult = usePromise(localDbPromise);
 
-    const localDbFacadeRef = useRef<{
-        promise: Promise<RxDatabase<LocalCollections>>;
-        localDbFacade: LocalDbFacade;
-    } | undefined>(undefined);
-
-    let localDbFacadeContextValue: LocalDbFacadeContextType;
-
-    if (localDbPromiseResult === undefined) {
-        localDbFacadeContextValue = undefined;
-    } else if ('error' in localDbPromiseResult) {
-        localDbFacadeContextValue = { error: localDbPromiseResult.error };
-    } else {
-        if (localDbFacadeRef.current === undefined || localDbFacadeRef.current.promise !== localDbPromise) {
-            const localDbFacade = new LocalDbFacade(localDbPromiseResult.data);
-
-            localDbFacadeRef.current = {
-                promise: localDbPromise,
-                localDbFacade,
-            };
+    const localDbFacadeContextValue: LocalDbFacadeContextType = useMemo(() => {
+        if (localDbPromiseResult === undefined) {
+            return undefined;
         }
 
-        localDbFacadeContextValue = { data: localDbFacadeRef.current.localDbFacade };
-    }
+        if ('error' in localDbPromiseResult) {
+            return { error: localDbPromiseResult.error };
+        }
+
+        return {
+            data: new LocalDbFacade(localDbPromiseResult.data),
+        };
+    }, [localDbPromiseResult]);
 
     return <LocalDbFacadeContext.Provider value={localDbFacadeContextValue}>
         {children}
