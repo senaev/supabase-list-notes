@@ -6,14 +6,11 @@ import {
 } from 'rxdb/plugins/replication-supabase';
 
 import {
+    LocalCollections,
     LocalDbFacade,
-    LocalNoteItemRow, LocalNoteRow,
+    LocalNoteItemRow,
+    LocalNoteRow,
 } from './LocalDbFacade';
-
-type ReplicationState = {
-    notes: RxSupabaseReplicationState<LocalNoteRow>;
-    noteItems: RxSupabaseReplicationState<LocalNoteItemRow>;
-};
 
 function normalizeNoteItemPosition<T extends { position: number | string }>(item: T): T {
     return {
@@ -22,69 +19,58 @@ function normalizeNoteItemPosition<T extends { position: number | string }>(item
     } as T;
 }
 
-async function startReplication(supabase: SupabaseClient, localDbFacade: LocalDbFacade): Promise<ReplicationState> {
-    const collections = await localDbFacade.getCollections();
+type ReplicatedRowByTable = {
+    notes_temp: LocalNoteRow;
+    note_items_temp: LocalNoteItemRow;
+};
 
-    const notes = replicateSupabase<LocalNoteRow>({
+type ReplicableTableName = keyof ReplicatedRowByTable;
+
+type ReplicateSupabaseOptions<T> = Parameters<typeof replicateSupabase<T>>[0];
+
+const COLLECTION_REPLICATION_OPTIONS: { [K in ReplicableTableName]: Omit<ReplicateSupabaseOptions<ReplicatedRowByTable[K]>, 'collection' | 'client' | 'tableName'> } = {
+    notes_temp: {
         replicationIdentifier: 'notes_temp_replication',
-        collection: collections.notes_temp,
-        client: supabase,
-        tableName: 'notes_temp',
         pull: {
             batchSize: 100,
         },
         push: {
             batchSize: 100,
         },
-        live: true,
-    });
-
-    const noteItems = replicateSupabase<LocalNoteItemRow>({
+    },
+    note_items_temp: {
         replicationIdentifier: 'note_items_temp_replication',
-        collection: collections.note_items_temp,
-        client: supabase,
-        tableName: 'note_items_temp',
         pull: {
             batchSize: 500,
             modifier: (item) => normalizeNoteItemPosition(item),
         },
         push: {
             batchSize: 500,
-            modifier: (item: WithDeleted<LocalNoteItemRow>) =>
-                normalizeNoteItemPosition(item),
+            modifier: (item: WithDeleted<LocalNoteItemRow>) => normalizeNoteItemPosition(item),
         },
         live: true,
-    });
+    },
+};
 
-    notes.error$.subscribe((error) => {
+export async function startReplication<T extends ReplicableTableName>(collectionName: T, supabase: SupabaseClient, localDbFacade: LocalDbFacade): Promise<RxSupabaseReplicationState<ReplicatedRowByTable[T]>> {
+    const collections: LocalCollections = await localDbFacade.getCollections();
+    const collection: LocalCollections[T] = collections[collectionName];
+
+    const replicateConfig: ReplicateSupabaseOptions<ReplicatedRowByTable[T]> = {
+        ...COLLECTION_REPLICATION_OPTIONS[collectionName] as Omit<ReplicateSupabaseOptions<ReplicatedRowByTable[T]>, 'collection' | 'client' | 'tableName'>,
+        collection: collection as ReplicateSupabaseOptions<ReplicatedRowByTable[T]>['collection'],
+        client: supabase,
+        tableName: collectionName,
+    };
+
+    const replicationState: RxSupabaseReplicationState<ReplicatedRowByTable[T]> = replicateSupabase<ReplicatedRowByTable[T]>(replicateConfig);
+
+    replicationState.error$.subscribe((error) => {
         // eslint-disable-next-line no-console
         console.error('notes replication error', error);
     });
-    noteItems.error$.subscribe((error) => {
-        // eslint-disable-next-line no-console
-        console.error('note_items replication error', error);
-    });
 
-    await Promise.all([
-        notes.awaitInitialReplication(),
-        noteItems.awaitInitialReplication(),
-    ]);
+    await replicationState.awaitInitialReplication();
 
-    return {
-        notes,
-        noteItems,
-    };
-}
-
-let replicationPromise: Promise<ReplicationState> | null = null;
-
-export function ensureReplicationReady(supabase: SupabaseClient, localDbFacade: LocalDbFacade): Promise<ReplicationState> {
-    if (!replicationPromise) {
-        replicationPromise = startReplication(supabase, localDbFacade).catch((error) => {
-            replicationPromise = null;
-            throw error;
-        });
-    }
-
-    return replicationPromise;
+    return replicationState;
 }

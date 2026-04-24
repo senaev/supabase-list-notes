@@ -32,7 +32,7 @@ export const TablesContextProvider = ({
     const tablesRef = useRef<TablesContextType | null>(null);
 
     const { clientSignal: clientReadyLatch } = useSupabaseControllerStatus();
-    const supabaseClient: SupabaseClient | undefined = clientReadyLatch.getValue();
+    const supabaseClient: SupabaseClient | undefined = clientReadyLatch.value();
 
     const localDbFacade = useLocalDbFacade();
 
