@@ -22,6 +22,7 @@ const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabas
 
 export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
     const localDbPromiseResult = usePromise(localDbPromise);
+
     const localDbFacadeRef = useRef<{
         promise: Promise<RxDatabase<LocalCollections>>;
         localDbFacade: LocalDbFacade;

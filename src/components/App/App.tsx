@@ -1,5 +1,6 @@
 import './App.css';
 
+import { PropsWithChildren } from 'react';
 import {
     Navigate, Route, Routes, useParams,
 } from 'react-router-dom';
@@ -16,8 +17,6 @@ import {
 } from '../../contexts/SupabaseControllerContext';
 import { TablesContextProvider } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
-import { SupabaseController } from '../../controllers/SupabaseController';
-import { NotesListTableLocal } from '../../tables/NotesListTableLocal';
 import { AuthPage } from '../AuthPage/AuthPage';
 import { ErrorPage } from '../ErrorPage/ErrorPage';
 import { LoadingPage } from '../LoadingPage/LoadingPage';
@@ -94,11 +93,9 @@ function AuthRouteElement() {
     return <AuthPage statusObject={supabaseControllerStatus}/>;
 }
 
-// TODO: move somewhere else
-const supabaseController = new SupabaseController();
-
 export function NotesAppInitializer() {
     const localDbFacadeContextValue = useLocalDbFacade();
+    const supabaseControllerStatus = useSupabaseControllerStatus();
 
     if (localDbFacadeContextValue === undefined) {
         return <LoadingPage/>;
@@ -108,17 +105,19 @@ export function NotesAppInitializer() {
         return <ErrorPage errorMessage={`Failed to initialize local database: ${localDbFacadeContextValue.error}`}/>;
     }
 
-    const supabaseControllerStatus = useSupabaseControllerStatus();
-
     if (supabaseControllerStatus.status === 'require-credentials' || supabaseControllerStatus.status === 'wrong-credentials') {
         return <AuthRouteElement/>;
     }
 
-    return <SupabaseControllerStatusContextProvider supabaseController={supabaseController}>
+    return <NotesListTableLocalContextProvider>
+        <NotesApp/>
+    </NotesListTableLocalContextProvider>;
+}
+
+export function NotesAppDatabaseProviders({ children }: PropsWithChildren) {
+    return <SupabaseControllerStatusContextProvider>
         <LocalDbFacadeContextProvider>
-            <NotesListTableLocalContextProvider>
-                <NotesApp/>
-            </NotesListTableLocalContextProvider>
+            {children}
         </LocalDbFacadeContextProvider>
     </SupabaseControllerStatusContextProvider>;
 }
@@ -126,7 +125,9 @@ export function NotesAppInitializer() {
 export function App() {
     return <div className={'App__page'}>
         <main className={'App__main'}>
-            <NotesAppInitializer/>
+            <NotesAppDatabaseProviders>
+                <NotesAppInitializer/>
+            </NotesAppDatabaseProviders>
         </main>
     </div>;
 }

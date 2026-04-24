@@ -14,9 +14,10 @@ const SupabaseControllerStatusContext = createContext<SupabaseControllerStatus |
 
 SupabaseControllerStatusContext.displayName = 'SupabaseControllerStatusContext';
 
-export function SupabaseControllerStatusContextProvider({ children, supabaseController }: PropsWithChildren & {
-    supabaseController: SupabaseController;
-}) {
+// TODO: move somewhere else
+const supabaseController = new SupabaseController();
+
+export function SupabaseControllerStatusContextProvider({ children }: PropsWithChildren) {
     const status = useSignal(supabaseController.statusSignal);
 
     return <SupabaseControllerStatusContext.Provider value={status}>

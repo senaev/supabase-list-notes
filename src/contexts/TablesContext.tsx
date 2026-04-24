@@ -11,7 +11,7 @@ import { noop } from 'senaev-utils/src/utils/Function/noop';
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 
-import { useLocalDbFacade } from './LocalDbFacadeContext';
+import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 export type TablesContextType = {
@@ -33,7 +33,7 @@ export const TablesContextProvider = ({
     const { clientSignal: clientReadyLatch } = useSupabaseControllerStatus();
     const supabaseClient: SupabaseClient | undefined = clientReadyLatch.value();
 
-    const localDbFacade = useLocalDbFacade();
+    const localDbFacade = useExistingLocalDbFacade();
 
     if (!tablesRef.current) {
         const noteItemsTableLocal = new NoteItemsTableLocal(localDbFacade);
