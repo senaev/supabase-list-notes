@@ -28,9 +28,9 @@ type LocalMetaRow = {
 };
 
 export type LocalCollections = {
-    notes_temp: RxCollection<LocalNoteRow, unknown, unknown, unknown>;
-    note_items_temp: RxCollection<LocalNoteItemRow, unknown, unknown, unknown>;
-    meta: RxCollection<LocalMetaRow, unknown, unknown, unknown>;
+    notes_temp: RxCollection<LocalNoteRow>;
+    note_items_temp: RxCollection<LocalNoteItemRow>;
+    meta: RxCollection<LocalMetaRow>;
 };
 
 type LocalTable<T> = {

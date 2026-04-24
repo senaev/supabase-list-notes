@@ -9,7 +9,6 @@ import { Subscription } from 'rxjs';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
-import { ensureReplicationReady } from '../localDb/replication';
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 
 import { useLocalDbFacade } from './LocalDbFacadeContext';
@@ -84,38 +83,6 @@ export const TablesContextProvider = ({
 
             const isSyncing = Object.values(activeByName).some(Boolean);
         };
-
-        ensureReplicationReady(supabaseClient, localDbFacade)
-            .then(({ notes, noteItems }) => {
-                if (cancelled) {
-                    return;
-                }
-
-                subscriptions.push(
-                    notes.active$.subscribe((active) => {
-                        activeByName.notes = active;
-                        publish();
-                    }),
-                    noteItems.active$.subscribe((active) => {
-                        activeByName.noteItems = active;
-                        publish();
-                    }),
-                    notes.error$.subscribe((error) => {
-                        latestError = error.message;
-                        publish();
-                    }),
-                    noteItems.error$.subscribe((error) => {
-                        latestError = error.message;
-                        publish();
-                    })
-                );
-
-                publish();
-            })
-            .catch((error) => {
-
-                // TODO: handle errors more gracefully
-            });
 
         return () => {
             cancelled = true;
