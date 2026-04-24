@@ -1,18 +1,14 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 import React, {
     PropsWithChildren,
     useContext,
     useEffect,
     useRef,
 } from 'react';
-import { Subscription } from 'rxjs';
-import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
-import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 export type TablesContextType = {
     noteItemsTableLocal: NoteItemsTableLocal;
@@ -30,11 +26,9 @@ export const TablesContextProvider = ({
 }) => {
     const tablesRef = useRef<TablesContextType | null>(null);
 
-    const { clientSignal: clientReadyLatch } = useSupabaseControllerStatus();
-    const supabaseClient: SupabaseClient | undefined = clientReadyLatch.value();
-
     const localDbFacade = useExistingLocalDbFacade();
 
+    // eslint-disable-next-line react-hooks/refs
     if (!tablesRef.current) {
         const noteItemsTableLocal = new NoteItemsTableLocal(localDbFacade);
 
@@ -47,6 +41,7 @@ export const TablesContextProvider = ({
         };
     }
 
+    // eslint-disable-next-line react-hooks/refs
     const tables = tablesRef.current;
 
     useEffect(() => {
@@ -56,41 +51,6 @@ export const TablesContextProvider = ({
             tables.noteItemsStore.dispose();
         };
     }, [tables]);
-
-    useEffect(() => {
-        if (!supabaseClient) {
-            return noop;
-        }
-
-        let cancelled = false;
-        const subscriptions: Subscription[] = [];
-        let latestError: string | undefined;
-        const activeByName = {
-            notes: false,
-            noteItems: false,
-        };
-
-        const publish = () => {
-            if (cancelled) {
-                return;
-            }
-
-            if (latestError) {
-                // TODO: handle errors more gracefully
-
-                return;
-            }
-
-            const isSyncing = Object.values(activeByName).some(Boolean);
-        };
-
-        return () => {
-            cancelled = true;
-            subscriptions.forEach((subscription) => {
-                subscription.unsubscribe();
-            });
-        };
-    }, [supabaseClient]);
 
     return <TablesContext.Provider value={tables}>
         {children}

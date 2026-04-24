@@ -52,8 +52,16 @@ const COLLECTION_REPLICATION_OPTIONS: { [K in ReplicableTableName]: Omit<Replica
     },
 };
 
-export async function startReplication<T extends ReplicableTableName>(collectionName: T, supabase: SupabaseClient, localDbFacade: LocalDbFacade): Promise<RxSupabaseReplicationState<ReplicatedRowByTable[T]>> {
-    const collections: LocalCollections = await localDbFacade.getCollections();
+export function startReplication<T extends ReplicableTableName>({
+    collectionName,
+    supabase,
+    localDbFacade,
+}: {
+    collectionName: T;
+    supabase: SupabaseClient;
+    localDbFacade: LocalDbFacade;
+}): RxSupabaseReplicationState<ReplicatedRowByTable[T]> {
+    const collections: LocalCollections = localDbFacade.getCollections();
     const collection: LocalCollections[T] = collections[collectionName];
 
     const replicateConfig: ReplicateSupabaseOptions<ReplicatedRowByTable[T]> = {

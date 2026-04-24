@@ -6,7 +6,6 @@ import {
     NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { SQL_SCHEMA_IMPORT_PROMISE } from '../../const/SQL_SCHEMA_IMPORT_PROMISE';
 import { SUPABASE_DASHBOARD_LINK } from '../../const/SUPABASE_DASHBOARD_LINK';
@@ -47,7 +46,6 @@ export function AuthPage({
         setPublishableKey,
     ] = useState('');
     const { showError } = useToastsContext();
-    const navigate = useNavigate();
 
     function copySqlRequestToClipboard() {
         SQL_SCHEMA_IMPORT_PROMISE.then((sqlRequest) => navigator.clipboard.writeText(sqlRequest))

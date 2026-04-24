@@ -9,6 +9,7 @@ import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 import { NoteRecord, NotesList } from '../controllers/NotesList';
 
 import { useNotesListTableLocal } from './NotesListTableLocalContext';
+import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 type NotesListContextType = NotesList | undefined;
 
@@ -23,12 +24,15 @@ export const NotesListContextProvider = ({
     showError: (message: string) => void;
 }) => {
     const notesListTableLocal = useNotesListTableLocal();
+    const { clientSignal } = useSupabaseControllerStatus();
 
     const notesList = useMemo(() => new NotesList({
         notesListTableLocal,
+        supabaseControllerClientSignal: clientSignal,
         showError,
     }), [
         notesListTableLocal,
+        clientSignal,
         showError,
     ]);
 

@@ -121,7 +121,7 @@ export class SupabaseController {
         }
 
         if (!credentials) {
-            this.statusSignal.next({
+            this.statusSignal.dispatch({
                 status: 'require-credentials',
                 authenticate: this.authenticate,
                 clientSignal: this.clientSignal,
@@ -134,11 +134,11 @@ export class SupabaseController {
     }
 
     private destroyOldClient(): void {
-        const oldClient = this.clientSignal.value();
+        const oldClient = this.clientSignal.getValue();
 
         if (oldClient) {
             oldClient.removeAllChannels();
-            this.clientSignal.next(undefined);
+            this.clientSignal.dispatch(undefined);
         }
     }
 
@@ -158,7 +158,7 @@ export class SupabaseController {
         if (error) {
             // eslint-disable-next-line no-console
             console.error('Failed to authenticate with Supabase:', error);
-            this.statusSignal.next({
+            this.statusSignal.dispatch({
                 status: 'wrong-credentials',
                 authenticate: this.authenticate,
                 message: error.message,
@@ -168,13 +168,13 @@ export class SupabaseController {
             return;
         }
 
-        this.statusSignal.next({
+        this.statusSignal.dispatch({
             status: 'ready',
             clientSignal: this.clientSignal,
             credentials,
             logout: this.logout,
         });
-        this.clientSignal.next(nextClient);
+        this.clientSignal.dispatch(nextClient);
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(credentials));
     };
@@ -182,7 +182,7 @@ export class SupabaseController {
     private readonly logout: VoidFunction = () => {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
         this.destroyOldClient();
-        this.statusSignal.next({
+        this.statusSignal.dispatch({
             status: 'require-credentials',
             authenticate: this.authenticate,
             clientSignal: this.clientSignal,

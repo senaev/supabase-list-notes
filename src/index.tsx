@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 
@@ -8,10 +7,9 @@ import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
-root.render(<React.StrictMode>
-    <HashRouter>
-        <ToastsContextProvider>
-            <App/>
-        </ToastsContextProvider>
-    </HashRouter>
-</React.StrictMode>);
+// TODO: wrap to React.StrictMode after moving all business logic out of rendering
+root.render(<HashRouter>
+    <ToastsContextProvider>
+        <App/>
+    </ToastsContextProvider>
+</HashRouter>);

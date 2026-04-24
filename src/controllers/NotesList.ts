@@ -1,7 +1,12 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
+import { startReplication } from '../localDb/replication';
 import { NotesListTableLocal } from '../tables/NotesListTableLocal';
+
+import { SupabaseClientSignal } from './SupabaseController';
 
 export type NoteRecord = {
     id: string;
@@ -15,15 +20,21 @@ export class NotesList {
 
     public constructor(private readonly params: {
         notesListTableLocal: NotesListTableLocal;
+        supabaseControllerClientSignal: SupabaseClientSignal;
         showError: (message: string) => void;
     }) {
         this.params.notesListTableLocal
             .observeAll((items) => {
-                this.recordsSignal.next(items);
+                this.recordsSignal.dispatch(items);
             })
             .catch((error) => {
                 this.params.showError(error.message);
             });
+
+        subscribeSignalAndCallWithCurrentValue(
+            this.params.supabaseControllerClientSignal,
+            this.startReplicationWithClient
+        );
     }
 
     public async createNewNote(): Promise<NoteRecord> {
@@ -32,9 +43,9 @@ export class NotesList {
             title: '',
         });
 
-        this.recordsSignal.next([
+        this.recordsSignal.dispatch([
             // TODO: remove workaround after fixing items persistence
-            ...this.recordsSignal.value()!,
+            ...this.recordsSignal.getValue()!,
             newNote,
         ]);
 
@@ -42,7 +53,7 @@ export class NotesList {
     }
 
     public changeTitle(id: string, title: string): Promise<void> {
-        const nextRecords = this.recordsSignal.value()!.map((item) => {
+        const nextRecords = this.recordsSignal.getValue()!.map((item) => {
             if (item.id !== id) {
                 return item;
             }
@@ -53,22 +64,22 @@ export class NotesList {
             };
         });
 
-        this.recordsSignal.next(nextRecords);
+        this.recordsSignal.dispatch(nextRecords);
 
         return this.params.notesListTableLocal.update(id, { title });
     }
 
     public async delete(id: string): Promise<void> {
-        const { recordsSignal: items } = this;
+        const { recordsSignal } = this;
 
-        if (!items) {
+        if (!recordsSignal) {
             this.params.showError('Notes are not loaded yet');
 
             return;
         }
 
         try {
-            this.recordsSignal.next(this.recordsSignal.value()!.filter((item) => item.id !== id));
+            this.recordsSignal.dispatch(this.recordsSignal.getValue()!.filter((item) => item.id !== id));
 
             await this.params.notesListTableLocal.delete(id);
         } catch (err) {
@@ -77,4 +88,20 @@ export class NotesList {
             this.params.showError(`Failed to delete note: ${message}`);
         }
     }
+
+    private readonly startReplicationWithClient = (client: SupabaseClient | undefined): void => {
+        if (client === undefined) {
+            // TODO: remove side effects
+            return;
+        }
+
+        const replicationState = startReplication({
+            collectionName: 'notes_temp',
+            supabase: client,
+            localDbFacade: this.params.notesListTableLocal.localDbFacade,
+        });
+
+        // eslint-disable-next-line no-console
+        console.log(replicationState);
+    };
 }

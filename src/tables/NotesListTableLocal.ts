@@ -20,7 +20,7 @@ function toNoteRecord(row: LocalNoteRow): Pick<NoteRecord, TableColumns> {
 }
 
 export class NotesListTableLocal {
-    public constructor(private readonly localDbFacade: LocalDbFacade) {}
+    public constructor(public readonly localDbFacade: LocalDbFacade) {}
 
     public async create({
         id,
