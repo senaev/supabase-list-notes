@@ -127,6 +127,6 @@ export class NotesList {
         });
 
         // eslint-disable-next-line no-console
-        console.log(replicationState);
+        console.log(this.replicationState);
     };
 }
