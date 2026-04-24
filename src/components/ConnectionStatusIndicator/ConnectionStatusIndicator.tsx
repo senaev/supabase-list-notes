@@ -1,4 +1,8 @@
-import { LocalDbFacadeStatus, useLocalDbFacadeStatus } from '../../contexts/LocalDbFacadeContext';
+import { UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
+
+import {
+    useLocalDbFacade,
+} from '../../contexts/LocalDbFacadeContext';
 import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerContext';
 import { SupabaseControllerStatus } from '../../controllers/SupabaseController';
 import './ConnectionStatusIndicator.css';
@@ -15,17 +19,17 @@ const CONNECTION_STATUSES = {
 export type ConnectionStatus = keyof typeof CONNECTION_STATUSES;
 
 function getConnectionStatusByDbStatuses({
-    localDbStatus,
+    localDbFacadeContextValue,
     supabaseControllerStatus,
 }: {
-    localDbStatus: LocalDbFacadeStatus;
+    localDbFacadeContextValue: UsePromiseResult<unknown>;
     supabaseControllerStatus: SupabaseControllerStatus;
 }): ConnectionStatus {
-    if (localDbStatus === 'loading') {
+    if (localDbFacadeContextValue === undefined) {
         return 'loadingLocalDb';
     }
 
-    if (localDbStatus === 'error') {
+    if ('error' in localDbFacadeContextValue) {
         return 'error';
     }
 
@@ -38,10 +42,10 @@ function getConnectionStatusByDbStatuses({
 
 export function ConnectionStatusIndicator() {
     const supabaseControllerStatus = useSupabaseControllerStatus();
-    const localDbStatus = useLocalDbFacadeStatus();
+    const localDbFacadeContextValue = useLocalDbFacade();
 
     const connectionStatus: ConnectionStatus = getConnectionStatusByDbStatuses({
-        localDbStatus,
+        localDbFacadeContextValue,
         supabaseControllerStatus,
     });
 

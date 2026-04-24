@@ -3,6 +3,7 @@ import {
 } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { Subscription } from 'rxjs';
+import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 export type LocalNoteRow = {
     id: string;
@@ -42,7 +43,6 @@ type LocalTable<T> = {
     toArray: () => Promise<T[]>;
 };
 
-const LOCAL_BOOTSTRAP_KEY = 'supabase_bootstrap_v1';
 const DATABASE_NAME = 'supabase-list-notes-local-db-v2';
 
 const noteSchema = {
@@ -155,7 +155,7 @@ const metaSchema = {
     ],
 } as const;
 
-async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
+export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     const database = await createRxDatabase<LocalCollections>({
         name: DATABASE_NAME,
         storage: getRxStorageDexie(),
@@ -186,29 +186,11 @@ export class LocalDbFacade {
     public readonly note_items_temp = this.createTable((database) => database.note_items_temp);
     public readonly meta = this.createTable((database) => database.meta);
 
-    public readonly databasePromise: Promise<RxDatabase<LocalCollections>>;
-
-    public constructor() {
-        this.databasePromise = createLocalDatabase();
+    public constructor(private readonly database: RxDatabase<LocalCollections>) {
     }
 
-    public async getCollections(): Promise<LocalCollections> {
-        const database = await this.databasePromise;
-
-        return database.collections;
-    }
-
-    public async isBootstrapComplete(): Promise<boolean> {
-        const row = await this.meta.get(LOCAL_BOOTSTRAP_KEY);
-
-        return row?.value === 'done';
-    }
-
-    public async markBootstrapComplete(): Promise<void> {
-        await this.meta.put({
-            key: LOCAL_BOOTSTRAP_KEY,
-            value: 'done',
-        });
+    public getCollections(): LocalCollections {
+        return this.database.collections;
     }
 
     private createTable<T>(getCollection: (database: RxDatabase<LocalCollections>) => RxCollection<T>): LocalTable<T> {
@@ -218,14 +200,11 @@ export class LocalDbFacade {
                     return;
                 }
 
-                const database = await this.databasePromise;
-
-                await getCollection(database).bulkUpsert(rows);
+                await getCollection(this.database).bulkUpsert(rows);
             },
 
             get: async (id): Promise<T | undefined> => {
-                const database = await this.databasePromise;
-                const document = await getCollection(database).findOne(id).exec();
+                const document = await getCollection(this.database).findOne(id).exec();
 
                 if (!document) {
                     return undefined;
@@ -235,8 +214,7 @@ export class LocalDbFacade {
             },
 
             observeAll: async (onChange): Promise<Subscription> => {
-                const database = await this.databasePromise;
-                const query = getCollection(database).find();
+                const query = getCollection(this.database).find();
                 const initialDocuments = await query.exec();
 
                 onChange(initialDocuments.map((document) => mapDocument(document)));
@@ -246,15 +224,10 @@ export class LocalDbFacade {
                 });
             },
 
-            put: async (row): Promise<void> => {
-                const database = await this.databasePromise;
-
-                await getCollection(database).incrementalUpsert(row);
-            },
+            put: (row): Promise<void> => getCollection(this.database).incrementalUpsert(row).then(noop),
 
             remove: async (id): Promise<void> => {
-                const database = await this.databasePromise;
-                const document = await getCollection(database).findOne(id).exec();
+                const document = await getCollection(this.database).findOne(id).exec();
 
                 if (!document) {
                     return;
@@ -264,8 +237,7 @@ export class LocalDbFacade {
             },
 
             toArray: async (): Promise<T[]> => {
-                const database = await this.databasePromise;
-                const documents = await getCollection(database).find().exec();
+                const documents = await getCollection(this.database).find().exec();
 
                 return documents.map((document) => mapDocument(document));
             },

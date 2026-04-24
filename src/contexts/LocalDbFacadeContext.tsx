@@ -2,46 +2,67 @@ import {
     createContext,
     PropsWithChildren,
     useContext,
+    useRef,
 } from 'react';
-import { usePromise } from 'senaev-utils/src/reactHooks/usePromise';
+import { RxDatabase } from 'rxdb';
+import { usePromise, UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
 
-import { LocalDbFacade } from '../localDb/LocalDbFacade';
+import {
+    createLocalDatabase, LocalCollections, LocalDbFacade,
+} from '../localDb/LocalDbFacade';
 
-const LocalDbFacadeContext = createContext<LocalDbFacade | undefined>(undefined);
+export type LocalDbFacadeContextType = UsePromiseResult<LocalDbFacade>;
+
+const LocalDbFacadeContext = createContext<LocalDbFacadeContextType>(undefined);
 
 LocalDbFacadeContext.displayName = 'LocalDbFacadeContext';
 
-export function LocalDbFacadeContextProvider({ children, localDbFacade }: PropsWithChildren & {
-    localDbFacade: LocalDbFacade;
-}) {
-    return <LocalDbFacadeContext.Provider value={localDbFacade}>
+// TODO: move somewhere else
+const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase();
+
+export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
+    const localDbPromiseResult = usePromise(localDbPromise);
+    const localDbFacadeRef = useRef<{
+        promise: Promise<RxDatabase<LocalCollections>>;
+        localDbFacade: LocalDbFacade;
+    } | undefined>(undefined);
+
+    let localDbFacadeContextValue: LocalDbFacadeContextType;
+
+    if (localDbPromiseResult === undefined) {
+        localDbFacadeContextValue = undefined;
+    } else if ('error' in localDbPromiseResult) {
+        localDbFacadeContextValue = { error: localDbPromiseResult.error };
+    } else {
+        if (localDbFacadeRef.current === undefined || localDbFacadeRef.current.promise !== localDbPromise) {
+            const localDbFacade = new LocalDbFacade(localDbPromiseResult.data);
+
+            localDbFacadeRef.current = {
+                promise: localDbPromise,
+                localDbFacade,
+            };
+        }
+
+        localDbFacadeContextValue = { data: localDbFacadeRef.current.localDbFacade };
+    }
+
+    return <LocalDbFacadeContext.Provider value={localDbFacadeContextValue}>
         {children}
     </LocalDbFacadeContext.Provider>;
 }
 
-export const useLocalDbFacade = (): LocalDbFacade => {
-    const localDbFacade = useContext(LocalDbFacadeContext);
+export const useLocalDbFacade = (): LocalDbFacadeContextType => useContext(LocalDbFacadeContext);
 
-    if (!localDbFacade) {
-        throw new Error('useSupabaseControllerStatus must be used within a SupabaseClientContextProvider');
+export const useExistingLocalDbFacade = (): LocalDbFacade => {
+    const contextValue = useContext(LocalDbFacadeContext);
+
+    if (contextValue === undefined) {
+        throw new Error('LocalDbFacadeContext is not provided in useExistingLocalDbFacade');
     }
 
-    return localDbFacade;
-};
-
-export type LocalDbFacadeStatus = 'loading' | 'loaded' | 'error';
-export const useLocalDbFacadeStatus = (): LocalDbFacadeStatus => {
-    const localDbFacade = useLocalDbFacade();
-
-    const databasePromiseResult = usePromise(localDbFacade.databasePromise);
-
-    if (databasePromiseResult === undefined) {
-        return 'loading';
+    if ('error' in contextValue) {
+        throw new Error(`LocalDbFacadeContext error in useExistingLocalDbFacade: ${contextValue.error}`);
     }
 
-    if ('error' in databasePromiseResult) {
-        return 'error';
-    }
-
-    return 'loaded';
+    return contextValue.data;
 };

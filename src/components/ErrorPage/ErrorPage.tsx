@@ -10,6 +10,7 @@ export function ErrorPage({
 }) {
     return <div>
         <MainPageHeader
+            showConnectionStatus={false}
             createNewNote={() => {
                 // TODO: implement createNewNote on Page404 instead of passing noop
             }}

@@ -3,9 +3,8 @@ import './App.css';
 import {
     Navigate, Route, Routes, useParams,
 } from 'react-router-dom';
-import { noop } from 'senaev-utils/src/utils/Function/noop';
 
-import { LocalDbFacadeContextProvider } from '../../contexts/LocalDbFacadeContext';
+import { LocalDbFacadeContextProvider, useLocalDbFacade } from '../../contexts/LocalDbFacadeContext';
 import {
     NotesListContextProvider,
     useNoteRecords,
@@ -18,13 +17,11 @@ import {
 import { TablesContextProvider } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { SupabaseController } from '../../controllers/SupabaseController';
-import { LocalDbFacade } from '../../localDb/LocalDbFacade';
 import { NotesListTableLocal } from '../../tables/NotesListTableLocal';
 import { AuthPage } from '../AuthPage/AuthPage';
 import { ErrorPage } from '../ErrorPage/ErrorPage';
-import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
+import { LoadingPage } from '../LoadingPage/LoadingPage';
 import { MainPage } from '../MainPage/MainPage';
-import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NoteHeader } from '../NoteHeader/NoteHeader';
 import { NotePage } from '../NotePage/NotePage';
 
@@ -37,14 +34,7 @@ export function NoteRouteElement() {
     }
 
     if (notes === undefined) {
-        return <>
-            {/* TODO: implement persistence and remove noop */}
-            <MainPageHeader
-                createNewNote={noop}
-                menu={[]}
-            />
-            <LoadingPageContent/>
-        </>;
+        return <LoadingPage/>;
     }
 
     const noteExists = notes.some((list) => list.id === noteId);
@@ -98,50 +88,45 @@ function AuthRouteElement() {
     }
 
     if (supabaseControllerStatus.status === 'initialization') {
-        return <>
-            {/* TODO: implement persistence and remove noop */}
-            <MainPageHeader
-                createNewNote={noop}
-                menu={[]}
-            />
-            <LoadingPageContent/>
-        </>;
+        return <LoadingPage/>;
     }
 
     return <AuthPage statusObject={supabaseControllerStatus}/>;
 }
 
-export function NotesWithAuthApp() {
+// TODO: move somewhere else
+const supabaseController = new SupabaseController();
+
+export function NotesAppInitializer() {
+    const localDbFacadeContextValue = useLocalDbFacade();
+
+    if (localDbFacadeContextValue === undefined) {
+        return <LoadingPage/>;
+    }
+
+    if ('error' in localDbFacadeContextValue) {
+        return <ErrorPage errorMessage={`Failed to initialize local database: ${localDbFacadeContextValue.error}`}/>;
+    }
+
     const supabaseControllerStatus = useSupabaseControllerStatus();
 
     if (supabaseControllerStatus.status === 'require-credentials' || supabaseControllerStatus.status === 'wrong-credentials') {
         return <AuthRouteElement/>;
     }
 
-    return <>
-        <NotesApp/>
-    </>;
+    return <SupabaseControllerStatusContextProvider supabaseController={supabaseController}>
+        <LocalDbFacadeContextProvider>
+            <NotesListTableLocalContextProvider>
+                <NotesApp/>
+            </NotesListTableLocalContextProvider>
+        </LocalDbFacadeContextProvider>
+    </SupabaseControllerStatusContextProvider>;
 }
-
-// TODO: move somewhere else
-const localDbFacade = new LocalDbFacade();
-
-// TODO: move somewhere else
-const notesListTableLocal = new NotesListTableLocal(localDbFacade);
-
-// TODO: move somewhere else
-const supabaseController = new SupabaseController();
 
 export function App() {
     return <div className={'App__page'}>
         <main className={'App__main'}>
-            <SupabaseControllerStatusContextProvider supabaseController={supabaseController}>
-                <LocalDbFacadeContextProvider localDbFacade={localDbFacade}>
-                    <NotesListTableLocalContextProvider notesListTableLocal={notesListTableLocal}>
-                        <NotesWithAuthApp/>
-                    </NotesListTableLocalContextProvider>
-                </LocalDbFacadeContextProvider>
-            </SupabaseControllerStatusContextProvider>
+            <NotesAppInitializer/>
         </main>
     </div>;
 }

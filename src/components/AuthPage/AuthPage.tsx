@@ -68,6 +68,7 @@ export function AuthPage({
 
     return <>
         <MainPageHeader
+            showConnectionStatus={true}
             createNewNote={undefined}
             menu={undefined}
         />

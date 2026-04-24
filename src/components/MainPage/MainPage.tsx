@@ -162,6 +162,7 @@ export function MainPage() {
 
     return <div className={'MainPage'}>
         <MainPageHeader
+            showConnectionStatus={true}
             createNewNote={createNewNote}
             menu={supabaseControllerStatus.status === 'ready'
                 ? [

@@ -11,9 +11,11 @@ import appLogoUrl from '/logo.svg';
 export function MainPageHeader({
     createNewNote,
     menu,
+    showConnectionStatus,
 }: {
     createNewNote: VoidFunction | undefined;
     menu: ContextMenuItem[] | undefined;
+    showConnectionStatus: boolean;
 }) {
     return <PageHeader
         homeButtonIcon={
@@ -27,7 +29,7 @@ export function MainPageHeader({
         <h1 className={'MainPageHeader__appTitle'}>
             {APP_TITLE}
         </h1>
-        <ConnectionStatusIndicator/>
+        {showConnectionStatus && <ConnectionStatusIndicator/>}
         {createNewNote && <button
             type={'button'}
             aria-label={'Add note'}

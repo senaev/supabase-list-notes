@@ -70,7 +70,5 @@ export async function startReplication<T extends ReplicableTableName>(collection
         console.error('notes replication error', error);
     });
 
-    await replicationState.awaitInitialReplication();
-
     return replicationState;
 }
