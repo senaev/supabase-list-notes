@@ -56,10 +56,18 @@ export function startReplication<T extends ReplicableTableName>({
     collectionName,
     supabase,
     localDbFacade,
+    onError,
+    onActiveChange,
+    onReceived,
+    onSent,
 }: {
     collectionName: T;
     supabase: SupabaseClient;
     localDbFacade: LocalDbFacade;
+    onError: (error: unknown) => void;
+    onActiveChange: (isActive: boolean) => void;
+    onReceived: (record: ReplicatedRowByTable[T]) => void;
+    onSent: (record: WithDeleted<ReplicatedRowByTable[T]>) => void;
 }): RxSupabaseReplicationState<ReplicatedRowByTable[T]> {
     const collections: LocalCollections = localDbFacade.getCollections();
     const collection: LocalCollections[T] = collections[collectionName];
@@ -73,10 +81,10 @@ export function startReplication<T extends ReplicableTableName>({
 
     const replicationState: RxSupabaseReplicationState<ReplicatedRowByTable[T]> = replicateSupabase<ReplicatedRowByTable[T]>(replicateConfig);
 
-    replicationState.error$.subscribe((error) => {
-        // eslint-disable-next-line no-console
-        console.error('notes replication error', error);
-    });
+    replicationState.error$.subscribe(onError);
+    replicationState.active$.subscribe(onActiveChange);
+    replicationState.received$.subscribe(onReceived);
+    replicationState.sent$.subscribe(onSent);
 
     return replicationState;
 }

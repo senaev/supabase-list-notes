@@ -1,8 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
+import { LocalNoteRow } from '../localDb/LocalDbFacade';
 import { startReplication } from '../localDb/replication';
 import { NotesListTableLocal } from '../tables/NotesListTableLocal';
 
@@ -17,6 +19,8 @@ export type NoteRecord = {
 
 export class NotesList {
     public readonly recordsSignal = new Signal<NoteRecord[] | undefined>(undefined, deepEqual);
+
+    private replicationState: RxSupabaseReplicationState<LocalNoteRow> | undefined;
 
     public constructor(private readonly params: {
         notesListTableLocal: NotesListTableLocal;
@@ -90,15 +94,36 @@ export class NotesList {
     }
 
     private readonly startReplicationWithClient = (client: SupabaseClient | undefined): void => {
+        if (this.replicationState) {
+            this.replicationState.remove();
+        }
+
         if (client === undefined) {
-            // TODO: remove side effects
+            this.replicationState = undefined;
+
             return;
         }
 
-        const replicationState = startReplication({
+        this.replicationState = startReplication({
             collectionName: 'notes_temp',
             supabase: client,
             localDbFacade: this.params.notesListTableLocal.localDbFacade,
+            onError: (error) => {
+                // eslint-disable-next-line no-console
+                console.error('notes replication error', error);
+            },
+            onActiveChange: (isActive) => {
+                // eslint-disable-next-line no-console
+                console.log('Replication active=', isActive);
+            },
+            onReceived: (record) => {
+                // eslint-disable-next-line no-console
+                console.log('Received record:', record);
+            },
+            onSent: (record) => {
+                // eslint-disable-next-line no-console
+                console.log('Sent record:', record);
+            },
         });
 
         // eslint-disable-next-line no-console
