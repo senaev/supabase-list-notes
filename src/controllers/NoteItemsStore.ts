@@ -58,11 +58,11 @@ export class NoteItemsStore {
 
     public async createNoteItem({
         id,
-    note_id,
-    title,
-    position,
-    completed_at,
-    is_child,
+        note_id,
+        title,
+        position,
+        completed_at,
+        is_child,
     }: Pick<
         NoteItem,
     'id' | 'note_id' | 'title' | 'position' | 'completed_at' | 'is_child'

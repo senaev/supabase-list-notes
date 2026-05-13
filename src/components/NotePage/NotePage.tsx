@@ -32,10 +32,7 @@ type DragState = {
 
 export function NotePage({ noteId }: { noteId: string }) {
     const { showError } = useToastsContext();
-    const [
-        itemsVer,
-        list,
-    ] = useNote({
+    const list = useNote({
         noteId,
         showError,
     });
@@ -72,16 +69,13 @@ export function NotePage({ noteId }: { noteId: string }) {
         input.focus();
         input.setSelectionRange(selectionStart, selectionEnd);
         list.setPendingFocus(null);
-    }, [
-        itemsVer,
-        list,
-    ]);
+    }, [list]);
 
     useEffect(() => {
         inputRefs.current.forEach((input) => {
             resizeTextarea(input);
         });
-    }, [itemsVer]);
+    }, [list]);
 
     function resizeTextarea(input: HTMLTextAreaElement) {
         input.style.height = 'auto';

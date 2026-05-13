@@ -1,3 +1,4 @@
+import { Latch } from 'senaev-utils/src/utils/Latch/Latch';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { NoteItem } from '../types/NoteItem';
@@ -25,32 +26,28 @@ const PENDING_COMPLETED_AT = '__pending__';
 
 export class Note {
     public pendingFocus: PendingFocus | null = null;
-    private unsubscribeStore: (() => void) | null = null;
 
     private items: NoteItem[] = [];
+
+    private destroyLatch = new Latch();
 
     public constructor(private readonly params: {
         noteItemsStore: NoteItemsStore;
         noteId: string;
         onChange: () => void;
         showError: (message: string) => void;
-    }) {}
-
-    public connect(): void {
-        if (this.unsubscribeStore) {
-            return;
-        }
-
-        subscribeSignalAndCallWithCurrentValue(this.params.noteItemsStore.recordsSignal, (nextRecords) => {
+    }) {
+        const unsubscribeSignal = subscribeSignalAndCallWithCurrentValue(this.params.noteItemsStore.recordsSignal, (nextRecords) => {
             const noteRecords = nextRecords.filter((item) => item.note_id === this.params.noteId);
 
             this.setItems(noteRecords);
         });
+
+        this.destroyLatch.subscribe(unsubscribeSignal);
     }
 
-    public dispose(): void {
-        this.unsubscribeStore?.();
-        this.unsubscribeStore = null;
+    public destroy(): void {
+        this.destroyLatch.dispatch(undefined);
     }
 
     public getItemsSorted(): NoteItem[] {
