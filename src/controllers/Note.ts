@@ -9,7 +9,7 @@ import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosit
 import { NoteItemsStore } from './NoteItemsStore';
 
 export type PendingFocus = {
-    id: string;
+    inputElementId: string;
     selectionStart: number;
     selectionEnd: number;
 };
@@ -325,7 +325,7 @@ export class Note {
         ]);
 
         this.pendingFocusSignal.dispatch({
-            id: newItem.id,
+            inputElementId: newItem.id,
             selectionStart: 0,
             selectionEnd: 0,
         });
@@ -478,7 +478,7 @@ export class Note {
         this.removeItemLocally(currentItem.id);
         this.removeItemRemotely(currentItem.id);
         this.pendingFocusSignal.dispatch({
-            id: previousItem.id,
+            inputElementId: previousItem.id,
             selectionStart: cursorPosition,
             selectionEnd: cursorPosition,
         });

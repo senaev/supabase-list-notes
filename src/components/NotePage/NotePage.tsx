@@ -58,10 +58,10 @@ export function NotePage({ noteId }: { noteId: string }) {
         }
 
         const {
-            selectionEnd, selectionStart, id,
+            selectionEnd, selectionStart, inputElementId,
         } = pendingFocus;
 
-        const input = inputRefs.current.get(id);
+        const input = inputRefs.current.get(inputElementId);
 
         if (!input) {
             return;
@@ -122,7 +122,7 @@ export function NotePage({ noteId }: { noteId: string }) {
         );
 
         list.pendingFocusSignal.dispatch({
-            id: targetItem.id,
+            inputElementId: targetItem.id,
             selectionStart: selectionPosition,
             selectionEnd: selectionPosition,
         });
