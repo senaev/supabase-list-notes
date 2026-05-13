@@ -51,18 +51,18 @@ export class NotesList {
     }
 
     public changeTitle(id: string, title: string): Promise<void> {
-        const nextRecords = this.recordsSignal.getValue()!.map((item) => {
-            if (item.id !== id) {
-                return item;
-            }
+        // const nextRecords = this.recordsSignal.getValue()!.map((item) => {
+        //     if (item.id !== id) {
+        //         return item;
+        //     }
 
-            return {
-                ...item,
-                title,
-            };
-        });
+        //     return {
+        //         ...item,
+        //         title,
+        //     };
+        // });
 
-        this.recordsSignal.dispatch(nextRecords);
+        // this.recordsSignal.dispatch(nextRecords);
 
         return this.params.notesListTableLocal.update(id, { title });
     }
