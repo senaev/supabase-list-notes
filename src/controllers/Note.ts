@@ -1,6 +1,5 @@
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
-import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
 
@@ -32,7 +31,6 @@ export class Note {
 
     public constructor(private readonly params: {
         noteItemsStore: NoteItemsStore;
-        noteItemsTable: NoteItemsTableLocal;
         noteId: string;
         onChange: () => void;
         showError: (message: string) => void;
@@ -154,7 +152,7 @@ export class Note {
     }
 
     public removeItemRemotely(id: string): void {
-        this.params.noteItemsTable.deleteNoteItem(id).catch((error) => {
+        this.params.noteItemsStore.deleteNoteItem(id).catch((error) => {
             this.params.showError(error.message);
         });
     }
@@ -194,7 +192,7 @@ export class Note {
         });
 
         if (updates.completed_at === PENDING_COMPLETED_AT) {
-            this.params.noteItemsTable
+            this.params.noteItemsStore
                 .setNoteItemCompleted(id, true)
                 .then((result) => {
                     const localItem = this.items.find((item) => item.id === id);
@@ -216,7 +214,7 @@ export class Note {
             return;
         }
 
-        this.params.noteItemsTable
+        this.params.noteItemsStore
             .updateNoteItem(id, updates)
             .then((result) => {
                 // Check that local item has not been removed during update
@@ -353,7 +351,7 @@ export class Note {
             selectionEnd: 0,
         });
 
-        this.params.noteItemsTable
+        this.params.noteItemsStore
             .createNoteItem(newItem)
             .then(() => {})
             .catch((error) => {
@@ -434,7 +432,7 @@ export class Note {
             completed_at: checked ? PENDING_COMPLETED_AT : null,
         });
 
-        this.params.noteItemsTable
+        this.params.noteItemsStore
             .setNoteItemCompleted(id, checked)
             .then((result) => {
                 const localItem = this.items.find((currentItem) => currentItem.id === id);

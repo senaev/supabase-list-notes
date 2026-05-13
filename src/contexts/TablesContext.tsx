@@ -5,13 +5,11 @@ import React, {
 } from 'react';
 
 import { NoteItemsStore } from '../controllers/NoteItemsStore';
-import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 export type TablesContextType = {
-    noteItemsTableLocal: NoteItemsTableLocal;
     noteItemsStore: NoteItemsStore;
 };
 
@@ -31,13 +29,9 @@ export const TablesContextProvider = ({
 
     // eslint-disable-next-line react-hooks/refs
     if (!tablesRef.current) {
-        const noteItemsTableLocal = new NoteItemsTableLocal(localDbFacade);
-
         tablesRef.current = {
-            noteItemsTableLocal,
             noteItemsStore: new NoteItemsStore({
                 localDbFacade,
-                noteItemsTable: noteItemsTableLocal,
                 supabaseControllerClientSignal: clientSignal,
                 showError,
             }),
