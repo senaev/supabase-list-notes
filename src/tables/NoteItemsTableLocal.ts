@@ -8,7 +8,7 @@ const _TABLE_COLUMNS = 'id, note_id, is_child, title, position, created_at, upda
 
 type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
 
-function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> {
+export function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> {
     return {
         id: row.id,
         note_id: row.note_id,
@@ -72,14 +72,6 @@ export class NoteItemsTableLocal {
         return items
             .sort((first, second) => first.position - second.position)
             .map(toNoteItem);
-    }
-
-    public observeAllNotes(onChange: (items: Pick<NoteItem, TableColumns>[]) => void): Promise<Subscription> {
-        return this.localDbFacade.note_items_temp.observeAll((items) => {
-            onChange(items
-                .sort((first, second) => first.position - second.position)
-                .map(toNoteItem));
-        });
     }
 
     public async update(

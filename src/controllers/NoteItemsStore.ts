@@ -5,7 +5,7 @@ import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/S
 
 import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
 import { startReplication } from '../localDb/replication';
-import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
+import { NoteItemsTableLocal, toNoteItem } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
 
 import { SupabaseClientSignal } from './SupabaseController';
@@ -36,11 +36,14 @@ export class NoteItemsStore {
             return;
         }
 
-        this.observePromise = this.params.noteItemsTable
-            .observeAllNotes((items) => {
-                this.items = items;
-                this.emitChange();
-            })
+        this.observePromise = this.params.localDbFacade.note_items_temp.observeAll((records) => {
+            const items = records
+                .sort((first, second) => first.position - second.position)
+                .map(toNoteItem);
+
+            this.items = items;
+            this.emitChange();
+        })
             .then((subscription) => {
                 this.subscription = subscription;
             })

@@ -43,8 +43,8 @@ export class NotesList {
         showError: (message: string) => void;
     }) {
         this.params.localDbFacade.notes_temp
-            .observeAll((notes) => {
-                const items = notes.map(toNoteRecord);
+            .observeAll((records) => {
+                const items = records.map(toNoteRecord);
 
                 this.recordsSignal.dispatch(items);
             })
