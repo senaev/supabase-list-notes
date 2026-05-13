@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 
 import { LocalDbFacadeContextProvider, useLocalDbFacade } from '../../contexts/LocalDbFacadeContext';
+import { NoteItemsStoreContextProvider } from '../../contexts/NoteItemsStoreContext';
 import {
     NotesListStoreContextProvider,
     useNotesListRecords,
@@ -14,7 +15,6 @@ import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
 } from '../../contexts/SupabaseControllerContext';
-import { TablesContextProvider } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { AuthPage } from '../AuthPage/AuthPage';
 import { ErrorPage } from '../ErrorPage/ErrorPage';
@@ -55,7 +55,7 @@ export function NoteRouteElement() {
 export function NotesApp() {
     const { showError } = useToastsContext();
 
-    return <TablesContextProvider showError={showError}>
+    return <NoteItemsStoreContextProvider showError={showError}>
         <NotesListStoreContextProvider showError={showError}>
             <Routes>
                 <Route
@@ -72,7 +72,7 @@ export function NotesApp() {
                 />
             </Routes>
         </NotesListStoreContextProvider>
-    </TablesContextProvider>;
+    </NoteItemsStoreContextProvider>;
 }
 
 function AuthRouteElement() {

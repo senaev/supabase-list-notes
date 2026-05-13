@@ -2,7 +2,7 @@ import {
     useEffect, useRef, useState,
 } from 'react';
 
-import { useTablesContext } from '../../contexts/TablesContext';
+import { useNoteItemsStore } from '../../contexts/NoteItemsStoreContext';
 import { Note } from '../../controllers/Note';
 
 export function useNote(params: {
@@ -14,7 +14,7 @@ export function useNote(params: {
         setVer,
     ] = useState<number>(0);
 
-    const { noteItemsStore } = useTablesContext();
+    const noteItemsStore = useNoteItemsStore();
 
     const ref = useRef<{ noteId: string; note: Note } | null>(null);
 
