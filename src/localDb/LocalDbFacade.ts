@@ -1,9 +1,13 @@
 import {
-    createRxDatabase, RxCollection, RxDatabase, RxDocument,
+    createRxDatabase, RxCollection,
+    RxConflictHandler,
+    RxDatabase, RxDocument,
+    WithDeleted,
 } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { Subscription } from 'rxjs';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
+import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 
 export type LocalNoteRow = {
     id: string;
@@ -155,6 +159,21 @@ const metaSchema = {
     ],
 } as const;
 
+const noteConflictHandler: RxConflictHandler<LocalNoteRow> = {
+    isEqual: (first, second): boolean => deepEqual({
+        id: first.id,
+        title: first.title,
+        created_at: first.created_at,
+        _deleted: first._deleted,
+    }, {
+        id: second.id,
+        title: second.title,
+        created_at: second.created_at,
+        _deleted: second._deleted,
+    }),
+    resolve: (input): Promise<WithDeleted<LocalNoteRow>> => Promise.resolve(input.newDocumentState),
+};
+
 export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     const database = await createRxDatabase<LocalCollections>({
         name: DATABASE_NAME,
@@ -165,6 +184,7 @@ export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections
     await database.addCollections({
         notes_temp: {
             schema: noteSchema,
+            conflictHandler: noteConflictHandler,
         },
         note_items_temp: {
             schema: noteItemSchema,

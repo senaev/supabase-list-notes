@@ -21,12 +21,12 @@ export function ErrorPage({
         />
 
         <FullPageContent>
-            <span className={'ErrorPage__content_emoji'}>
+            <span className={'ErrorPage__emoji'}>
                 {'🤷'}
             </span>
-            <h1>
+            <span className={'ErrorPage__message'}>
                 {errorMessage}
-            </h1>
+            </span>
         </FullPageContent>
     </div>;
 }

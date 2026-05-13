@@ -1,3 +1,7 @@
-.ErrorPage__content_emoji {
+.ErrorPage__emoji {
     font-size: 5rem;
+}
+
+.ErrorPage__message {
+    color: rgb(255, 175, 175);
 }

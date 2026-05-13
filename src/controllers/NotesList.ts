@@ -47,12 +47,6 @@ export class NotesList {
             title: '',
         });
 
-        this.recordsSignal.dispatch([
-            // TODO: remove workaround after fixing items persistence
-            ...this.recordsSignal.getValue()!,
-            newNote,
-        ]);
-
         return newNote;
     }
 
@@ -112,9 +106,8 @@ export class NotesList {
                 // eslint-disable-next-line no-console
                 console.error('notes replication error', error);
             },
-            onActiveChange: (isActive) => {
-                // eslint-disable-next-line no-console
-                console.log('Replication active=', isActive);
+            onActiveChange: (_isActive) => {
+
             },
             onReceived: (record) => {
                 // eslint-disable-next-line no-console

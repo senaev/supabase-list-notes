@@ -37,6 +37,7 @@ const COLLECTION_REPLICATION_OPTIONS: { [K in ReplicableTableName]: Omit<Replica
         push: {
             batchSize: 100,
         },
+        live: true,
     },
     note_items_temp: {
         replicationIdentifier: 'note_items_temp_replication',
