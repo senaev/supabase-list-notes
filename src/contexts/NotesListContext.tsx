@@ -8,7 +8,7 @@ import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
 import { NoteRecord, NotesList } from '../controllers/NotesList';
 
-import { useNotesListTableLocal } from './NotesListTableLocalContext';
+import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
 type NotesListContextType = NotesList | undefined;
@@ -23,15 +23,15 @@ export const NotesListContextProvider = ({
 }: PropsWithChildren & {
     showError: (message: string) => void;
 }) => {
-    const notesListTableLocal = useNotesListTableLocal();
+    const localDbFacade = useExistingLocalDbFacade();
     const { clientSignal } = useSupabaseControllerStatus();
 
     const notesList = useMemo(() => new NotesList({
-        notesListTableLocal,
+        localDbFacade,
         supabaseControllerClientSignal: clientSignal,
         showError,
     }), [
-        notesListTableLocal,
+        localDbFacade,
         clientSignal,
         showError,
     ]);

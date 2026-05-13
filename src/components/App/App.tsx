@@ -10,7 +10,6 @@ import {
     NotesListContextProvider,
     useNoteRecords,
 } from '../../contexts/NotesListContext';
-import { NotesListTableLocalContextProvider } from '../../contexts/NotesListTableLocalContext';
 import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
@@ -109,9 +108,7 @@ export function NotesAppInitializer() {
         return <AuthRouteElement/>;
     }
 
-    return <NotesListTableLocalContextProvider>
-        <NotesApp/>
-    </NotesListTableLocalContextProvider>;
+    return <NotesApp/>;
 }
 
 export function NotesAppDatabaseProviders({ children }: PropsWithChildren) {
