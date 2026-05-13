@@ -90,8 +90,8 @@ function MainPageContent() {
     }
 
     const itemsSorted = [...notes].sort((a, b) => {
-        const aUpdated = new Date(a.modified_at).getTime();
-        const bUpdated = new Date(b.modified_at).getTime();
+        const aUpdated = new Date(a.updated_at).getTime();
+        const bUpdated = new Date(b.updated_at).getTime();
 
         return bUpdated - aUpdated;
     });

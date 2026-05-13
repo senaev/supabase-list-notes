@@ -13,6 +13,7 @@ export type LocalNoteRow = {
     id: string;
     title: string;
     created_at: string;
+    updated_at: string;
     _modified: string;
 };
 
@@ -23,8 +24,8 @@ export type LocalNoteItemRow = {
     title: string;
     position: number;
     created_at: string;
-    _modified: string;
     completed_at: string | null;
+    _modified: string;
 };
 
 type LocalMetaRow = {
@@ -68,6 +69,10 @@ const noteSchema = {
             type: 'string',
             maxLength: 64,
         },
+        updated_at: {
+            type: 'string',
+            maxLength: 64,
+        },
         _modified: {
             type: 'string',
             maxLength: 64,
@@ -77,6 +82,7 @@ const noteSchema = {
         'id',
         'title',
         'created_at',
+        'updated_at',
         '_modified',
     ],
 } as const;
@@ -159,19 +165,42 @@ const metaSchema = {
     ],
 } as const;
 
+function getUpdatedAtTime(note: WithDeleted<LocalNoteRow>): number {
+    return new Date(note.updated_at).getTime();
+}
+
 const noteConflictHandler: RxConflictHandler<LocalNoteRow> = {
-    isEqual: (first, second): boolean => deepEqual({
-        id: first.id,
-        title: first.title,
-        created_at: first.created_at,
-        _deleted: first._deleted,
-    }, {
-        id: second.id,
-        title: second.title,
-        created_at: second.created_at,
-        _deleted: second._deleted,
-    }),
-    resolve: (input): Promise<WithDeleted<LocalNoteRow>> => Promise.resolve(input.newDocumentState),
+    isEqual: (first, second, context): boolean => {
+        if (
+            context === 'downstream-check-if-equal-1' && getUpdatedAtTime(first) < getUpdatedAtTime(second)
+        ) {
+            return true;
+        }
+
+        return deepEqual({
+            id: first.id,
+            title: first.title,
+            created_at: first.created_at,
+            updated_at: first.updated_at,
+            _deleted: first._deleted,
+        }, {
+            id: second.id,
+            title: second.title,
+            created_at: second.created_at,
+            updated_at: second.updated_at,
+            _deleted: second._deleted,
+        });
+    },
+    resolve: ({
+        realMasterState,
+        newDocumentState,
+    }): Promise<WithDeleted<LocalNoteRow>> => {
+        const resolvedState = getUpdatedAtTime(realMasterState) > getUpdatedAtTime(newDocumentState)
+            ? realMasterState
+            : newDocumentState;
+
+        return Promise.resolve(resolvedState);
+    },
 };
 
 export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {

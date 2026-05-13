@@ -184,9 +184,9 @@ export class Note {
             return;
         }
 
-        const modified_at = new Date().toISOString();
+        const _modified = new Date().toISOString();
 
-        this.changeItemLocally(id, { modified_at });
+        this.changeItemLocally(id, { _modified });
 
         if (updates.completed_at === PENDING_COMPLETED_AT) {
             this.params.noteItemsTable
@@ -197,7 +197,7 @@ export class Note {
                     if (localItem) {
                         this.changeItemLocally(id, {
                             completed_at: result.completed_at,
-                            modified_at: result.modified_at,
+                            _modified: result._modified,
                         });
                     }
                 })
@@ -218,7 +218,7 @@ export class Note {
 
                 if (localItem) {
                     this.changeItemLocally(id, {
-                        modified_at: result.modified_at,
+                        _modified: result._modified,
                     });
                 }
             })
@@ -328,7 +328,7 @@ export class Note {
             note_id: this.params.noteId,
             title,
             created_at: '',
-            modified_at: '',
+            _modified: '',
             position,
             completed_at,
             is_child,
@@ -434,7 +434,7 @@ export class Note {
                 if (localItem) {
                     this.changeItemLocally(id, {
                         completed_at: result.completed_at,
-                        modified_at: result.modified_at,
+                        _modified: result._modified,
                     });
                 }
             })

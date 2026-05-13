@@ -75,7 +75,7 @@ export function startReplication<T extends ReplicableTableName>({
 
     const replicateConfig: ReplicateSupabaseOptions<ReplicatedRowByTable[T]> = {
         ...COLLECTION_REPLICATION_OPTIONS[collectionName] as Omit<ReplicateSupabaseOptions<ReplicatedRowByTable[T]>, 'collection' | 'client' | 'tableName'>,
-        collection: collection as ReplicateSupabaseOptions<ReplicatedRowByTable[T]>['collection'],
+        collection: collection as unknown as ReplicateSupabaseOptions<ReplicatedRowByTable[T]>['collection'],
         client: supabase,
         tableName: collectionName,
     };

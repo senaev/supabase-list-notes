@@ -6,7 +6,7 @@ import {
 } from '../localDb/LocalDbFacade';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
 
-const _TABLE_COLUMNS = 'id, title, created_at, modified_at';
+const _TABLE_COLUMNS = 'id, title, created_at, updated_at, _modified';
 
 type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
 
@@ -15,7 +15,8 @@ function toNoteRecord(row: LocalNoteRow): Pick<NoteRecord, TableColumns> {
         id: row.id,
         title: row.title,
         created_at: row.created_at,
-        modified_at: row._modified,
+        updated_at: row.updated_at,
+        _modified: row._modified,
     };
 }
 
@@ -34,6 +35,7 @@ export class NotesListTableLocal {
             id,
             title,
             created_at: now,
+            updated_at: now,
             _modified: now,
         };
 
@@ -60,10 +62,12 @@ export class NotesListTableLocal {
             throw new Error(`NotesListTable.update(${id}) error: note not found`);
         }
 
+        const now = new Date().toISOString();
         const updatedLocalRow: LocalNoteRow = {
             ...localRow,
             ...updates,
-            _modified: new Date().toISOString(),
+            updated_at: now,
+            _modified: now,
         };
 
         await this.localDbFacade.notes_temp.put(updatedLocalRow);

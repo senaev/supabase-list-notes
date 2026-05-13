@@ -140,7 +140,7 @@ export function NoteItemElement({
                 }}
             >
                 {'modified=['}
-                {new Date(item.modified_at).getTime()}
+                {new Date(item._modified).getTime()}
                 {']'}
             </span>
         </span>}

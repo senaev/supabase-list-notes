@@ -13,6 +13,7 @@ create table public.notes_temp (
     id text primary key,
     title text not null,
     created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
     _modified timestamptz not null default now(),
     _deleted boolean not null default false
 );
