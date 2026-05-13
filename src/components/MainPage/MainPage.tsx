@@ -34,7 +34,7 @@ function MainPageContent() {
 
     useEffect(() => {
         const updateCounts = () => {
-            const noteItems = noteItemsStore.getAllItems();
+            const noteItems = noteItemsStore.recordsSignal.getValue();
             const nextCountsByNoteId = new Map<
                 string,
                 { items_count: number; open_items_count: number }
@@ -58,7 +58,7 @@ function MainPageContent() {
         };
 
         updateCounts();
-        const unsubscribe = noteItemsStore.subscribe(() => {
+        const unsubscribe = noteItemsStore.recordsSignal.subscribe(() => {
             updateCounts();
         });
 

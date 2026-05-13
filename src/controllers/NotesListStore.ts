@@ -32,7 +32,7 @@ function toNoteRecord(row: LocalNoteRow): Pick<NoteRecord, TableColumns> {
     };
 }
 
-export class NotesList {
+export class NotesListStore {
     public readonly recordsSignal = new Signal<NoteRecord[] | undefined>(undefined, deepEqual);
 
     private replicationState: RxSupabaseReplicationState<LocalNoteRow> | undefined;

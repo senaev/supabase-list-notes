@@ -1,5 +1,3 @@
-import { Subscription } from 'rxjs';
-
 import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
 import { NoteItem } from '../types/NoteItem';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
@@ -25,7 +23,7 @@ export function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> 
 export class NoteItemsTableLocal {
     public constructor(public readonly localDbFacade: LocalDbFacade) {}
 
-    public async create({
+    public async createNoteItem({
         id,
     note_id,
     title,
@@ -54,27 +52,7 @@ export class NoteItemsTableLocal {
         return toNoteItem(localRow);
     }
 
-    public observeAll(
-        noteId: string,
-        onChange: (items: Pick<NoteItem, TableColumns>[]) => void
-    ): Promise<Subscription> {
-        return this.localDbFacade.note_items_temp.observeAll((items) => {
-            onChange(items
-                .filter((item) => item.note_id === noteId)
-                .sort((first, second) => first.position - second.position)
-                .map(toNoteItem));
-        });
-    }
-
-    public async readAllNotes(): Promise<Pick<NoteItem, TableColumns>[]> {
-        const items = await this.localDbFacade.note_items_temp.toArray();
-
-        return items
-            .sort((first, second) => first.position - second.position)
-            .map(toNoteItem);
-    }
-
-    public async update(
+    public async updateNoteItem(
         itemId: string,
         updates: Partial<
             Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
@@ -101,7 +79,7 @@ export class NoteItemsTableLocal {
         };
     }
 
-    public async setCompleted(
+    public async setNoteItemCompleted(
         itemId: string,
         checked: boolean
     ): Promise<Pick<NoteItem, 'completed_at' | 'updated_at' | '_modified'>> {
@@ -128,7 +106,7 @@ export class NoteItemsTableLocal {
         };
     }
 
-    public async delete(itemId: string): Promise<void> {
+    public async deleteNoteItem(itemId: string): Promise<void> {
         await this.localDbFacade.note_items_temp.remove(itemId);
     }
 }

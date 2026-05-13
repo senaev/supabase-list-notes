@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
-import { Subscription } from 'rxjs';
+import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
@@ -10,13 +11,9 @@ import { NoteItem } from '../types/NoteItem';
 
 import { SupabaseClientSignal } from './SupabaseController';
 
-type Listener = () => void;
-
 export class NoteItemsStore {
-    private items: NoteItem[] = [];
-    private listeners = new Set<Listener>();
-    private subscription: Subscription | null = null;
-    private observePromise: Promise<void> | null = null;
+    public recordsSignal = new Signal<NoteItem[]>([], deepEqual);
+
     private replicationState: RxSupabaseReplicationState<LocalNoteItemRow> | undefined;
 
     public constructor(private readonly params: {
@@ -25,63 +22,21 @@ export class NoteItemsStore {
         supabaseControllerClientSignal: SupabaseClientSignal;
         showError: (message: string) => void;
     }) {
-        subscribeSignalAndCallWithCurrentValue(
-            this.params.supabaseControllerClientSignal,
-            this.startReplicationWithClient
-        );
-    }
-
-    public connect(): void {
-        if (this.subscription || this.observePromise) {
-            return;
-        }
-
-        this.observePromise = this.params.localDbFacade.note_items_temp.observeAll((records) => {
+        this.params.localDbFacade.note_items_temp.observeAll((records) => {
             const items = records
                 .sort((first, second) => first.position - second.position)
                 .map(toNoteItem);
 
-            this.items = items;
-            this.emitChange();
+            this.recordsSignal.dispatch(items);
         })
-            .then((subscription) => {
-                this.subscription = subscription;
-            })
             .catch((error) => {
                 this.params.showError(error.message);
-            })
-            .finally(() => {
-                this.observePromise = null;
             });
-    }
 
-    public dispose(): void {
-        this.subscription?.unsubscribe();
-        this.subscription = null;
-        this.observePromise = null;
-        this.listeners.clear();
-    }
-
-    public getItems(noteId: string): NoteItem[] {
-        return this.items.filter((item) => item.note_id === noteId);
-    }
-
-    public getAllItems(): NoteItem[] {
-        return this.items;
-    }
-
-    public subscribe(listener: Listener): () => void {
-        this.listeners.add(listener);
-
-        return () => {
-            this.listeners.delete(listener);
-        };
-    }
-
-    private emitChange(): void {
-        this.listeners.forEach((listener) => {
-            listener();
-        });
+        subscribeSignalAndCallWithCurrentValue(
+            this.params.supabaseControllerClientSignal,
+            this.startReplicationWithClient
+        );
     }
 
     private readonly startReplicationWithClient = (client: SupabaseClient | undefined): void => {

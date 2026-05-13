@@ -32,6 +32,7 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
+        "simple-checks": "npm run typecheck && npm run test:ci && npm run lint",
         "test": "vitest",
         "test:ci": "vitest --run",
         "test:watch": "vitest"

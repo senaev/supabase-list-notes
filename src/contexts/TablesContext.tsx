@@ -1,7 +1,6 @@
 import React, {
     PropsWithChildren,
     useContext,
-    useEffect,
     useRef,
 } from 'react';
 
@@ -47,14 +46,6 @@ export const TablesContextProvider = ({
 
     // eslint-disable-next-line react-hooks/refs
     const tables = tablesRef.current;
-
-    useEffect(() => {
-        tables.noteItemsStore.connect();
-
-        return () => {
-            tables.noteItemsStore.dispose();
-        };
-    }, [tables]);
 
     return <TablesContext.Provider value={tables}>
         {children}

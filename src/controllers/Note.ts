@@ -1,3 +1,5 @@
+import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
+
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
@@ -41,10 +43,10 @@ export class Note {
             return;
         }
 
-        this.params.noteItemsStore.connect();
-        this.setItems(this.params.noteItemsStore.getItems(this.params.noteId));
-        this.unsubscribeStore = this.params.noteItemsStore.subscribe(() => {
-            this.setItems(this.params.noteItemsStore.getItems(this.params.noteId));
+        subscribeSignalAndCallWithCurrentValue(this.params.noteItemsStore.recordsSignal, (nextRecords) => {
+            const noteRecords = nextRecords.filter((item) => item.note_id === this.params.noteId);
+
+            this.setItems(noteRecords);
         });
     }
 
@@ -152,7 +154,7 @@ export class Note {
     }
 
     public removeItemRemotely(id: string): void {
-        this.params.noteItemsTable.delete(id).catch((error) => {
+        this.params.noteItemsTable.deleteNoteItem(id).catch((error) => {
             this.params.showError(error.message);
         });
     }
@@ -193,7 +195,7 @@ export class Note {
 
         if (updates.completed_at === PENDING_COMPLETED_AT) {
             this.params.noteItemsTable
-                .setCompleted(id, true)
+                .setNoteItemCompleted(id, true)
                 .then((result) => {
                     const localItem = this.items.find((item) => item.id === id);
 
@@ -215,7 +217,7 @@ export class Note {
         }
 
         this.params.noteItemsTable
-            .update(id, updates)
+            .updateNoteItem(id, updates)
             .then((result) => {
                 // Check that local item has not been removed during update
                 const localItem = this.items.find((item) => item.id === id);
@@ -352,7 +354,7 @@ export class Note {
         });
 
         this.params.noteItemsTable
-            .create(newItem)
+            .createNoteItem(newItem)
             .then(() => {})
             .catch((error) => {
                 this.params.showError(error.message);
@@ -433,7 +435,7 @@ export class Note {
         });
 
         this.params.noteItemsTable
-            .setCompleted(id, checked)
+            .setNoteItemCompleted(id, checked)
             .then((result) => {
                 const localItem = this.items.find((currentItem) => currentItem.id === id);
 
