@@ -3,7 +3,7 @@ import { RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
 import { Subscription } from 'rxjs';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
-import { LocalNoteItemRow } from '../localDb/LocalDbFacade';
+import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
 import { startReplication } from '../localDb/replication';
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
@@ -20,6 +20,7 @@ export class NoteItemsStore {
     private replicationState: RxSupabaseReplicationState<LocalNoteItemRow> | undefined;
 
     public constructor(private readonly params: {
+        localDbFacade: LocalDbFacade;
         noteItemsTable: NoteItemsTableLocal;
         supabaseControllerClientSignal: SupabaseClientSignal;
         showError: (message: string) => void;
@@ -94,21 +95,14 @@ export class NoteItemsStore {
         this.replicationState = startReplication({
             collectionName: 'note_items_temp',
             supabase: client,
-            localDbFacade: this.params.noteItemsTable.localDbFacade,
-            onError: (error) => {
-                // eslint-disable-next-line no-console
-                console.error('note items replication error', error);
+            localDbFacade: this.params.localDbFacade,
+            onError: (_error) => {
             },
             onActiveChange: (_isActive) => {
-                //
             },
-            onReceived: (record) => {
-                // eslint-disable-next-line no-console
-                console.log('Received item record:', record);
+            onReceived: (_record) => {
             },
-            onSent: (record) => {
-                // eslint-disable-next-line no-console
-                console.log('Sent item record:', record);
+            onSent: (_record) => {
             },
         });
     };

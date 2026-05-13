@@ -37,6 +37,7 @@ export const TablesContextProvider = ({
         tablesRef.current = {
             noteItemsTableLocal,
             noteItemsStore: new NoteItemsStore({
+                localDbFacade,
                 noteItemsTable: noteItemsTableLocal,
                 supabaseControllerClientSignal: clientSignal,
                 showError,
