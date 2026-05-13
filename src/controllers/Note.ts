@@ -1,4 +1,6 @@
 import { Latch } from 'senaev-utils/src/utils/Latch/Latch';
+import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { NoteItem } from '../types/NoteItem';
@@ -27,7 +29,7 @@ const PENDING_COMPLETED_AT = '__pending__';
 export class Note {
     public pendingFocus: PendingFocus | null = null;
 
-    private items: NoteItem[] = [];
+    public itemsSignal = new Signal<NoteItem[]>([], deepEqual);
 
     private destroyLatch = new Latch();
 
@@ -40,10 +42,12 @@ export class Note {
         const unsubscribeSignal = subscribeSignalAndCallWithCurrentValue(this.params.noteItemsStore.recordsSignal, (nextRecords) => {
             const noteRecords = nextRecords.filter((item) => item.note_id === this.params.noteId);
 
-            this.setItems(noteRecords);
+            this.itemsSignal.dispatch(noteRecords);
         });
 
         this.destroyLatch.subscribe(unsubscribeSignal);
+
+        this.itemsSignal.subscribe(params.onChange);
     }
 
     public destroy(): void {
@@ -51,7 +55,7 @@ export class Note {
     }
 
     public getItemsSorted(): NoteItem[] {
-        return [...this.items].sort((first, second) => first.position - second.position);
+        return [...this.itemsSignal.getValue()].sort((first, second) => first.position - second.position);
     }
 
     public getItemsSortedGroupedByParent(): ItemParentGroup[] {
@@ -109,25 +113,8 @@ export class Note {
         };
     }
 
-    public getItems() {
-        return this.items;
-    }
-
-    public setItems(items: NoteItem[]): void {
-    // TODO: use normal comparison
-        const itemsChanged = JSON.stringify(this.items) !== JSON.stringify(items);
-
-        if (itemsChanged) {
-            this.items = items;
-        }
-
-        if (itemsChanged) {
-            this.params.onChange();
-        }
-    }
-
     public changeItemLocally(id: string, updates: Partial<NoteItem>): void {
-        this.setItems(this.items.map((item) =>
+        this.itemsSignal.dispatch(this.itemsSignal.getValue().map((item) =>
             item.id === id
                 ? {
                     ...item,
@@ -137,7 +124,7 @@ export class Note {
     }
 
     public removeItemLocally(id: string): void {
-        const itemToRemove = this.items.find((item) => item.id === id);
+        const itemToRemove = this.itemsSignal.getValue().find((item) => item.id === id);
 
         if (!itemToRemove) {
             this.params.showError(`removeItem: item with id ${id} not found`);
@@ -145,7 +132,7 @@ export class Note {
             return;
         }
 
-        this.setItems(this.items.filter((item) => item.id !== id));
+        this.itemsSignal.dispatch(this.itemsSignal.getValue().filter((item) => item.id !== id));
     }
 
     public removeItemRemotely(id: string): void {
@@ -155,7 +142,7 @@ export class Note {
     }
 
     public removeItem(id: string) {
-        const item = this.items.find((candidate) => candidate.id === id);
+        const item = this.itemsSignal.getValue().find((candidate) => candidate.id === id);
 
         if (!item) {
             this.params.showError(`removeItem: item with id ${id} not found`);
@@ -173,7 +160,7 @@ export class Note {
             Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
         >
     ): void {
-        const itemToUpdate = this.items.find((item) => item.id === id);
+        const itemToUpdate = this.itemsSignal.getValue().find((item) => item.id === id);
 
         if (!itemToUpdate) {
             this.params.showError(`persistItem: item with id ${id} not found`);
@@ -192,7 +179,7 @@ export class Note {
             this.params.noteItemsStore
                 .setNoteItemCompleted(id, true)
                 .then((result) => {
-                    const localItem = this.items.find((item) => item.id === id);
+                    const localItem = this.itemsSignal.getValue().find((item) => item.id === id);
 
                     if (localItem) {
                         this.changeItemLocally(id, {
@@ -203,7 +190,7 @@ export class Note {
                     }
                 })
                 .catch((error) => {
-                    const itemStillExists = this.items.some((item) => item.id === id);
+                    const itemStillExists = this.itemsSignal.getValue().some((item) => item.id === id);
 
                     this.params.showError(`persistItem(setCompleted): error id=[${id}] [${error.message}] itemStillExists=[${itemStillExists}]`);
                 });
@@ -215,7 +202,7 @@ export class Note {
             .updateNoteItem(id, updates)
             .then((result) => {
                 // Check that local item has not been removed during update
-                const localItem = this.items.find((item) => item.id === id);
+                const localItem = this.itemsSignal.getValue().find((item) => item.id === id);
 
                 if (localItem) {
                     this.changeItemLocally(id, {
@@ -225,7 +212,7 @@ export class Note {
                 }
             })
             .catch((error) => {
-                const itemStillExists = this.items.some((item) => item.id === id);
+                const itemStillExists = this.itemsSignal.getValue().some((item) => item.id === id);
 
                 this.params.showError(`persistItem: error id=[${id}] [${error.message}] itemStillExists=[${itemStillExists}]`);
             });
@@ -337,8 +324,8 @@ export class Note {
             is_child,
         };
 
-        this.setItems([
-            ...this.items,
+        this.itemsSignal.dispatch([
+            ...this.itemsSignal.getValue(),
             newItem,
         ]);
 
@@ -357,7 +344,7 @@ export class Note {
     }
 
     public getPositionAtTheEnd(): number {
-        return Math.max(...this.items.map((item) => item.position), 0) + 1;
+        return Math.max(...this.itemsSignal.getValue().map((item) => item.position), 0) + 1;
     }
 
     public createNewItemAtTheEnd() {
@@ -380,7 +367,7 @@ export class Note {
         selectionStart: number;
         selectionEnd: number;
     }) {
-        const currentItem = this.items.find((item) => item.id === id);
+        const currentItem = this.itemsSignal.getValue().find((item) => item.id === id);
 
         if (!currentItem) {
             this.params.showError(`createItemAfter: item not found id=[${id}]`);
@@ -432,7 +419,7 @@ export class Note {
         this.params.noteItemsStore
             .setNoteItemCompleted(id, checked)
             .then((result) => {
-                const localItem = this.items.find((currentItem) => currentItem.id === id);
+                const localItem = this.itemsSignal.getValue().find((currentItem) => currentItem.id === id);
 
                 if (localItem) {
                     this.changeItemLocally(id, {
@@ -469,7 +456,7 @@ export class Note {
     }
 
     public mergeItemWithPrevious(id: string) {
-        const sortedItems = [...this.items].sort((first, second) => first.position - second.position);
+        const sortedItems = [...this.itemsSignal.getValue()].sort((first, second) => first.position - second.position);
         const currentIndex = sortedItems.findIndex((item) => item.id === id);
 
         if (currentIndex <= 0) {
@@ -481,7 +468,7 @@ export class Note {
         const mergedTitle = previousItem.title + currentItem.title;
         const cursorPosition = previousItem.title.length;
 
-        this.setItems(this.items.map((item) => {
+        this.itemsSignal.dispatch(this.itemsSignal.getValue().map((item) => {
             if (item.id === previousItem.id) {
                 return {
                     ...item,
@@ -504,7 +491,7 @@ export class Note {
 
     private shiftElementsToInsertOnPosition(position: number, count: number) {
         const shiftedItems = shiftItemsToInsertOnPosition(
-            this.items,
+            this.itemsSignal.getValue(),
             position,
             count
         );
