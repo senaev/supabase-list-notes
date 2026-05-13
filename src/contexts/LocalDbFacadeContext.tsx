@@ -18,7 +18,13 @@ const LocalDbFacadeContext = createContext<LocalDbFacadeContextType>(undefined);
 LocalDbFacadeContext.displayName = 'LocalDbFacadeContext';
 
 // TODO: move somewhere else
-const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase();
+const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase()
+    .catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error(error);
+
+        throw error;
+    });
 
 export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
     const localDbPromiseResult = usePromise(localDbPromise);

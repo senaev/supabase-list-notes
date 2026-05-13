@@ -28,25 +28,27 @@ type ReplicableTableName = keyof ReplicatedRowByTable;
 
 type ReplicateSupabaseOptions<T> = Parameters<typeof replicateSupabase<T>>[0];
 
+const BATCH_SIZE = 500;
+
 const COLLECTION_REPLICATION_OPTIONS: { [K in ReplicableTableName]: Omit<ReplicateSupabaseOptions<ReplicatedRowByTable[K]>, 'collection' | 'client' | 'tableName'> } = {
     notes_temp: {
         replicationIdentifier: 'notes_temp_replication',
         pull: {
-            batchSize: 100,
+            batchSize: BATCH_SIZE,
         },
         push: {
-            batchSize: 100,
+            batchSize: BATCH_SIZE,
         },
         live: true,
     },
     note_items_temp: {
         replicationIdentifier: 'note_items_temp_replication',
         pull: {
-            batchSize: 500,
+            batchSize: BATCH_SIZE,
             modifier: (item) => normalizeNoteItemPosition(item),
         },
         push: {
-            batchSize: 500,
+            batchSize: BATCH_SIZE,
             modifier: (item: WithDeleted<LocalNoteItemRow>) => normalizeNoteItemPosition(item),
         },
         live: true,

@@ -4,7 +4,7 @@ import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
 import { NoteItem } from '../types/NoteItem';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
 
-const _TABLE_COLUMNS = 'id, note_id, is_child, title, position, created_at, _modified, completed_at';
+const _TABLE_COLUMNS = 'id, note_id, is_child, title, position, created_at, updated_at, _modified, completed_at';
 
 type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
 
@@ -16,13 +16,14 @@ function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> {
         title: row.title,
         position: row.position,
         created_at: row.created_at,
+        updated_at: row.updated_at,
         _modified: row._modified,
         completed_at: row.completed_at,
     };
 }
 
 export class NoteItemsTableLocal {
-    public constructor(private readonly localDbFacade: LocalDbFacade) {}
+    public constructor(public readonly localDbFacade: LocalDbFacade) {}
 
     public async create({
         id,
@@ -44,6 +45,7 @@ export class NoteItemsTableLocal {
             completed_at,
             is_child,
             created_at: now,
+            updated_at: now,
             _modified: now,
         };
 
@@ -85,46 +87,52 @@ export class NoteItemsTableLocal {
         updates: Partial<
             Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
         >
-    ): Promise<{ _modified: string }> {
+    ): Promise<Pick<NoteItem, 'updated_at' | '_modified'>> {
         const localRow = await this.localDbFacade.note_items_temp.get(itemId);
 
         if (!localRow) {
             throw new Error(`NoteItemsTable.update(${itemId}) error: note item not found`);
         }
 
-        const _modified = new Date().toISOString();
+        const now = new Date().toISOString();
 
         await this.localDbFacade.note_items_temp.put({
             ...localRow,
             ...updates,
-            _modified,
+            updated_at: now,
+            _modified: now,
         });
 
-        return { _modified };
+        return {
+            updated_at: now,
+            _modified: now,
+        };
     }
 
     public async setCompleted(
         itemId: string,
         checked: boolean
-    ): Promise<Pick<NoteItem, 'completed_at' | '_modified'>> {
+    ): Promise<Pick<NoteItem, 'completed_at' | 'updated_at' | '_modified'>> {
         const localRow = await this.localDbFacade.note_items_temp.get(itemId);
 
         if (!localRow) {
             throw new Error(`NoteItemsTable.setCompleted(${itemId}) error: note item not found`);
         }
 
-        const _modified = new Date().toISOString();
-        const completed_at = checked ? _modified : null;
+        const now = new Date().toISOString();
+        const completed_at = checked ? now : null;
 
         await this.localDbFacade.note_items_temp.put({
             ...localRow,
             completed_at,
-            _modified,
+            updated_at: now,
+            _modified: now,
         });
 
         return {
             completed_at,
-            _modified,
+            updated_at: now,
+            _modified: now,
         };
     }
 

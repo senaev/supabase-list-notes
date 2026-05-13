@@ -1,6 +1,7 @@
 import {
     createRxDatabase, RxCollection,
     RxConflictHandler,
+    RxConflictHandlerInput,
     RxDatabase, RxDocument,
     WithDeleted,
 } from 'rxdb';
@@ -8,6 +9,7 @@ import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { Subscription } from 'rxjs';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { omitKeys } from 'senaev-utils/src/utils/Object/omitKeys/omitKeys';
 
 export type LocalNoteRow = {
     id: string;
@@ -24,6 +26,7 @@ export type LocalNoteItemRow = {
     title: string;
     position: number;
     created_at: string;
+    updated_at: string;
     completed_at: string | null;
     _modified: string;
 };
@@ -119,6 +122,10 @@ const noteItemSchema = {
             type: 'string',
             maxLength: 64,
         },
+        updated_at: {
+            type: 'string',
+            maxLength: 64,
+        },
         _modified: {
             type: 'string',
             maxLength: 64,
@@ -138,6 +145,7 @@ const noteItemSchema = {
         'title',
         'position',
         'created_at',
+        'updated_at',
         '_modified',
         'completed_at',
     ],
@@ -165,42 +173,48 @@ const metaSchema = {
     ],
 } as const;
 
-function getUpdatedAtTime(note: WithDeleted<LocalNoteRow>): number {
+function getUpdatedAtTime(note: WithDeleted<{ updated_at: string }>): number {
     return new Date(note.updated_at).getTime();
 }
 
-const noteConflictHandler: RxConflictHandler<LocalNoteRow> = {
-    isEqual: (first, second, context): boolean => {
-        if (
-            context === 'downstream-check-if-equal-1' && getUpdatedAtTime(first) < getUpdatedAtTime(second)
-        ) {
-            return true;
-        }
+/**
+ * RxDB passes this context when checking whether an incoming remote document
+ * should be written downstream into the local fork. We use it to suppress
+ * stale Supabase realtime echoes that are older than the current local edit.
+ */
+const RXDB_DOWNSTREAM_EQUALITY_CHECK_CONTEXT = 'downstream-check-if-equal-1';
 
-        return deepEqual({
-            id: first.id,
-            title: first.title,
-            created_at: first.created_at,
-            updated_at: first.updated_at,
-            _deleted: first._deleted,
-        }, {
-            id: second.id,
-            title: second.title,
-            created_at: second.created_at,
-            updated_at: second.updated_at,
-            _deleted: second._deleted,
-        });
-    },
-    resolve: ({
-        realMasterState,
-        newDocumentState,
-    }): Promise<WithDeleted<LocalNoteRow>> => {
-        const resolvedState = getUpdatedAtTime(realMasterState) > getUpdatedAtTime(newDocumentState)
-            ? realMasterState
-            : newDocumentState;
+function shouldUpdateLocalRecord<T extends {
+    updated_at: string;
+    _modified: string;
+}>(
+    first: WithDeleted<T>,
+    second: WithDeleted<T>,
+    context: string
+): boolean {
+    if (
+        context === RXDB_DOWNSTREAM_EQUALITY_CHECK_CONTEXT && getUpdatedAtTime(first) < getUpdatedAtTime(second)
+    ) {
+        return true;
+    }
 
-        return Promise.resolve(resolvedState);
-    },
+    return deepEqual(omitKeys(first, ['_modified']), omitKeys(second, ['_modified']));
+}
+
+function resolveSupabaseRecordsConflict<T extends { updated_at: string }> ({
+    realMasterState,
+    newDocumentState,
+}: RxConflictHandlerInput<T>): Promise<WithDeleted<T>> {
+    const resolvedState = getUpdatedAtTime(realMasterState) > getUpdatedAtTime(newDocumentState)
+        ? realMasterState
+        : newDocumentState;
+
+    return Promise.resolve(resolvedState);
+}
+
+const conflictHandler: RxConflictHandler<LocalNoteRow> = {
+    isEqual: shouldUpdateLocalRecord,
+    resolve: resolveSupabaseRecordsConflict,
 };
 
 export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
@@ -213,10 +227,11 @@ export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections
     await database.addCollections({
         notes_temp: {
             schema: noteSchema,
-            conflictHandler: noteConflictHandler,
+            conflictHandler,
         },
         note_items_temp: {
             schema: noteItemSchema,
+            conflictHandler,
         },
         meta: {
             schema: metaSchema,

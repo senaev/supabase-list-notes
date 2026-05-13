@@ -1,7 +1,14 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+import { RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
 import { Subscription } from 'rxjs';
+import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
+import { LocalNoteItemRow } from '../localDb/LocalDbFacade';
+import { startReplication } from '../localDb/replication';
 import { NoteItemsTableLocal } from '../tables/NoteItemsTableLocal';
 import { NoteItem } from '../types/NoteItem';
+
+import { SupabaseClientSignal } from './SupabaseController';
 
 type Listener = () => void;
 
@@ -10,11 +17,18 @@ export class NoteItemsStore {
     private listeners = new Set<Listener>();
     private subscription: Subscription | null = null;
     private observePromise: Promise<void> | null = null;
+    private replicationState: RxSupabaseReplicationState<LocalNoteItemRow> | undefined;
 
     public constructor(private readonly params: {
         noteItemsTable: NoteItemsTableLocal;
+        supabaseControllerClientSignal: SupabaseClientSignal;
         showError: (message: string) => void;
-    }) {}
+    }) {
+        subscribeSignalAndCallWithCurrentValue(
+            this.params.supabaseControllerClientSignal,
+            this.startReplicationWithClient
+        );
+    }
 
     public connect(): void {
         if (this.subscription || this.observePromise) {
@@ -65,4 +79,37 @@ export class NoteItemsStore {
             listener();
         });
     }
+
+    private readonly startReplicationWithClient = (client: SupabaseClient | undefined): void => {
+        if (this.replicationState) {
+            this.replicationState.remove();
+        }
+
+        if (client === undefined) {
+            this.replicationState = undefined;
+
+            return;
+        }
+
+        this.replicationState = startReplication({
+            collectionName: 'note_items_temp',
+            supabase: client,
+            localDbFacade: this.params.noteItemsTable.localDbFacade,
+            onError: (error) => {
+                // eslint-disable-next-line no-console
+                console.error('note items replication error', error);
+            },
+            onActiveChange: (_isActive) => {
+                //
+            },
+            onReceived: (record) => {
+                // eslint-disable-next-line no-console
+                console.log('Received item record:', record);
+            },
+            onSent: (record) => {
+                // eslint-disable-next-line no-console
+                console.log('Sent item record:', record);
+            },
+        });
+    };
 }

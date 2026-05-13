@@ -54,6 +54,7 @@ create table public.note_items_temp (
     title text not null,
     position bigint not null,
     created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
     completed_at timestamptz,
     _modified timestamptz not null default now(),
     _deleted boolean not null default false
