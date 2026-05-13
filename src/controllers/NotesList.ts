@@ -103,24 +103,14 @@ export class NotesList {
             collectionName: 'notes_temp',
             supabase: client,
             localDbFacade: this.params.notesListTableLocal.localDbFacade,
-            onError: (error) => {
-                // eslint-disable-next-line no-console
-                console.error('notes replication error', error);
+            onError: (_error) => {
             },
             onActiveChange: (_isActive) => {
-
             },
-            onReceived: (record) => {
-                // eslint-disable-next-line no-console
-                console.log('Received record:', record);
+            onReceived: (_record) => {
             },
-            onSent: (record) => {
-                // eslint-disable-next-line no-console
-                console.log('Sent record:', record);
+            onSent: (_record) => {
             },
         });
-
-        // eslint-disable-next-line no-console
-        console.log(this.replicationState);
     };
 }
