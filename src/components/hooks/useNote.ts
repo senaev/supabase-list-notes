@@ -19,14 +19,22 @@ export function useNote({
     ] = useState<number>(0);
 
     const noteItemsStore = useNoteItemsStore();
-    const note = useMemo(() => new Note({
-        noteItemsStore,
-        noteId,
-        onChange: () => {
+    const note = useMemo(() => {
+        const newNote = new Note({
+            noteItemsStore,
+            noteId,
+            onChange: () => {
+                setVer((prev) => prev + 1);
+            },
+            showError,
+        });
+
+        newNote.pendingFocusSignal.subscribe(() => {
             setVer((prev) => prev + 1);
-        },
-        showError,
-    }), [
+        });
+
+        return newNote;
+    }, [
         noteItemsStore,
         noteId,
         showError,

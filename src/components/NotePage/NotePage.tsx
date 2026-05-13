@@ -51,13 +51,15 @@ export function NotePage({ noteId }: { noteId: string }) {
     const checked = flattenGroups(parentGroups.checked);
 
     useEffect(() => {
-        if (list.pendingFocus == null) {
+        const pendingFocus = list.pendingFocusSignal.getValue();
+
+        if (pendingFocus == null) {
             return;
         }
 
         const {
             selectionEnd, selectionStart, id,
-        } = list.pendingFocus;
+        } = pendingFocus;
 
         const input = inputRefs.current.get(id);
 
@@ -68,7 +70,7 @@ export function NotePage({ noteId }: { noteId: string }) {
         ignoreNextSelectionRef.current = true;
         input.focus();
         input.setSelectionRange(selectionStart, selectionEnd);
-        list.setPendingFocus(null);
+        list.pendingFocusSignal.dispatch(null);
     }, [list]);
 
     useEffect(() => {
@@ -119,7 +121,7 @@ export function NotePage({ noteId }: { noteId: string }) {
             maxPositionInFirstLine
         );
 
-        list.setPendingFocus({
+        list.pendingFocusSignal.dispatch({
             id: targetItem.id,
             selectionStart: selectionPosition,
             selectionEnd: selectionPosition,

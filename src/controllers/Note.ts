@@ -27,7 +27,7 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
 const PENDING_COMPLETED_AT = '__pending__';
 
 export class Note {
-    public pendingFocus: PendingFocus | null = null;
+    public pendingFocusSignal = new Signal<PendingFocus | null>(null);
 
     public itemsSignal = new Signal<NoteItem[]>([], deepEqual);
 
@@ -218,11 +218,6 @@ export class Note {
             });
     }
 
-    public setPendingFocus(focus: PendingFocus | null) {
-        this.pendingFocus = focus;
-        this.params.onChange();
-    }
-
     public moveItems(
         id: string,
         {
@@ -329,7 +324,7 @@ export class Note {
             newItem,
         ]);
 
-        this.setPendingFocus({
+        this.pendingFocusSignal.dispatch({
             id: newItem.id,
             selectionStart: 0,
             selectionEnd: 0,
@@ -482,7 +477,7 @@ export class Note {
         this.persistItem(previousItem.id, { title: mergedTitle });
         this.removeItemLocally(currentItem.id);
         this.removeItemRemotely(currentItem.id);
-        this.setPendingFocus({
+        this.pendingFocusSignal.dispatch({
             id: previousItem.id,
             selectionStart: cursorPosition,
             selectionEnd: cursorPosition,
