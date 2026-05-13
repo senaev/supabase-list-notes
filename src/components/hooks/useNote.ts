@@ -14,7 +14,7 @@ export function useNote(params: {
         setVer,
     ] = useState<number>(0);
 
-    const { noteItemsStore, noteItemsTableLocal: noteItemsTable } = useTablesContext();
+    const { noteItemsStore } = useTablesContext();
 
     const ref = useRef<{ noteId: string; note: Note } | null>(null);
 
@@ -27,7 +27,6 @@ export function useNote(params: {
             note: new Note({
                 ...params,
                 noteItemsStore,
-                noteItemsTable,
                 onChange: () => {
                     setVer((prev) => prev + 1);
                 },
