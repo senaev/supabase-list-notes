@@ -4,7 +4,7 @@ import { NBSP } from 'senaev-utils/src/const/chars/NBSP';
 
 import { ROUTES } from '../../const/ROUTES';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
-import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
+import { useNotesListRecords, useNotesListStore } from '../../contexts/NotesListStoreContext';
 import { ContextMenu } from '../ContextMenu/ContextMenu';
 import { PageHeader } from '../PageHeader/PageHeader';
 import './NoteHeader.css';
@@ -18,8 +18,8 @@ export function NoteHeader({
 }) {
     const navigate = useNavigate();
 
-    const notesList = useNotesListContext();
-    const notes = useNoteRecords();
+    const notesList = useNotesListStore();
+    const notes = useNotesListRecords();
 
     const noteItem = notes?.find((list) => list.id === noteId);
 

@@ -11,13 +11,13 @@ import { NoteRecord, NotesListStore } from '../controllers/NotesListStore';
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 import { useSupabaseControllerStatus } from './SupabaseControllerContext';
 
-type NotesListContextType = NotesListStore | undefined;
+type NotesListStoreContextType = NotesListStore | undefined;
 
-const NotesListContext = createContext<NotesListContextType>(undefined);
+const NotesListStoreContext = createContext<NotesListStoreContextType>(undefined);
 
-NotesListContext.displayName = 'NotesListContext';
+NotesListStoreContext.displayName = 'NotesListStoreContext';
 
-export const NotesListContextProvider = ({
+export const NotesListStoreContextProvider = ({
     children,
     showError,
 }: PropsWithChildren & {
@@ -36,13 +36,13 @@ export const NotesListContextProvider = ({
         showError,
     ]);
 
-    return <NotesListContext.Provider value={notesList}>
+    return <NotesListStoreContext.Provider value={notesList}>
         {children}
-    </NotesListContext.Provider>;
+    </NotesListStoreContext.Provider>;
 };
 
-export const useNotesListContext = (): NotesListStore => {
-    const notesList = useContext(NotesListContext);
+export const useNotesListStore = (): NotesListStore => {
+    const notesList = useContext(NotesListStoreContext);
 
     if (!notesList) {
         throw new Error('useNotesListContext must be used inside NotesListContext.Provider');
@@ -51,8 +51,8 @@ export const useNotesListContext = (): NotesListStore => {
     return notesList;
 };
 
-export const useNoteRecords = (): NoteRecord[] | undefined => {
-    const { recordsSignal } = useNotesListContext();
+export const useNotesListRecords = (): NoteRecord[] | undefined => {
+    const { recordsSignal } = useNotesListStore();
 
     const items = useSignal(recordsSignal);
 

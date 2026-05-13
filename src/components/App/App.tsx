@@ -7,9 +7,9 @@ import {
 
 import { LocalDbFacadeContextProvider, useLocalDbFacade } from '../../contexts/LocalDbFacadeContext';
 import {
-    NotesListContextProvider,
-    useNoteRecords,
-} from '../../contexts/NotesListContext';
+    NotesListStoreContextProvider,
+    useNotesListRecords,
+} from '../../contexts/NotesListStoreContext';
 import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
@@ -25,7 +25,7 @@ import { NotePage } from '../NotePage/NotePage';
 
 export function NoteRouteElement() {
     const { noteId } = useParams<{ noteId: string }>();
-    const notes = useNoteRecords();
+    const notes = useNotesListRecords();
 
     if (!noteId) {
         return <ErrorPage errorMessage={'404: Note id absent'}/>;
@@ -56,7 +56,7 @@ export function NotesApp() {
     const { showError } = useToastsContext();
 
     return <TablesContextProvider showError={showError}>
-        <NotesListContextProvider showError={showError}>
+        <NotesListStoreContextProvider showError={showError}>
             <Routes>
                 <Route
                     path={'/'}
@@ -71,7 +71,7 @@ export function NotesApp() {
                     element={<ErrorPage errorMessage={'404: Page not found'}/>}
                 />
             </Routes>
-        </NotesListContextProvider>
+        </NotesListStoreContextProvider>
     </TablesContextProvider>;
 }
 

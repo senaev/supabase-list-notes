@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 
-import { useNotesListContext } from '../../contexts/NotesListContext';
+import { useNotesListStore } from '../../contexts/NotesListStoreContext';
 
 export function useCreateNewNote() {
-    const notesList = useNotesListContext();
+    const notesList = useNotesListStore();
     const navigate = useNavigate();
 
     return async () => {

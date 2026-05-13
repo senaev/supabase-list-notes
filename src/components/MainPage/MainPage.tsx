@@ -11,7 +11,7 @@ import { NBSP } from 'senaev-utils/src/const/chars/NBSP';
 import { APP_BASE_URL } from '../../const/APP_BASE_URL';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
 import { UNTITLED_PLACEHOLDER } from '../../const/UNTITLED_PLACEHOLDER';
-import { useNoteRecords, useNotesListContext } from '../../contexts/NotesListContext';
+import { useNotesListRecords, useNotesListStore } from '../../contexts/NotesListStoreContext';
 import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerContext';
 import { useTablesContext } from '../../contexts/TablesContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
@@ -22,7 +22,7 @@ import { useCreateNewNote } from '../hooks/useCreateNewNote';
 
 function MainPageContent() {
     const createNewNote = useCreateNewNote();
-    const notes = useNoteRecords();
+    const notes = useNotesListRecords();
     const { noteItemsStore } = useTablesContext();
     const navigate = useNavigate();
     const [
@@ -137,7 +137,7 @@ export function MainPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const { showError, showInfoMessage } = useToastsContext();
-    const notesList = useNotesListContext();
+    const notesList = useNotesListStore();
     const supabaseControllerStatus = useSupabaseControllerStatus();
     const createNewNote = useCreateNewNote();
 
