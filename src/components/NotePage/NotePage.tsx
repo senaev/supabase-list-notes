@@ -10,12 +10,14 @@ import {
 } from 'react';
 import { captureDragAndDrop } from 'senaev-utils/src/utils/DOM/captureDragAndDrop/captureDragAndDrop';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
+import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
+import { PENDING_FOCUS_SIGNAL } from '../../const/PENDING_FOCUS_SIGNAL';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { flattenGroups } from '../../controllers/Note';
 import { NoteItem } from '../../types/NoteItem';
-import { NoteItemElement } from '../NoteItemElement/NoteItemElement';
 import { useNote } from '../hooks/useNote';
+import { NoteItemElement } from '../NoteItemElement/NoteItemElement';
 
 const PLACEHOLDER_ITEM_ID_PREFIX = 'placeholder:';
 
@@ -50,15 +52,17 @@ export function NotePage({ noteId }: { noteId: string }) {
     const unchecked = flattenGroups(parentGroups.unchecked);
     const checked = flattenGroups(parentGroups.checked);
 
-    useEffect(() => {
-        const pendingFocus = list.pendingFocusSignal.getValue();
+    const pendingFocus = useSignal(PENDING_FOCUS_SIGNAL);
 
+    useEffect(() => {
         if (pendingFocus == null) {
             return;
         }
 
         const {
-            selectionEnd, selectionStart, inputElementId,
+            inputElementId,
+            selectionEnd,
+            selectionStart,
         } = pendingFocus;
 
         const input = inputRefs.current.get(inputElementId);
@@ -70,8 +74,11 @@ export function NotePage({ noteId }: { noteId: string }) {
         ignoreNextSelectionRef.current = true;
         input.focus();
         input.setSelectionRange(selectionStart, selectionEnd);
-        list.pendingFocusSignal.dispatch(null);
-    }, [list]);
+        PENDING_FOCUS_SIGNAL.dispatch(null);
+    }, [
+        list,
+        pendingFocus,
+    ]);
 
     useEffect(() => {
         inputRefs.current.forEach((input) => {
@@ -121,7 +128,7 @@ export function NotePage({ noteId }: { noteId: string }) {
             maxPositionInFirstLine
         );
 
-        list.pendingFocusSignal.dispatch({
+        PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: targetItem.id,
             selectionStart: selectionPosition,
             selectionEnd: selectionPosition,

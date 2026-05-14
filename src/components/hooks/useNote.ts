@@ -29,10 +29,6 @@ export function useNote({
             showError,
         });
 
-        newNote.pendingFocusSignal.subscribe(() => {
-            setVer((prev) => prev + 1);
-        });
-
         return newNote;
     }, [
         noteItemsStore,

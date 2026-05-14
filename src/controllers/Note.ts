@@ -3,16 +3,11 @@ import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
+import { PENDING_FOCUS_SIGNAL } from '../const/PENDING_FOCUS_SIGNAL';
 import { NoteItem } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
 
 import { NoteItemsStore } from './NoteItemsStore';
-
-export type PendingFocus = {
-    inputElementId: string;
-    selectionStart: number;
-    selectionEnd: number;
-};
 
 export type ItemParentGroup = { parent: NoteItem; children: NoteItem[] };
 
@@ -27,8 +22,6 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
 const PENDING_COMPLETED_AT = '__pending__';
 
 export class Note {
-    public pendingFocusSignal = new Signal<PendingFocus | null>(null);
-
     public itemsSignal = new Signal<NoteItem[]>([], deepEqual);
 
     private destroyLatch = new Latch();
@@ -324,7 +317,7 @@ export class Note {
             newItem,
         ]);
 
-        this.pendingFocusSignal.dispatch({
+        PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: newItem.id,
             selectionStart: 0,
             selectionEnd: 0,
@@ -477,7 +470,7 @@ export class Note {
         this.persistItem(previousItem.id, { title: mergedTitle });
         this.removeItemLocally(currentItem.id);
         this.removeItemRemotely(currentItem.id);
-        this.pendingFocusSignal.dispatch({
+        PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: previousItem.id,
             selectionStart: cursorPosition,
             selectionEnd: cursorPosition,
