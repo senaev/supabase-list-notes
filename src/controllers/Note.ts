@@ -7,7 +7,7 @@ import { PENDING_FOCUS_SIGNAL } from '../const/PENDING_FOCUS_SIGNAL';
 import { NoteItem } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
 
-import { NoteItemsStore } from './NoteItemsStore';
+import { NoteItemCreateParams, NoteItemsStore } from './NoteItemsStore';
 
 export type ItemParentGroup = { parent: NoteItem; children: NoteItem[] };
 
@@ -18,8 +18,6 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
         return acc;
     }, []);
 }
-
-const PENDING_COMPLETED_AT = '__pending__';
 
 export class Note {
     public itemsSignal = new Signal<NoteItem[]>([], deepEqual);
@@ -127,46 +125,8 @@ export class Note {
         updates: Partial<
             Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
         >
-    ): void {
-        const itemToUpdate = this.itemsSignal.getValue().find((item) => item.id === id);
-
-        if (!itemToUpdate) {
-            this.params.showError(`persistItem: item with id ${id} not found`);
-
-            return;
-        }
-
-        const now = new Date().toISOString();
-
-        this.changeItemLocally(id, {
-            updated_at: now,
-            _modified: now,
-        });
-
-        if (updates.completed_at === PENDING_COMPLETED_AT) {
-            this.params.noteItemsStore
-                .setNoteItemCompleted(id, true)
-                .then((result) => {
-                    const localItem = this.itemsSignal.getValue().find((item) => item.id === id);
-
-                    if (localItem) {
-                        this.changeItemLocally(id, {
-                            completed_at: result.completed_at,
-                            updated_at: result.updated_at,
-                            _modified: result._modified,
-                        });
-                    }
-                })
-                .catch((error) => {
-                    const itemStillExists = this.itemsSignal.getValue().some((item) => item.id === id);
-
-                    this.params.showError(`persistItem(setCompleted): error id=[${id}] [${error.message}] itemStillExists=[${itemStillExists}]`);
-                });
-
-            return;
-        }
-
-        this.params.noteItemsStore
+    ): Promise<void> {
+        return this.params.noteItemsStore
             .updateNoteItem(id, updates)
             .then((result) => {
                 // Check that local item has not been removed during update
@@ -264,9 +224,9 @@ export class Note {
 
     public insertItem({
         title,
-    completed_at,
-    position,
-    is_child,
+        completed_at,
+        position,
+        is_child,
     }: {
         title: string;
         completed_at: string | null;
@@ -275,22 +235,14 @@ export class Note {
     }) {
         this.shiftElementsToInsertOnPosition(position, 1);
 
-        const newItem: NoteItem = {
+        const newItem: NoteItemCreateParams = {
             id: crypto.randomUUID(),
             note_id: this.params.noteId,
             title,
-            created_at: '',
-            updated_at: '',
-            _modified: '',
             position,
             completed_at,
             is_child,
         };
-
-        this.itemsSignal.dispatch([
-            ...this.itemsSignal.getValue(),
-            newItem,
-        ]);
 
         PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: newItem.id,
@@ -323,8 +275,8 @@ export class Note {
 
     public createItemAfter({
         id,
-    selectionStart,
-    selectionEnd,
+        selectionStart,
+        selectionEnd,
     }: {
         id: string;
         selectionStart: number;
@@ -343,7 +295,6 @@ export class Note {
 
         const previousParams = { title: titlePrevious };
 
-        this.changeItemLocally(id, previousParams);
         this.persistItem(id, previousParams);
 
         const nextPosition = currentItem.position + 1;
@@ -374,10 +325,6 @@ export class Note {
 
             return;
         }
-
-        this.changeItemLocally(id, {
-            completed_at: checked ? PENDING_COMPLETED_AT : null,
-        });
 
         this.params.noteItemsStore
             .setNoteItemCompleted(id, checked)
@@ -453,19 +400,16 @@ export class Note {
         });
     }
 
-    private shiftElementsToInsertOnPosition(position: number, count: number) {
+    private async shiftElementsToInsertOnPosition(position: number, count: number) {
         const shiftedItems = shiftItemsToInsertOnPosition(
             this.itemsSignal.getValue(),
             position,
             count
         );
 
-        shiftedItems.forEach((nextPosition, id) => {
-            this.changeItemLocally(id, {
-                position: nextPosition,
-            });
-
-            this.persistItem(id, { position: nextPosition });
-        });
+        await Promise.all(shiftedItems.entries().map(([
+            id,
+            nextPosition,
+        ]) => this.persistItem(id, { position: nextPosition })));
     }
 }

@@ -22,6 +22,11 @@ const DRAG_STATE_CLASSES: Record<DragState, string[]> = {
 
 export type DragStartCallback = (event: PointerEvent<HTMLDivElement>) => void;
 
+/**
+ * null if element is detached
+ */
+export type OnNoteItemInputElementRefChangeCallback = (id: string, inputElement: HTMLTextAreaElement | null) => void;
+
 export function NoteItemElement({
     item,
     toggleChecked,
@@ -31,7 +36,7 @@ export function NoteItemElement({
     dragState,
     onDragStart,
     resizeTextarea,
-    inputRefs,
+    onNoteItemInputElementRefChange,
     onTextSelectionChange,
     readonlyText,
 }: {
@@ -43,7 +48,7 @@ export function NoteItemElement({
     dragState: DragState | undefined;
     onDragStart: DragStartCallback | undefined;
     resizeTextarea: (input: HTMLTextAreaElement) => void;
-    inputRefs: React.RefObject<Map<string, HTMLTextAreaElement>>;
+    onNoteItemInputElementRefChange: OnNoteItemInputElementRefChangeCallback;
     readonlyText: boolean;
     onTextSelectionChange: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
 }) {
@@ -92,11 +97,10 @@ export function NoteItemElement({
                     className={'NoteItemElement__input'}
                     ref={(node) => {
                         if (node) {
-                            inputRefs.current.set(item.id, node);
                             resizeTextarea(node);
-                        } else {
-                            inputRefs.current.delete(item.id);
                         }
+
+                        onNoteItemInputElementRefChange(item.id, node);
                     }}
                     onChange={(event) => {
                         resizeTextarea(event.currentTarget);

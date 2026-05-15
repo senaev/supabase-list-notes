@@ -10,14 +10,13 @@ import {
 } from 'react';
 import { captureDragAndDrop } from 'senaev-utils/src/utils/DOM/captureDragAndDrop/captureDragAndDrop';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
-import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 
 import { PENDING_FOCUS_SIGNAL } from '../../const/PENDING_FOCUS_SIGNAL';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { flattenGroups } from '../../controllers/Note';
 import { NoteItem } from '../../types/NoteItem';
 import { useNote } from '../hooks/useNote';
-import { NoteItemElement } from '../NoteItemElement/NoteItemElement';
+import { NoteItemElement, OnNoteItemInputElementRefChangeCallback } from '../NoteItemElement/NoteItemElement';
 
 const PLACEHOLDER_ITEM_ID_PREFIX = 'placeholder:';
 
@@ -32,6 +31,67 @@ type DragState = {
     y: number;
 };
 
+function checkPendingFocus(): void {
+    const pendingFocus = PENDING_FOCUS_SIGNAL.getValue();
+
+    if (pendingFocus == null) {
+        return;
+    }
+
+    const {
+        inputElementId,
+        selectionEnd,
+        selectionStart,
+    } = pendingFocus;
+
+    const input = inputElements.get(inputElementId);
+
+    if (!input) {
+        return;
+    }
+
+    ignoreNextSelection = true;
+    input.focus();
+    input.setSelectionRange(selectionStart, selectionEnd);
+    PENDING_FOCUS_SIGNAL.dispatch(null);
+}
+
+PENDING_FOCUS_SIGNAL.subscribe(checkPendingFocus);
+
+let ignoreNextSelection = false;
+let desiredCaretPosition = 0;
+const inputElements = new Map<string, HTMLTextAreaElement>();
+const onNoteItemInputElementRefChange: OnNoteItemInputElementRefChangeCallback = (id, inputElement) => {
+    if (inputElement) {
+        inputElements.set(id, inputElement);
+        checkPendingFocus();
+    } else {
+        inputElements.delete(id);
+    }
+};
+
+function saveCaretPosition(event: SyntheticEvent<HTMLTextAreaElement>) {
+    if (ignoreNextSelection) {
+        ignoreNextSelection = false;
+
+        return;
+    }
+
+    const {
+        selectionDirection, selectionStart, selectionEnd,
+    } = event.currentTarget;
+    const caretPosition = selectionDirection === 'backward' ? selectionStart : selectionEnd;
+
+    if (caretPosition == null) {
+        return;
+    }
+
+    const lineStart = event.currentTarget.value.lastIndexOf('\n', caretPosition - 1) + 1;
+    const nextDesiredCaretPosition = caretPosition - lineStart;
+
+    desiredCaretPosition = nextDesiredCaretPosition;
+}
+
 export function NotePage({ noteId }: { noteId: string }) {
     const { showError } = useToastsContext();
     const list = useNote({
@@ -42,9 +102,6 @@ export function NotePage({ noteId }: { noteId: string }) {
         dragState,
         setDragState,
     ] = useState<DragState | null>(null);
-    const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
-    const desiredCaretPositionRef = useRef(0);
-    const ignoreNextSelectionRef = useRef(false);
     const itemsContainerRef = useRef<HTMLDivElement>(null);
     const itemsContainer = itemsContainerRef.current;
 
@@ -52,36 +109,8 @@ export function NotePage({ noteId }: { noteId: string }) {
     const unchecked = flattenGroups(parentGroups.unchecked);
     const checked = flattenGroups(parentGroups.checked);
 
-    const pendingFocus = useSignal(PENDING_FOCUS_SIGNAL);
-
     useEffect(() => {
-        if (pendingFocus == null) {
-            return;
-        }
-
-        const {
-            inputElementId,
-            selectionEnd,
-            selectionStart,
-        } = pendingFocus;
-
-        const input = inputRefs.current.get(inputElementId);
-
-        if (!input) {
-            return;
-        }
-
-        ignoreNextSelectionRef.current = true;
-        input.focus();
-        input.setSelectionRange(selectionStart, selectionEnd);
-        PENDING_FOCUS_SIGNAL.dispatch(null);
-    }, [
-        list,
-        pendingFocus,
-    ]);
-
-    useEffect(() => {
-        inputRefs.current.forEach((input) => {
+        inputElements.forEach((input) => {
             resizeTextarea(input);
         });
     }, [list]);
@@ -89,72 +118,6 @@ export function NotePage({ noteId }: { noteId: string }) {
     function resizeTextarea(input: HTMLTextAreaElement) {
         input.style.height = 'auto';
         input.style.height = `${input.scrollHeight}px`;
-    }
-
-    function moveCaretBetweenItems({
-        id,
-        direction,
-    }: {
-        id: string;
-        direction: 'up' | 'down';
-    }) {
-        const currentParentGroups = list.getItemGroupsSplit();
-        const currentUnchecked = flattenGroups(currentParentGroups.unchecked);
-        const currentChecked = flattenGroups(currentParentGroups.checked);
-
-        const sortedItems = currentUnchecked.find((item) => item.id === id)
-            ? currentUnchecked
-            : currentChecked;
-
-        const currentIndex = sortedItems.findIndex((item) => item.id === id);
-
-        if (currentIndex === -1) {
-            showError('Unable to find item to move caret from');
-
-            return;
-        }
-
-        const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-        const targetItem = sortedItems[targetIndex];
-
-        if (!targetItem) {
-            return;
-        }
-
-        const firstLineLength = targetItem.title.indexOf('\n');
-        const maxPositionInFirstLine = firstLineLength === -1 ? targetItem.title.length : firstLineLength;
-        const selectionPosition = Math.min(
-            desiredCaretPositionRef.current,
-            maxPositionInFirstLine
-        );
-
-        PENDING_FOCUS_SIGNAL.dispatch({
-            inputElementId: targetItem.id,
-            selectionStart: selectionPosition,
-            selectionEnd: selectionPosition,
-        });
-    }
-
-    function saveCaretPosition(event: SyntheticEvent<HTMLTextAreaElement>) {
-        if (ignoreNextSelectionRef.current) {
-            ignoreNextSelectionRef.current = false;
-
-            return;
-        }
-
-        const {
-            selectionDirection, selectionStart, selectionEnd,
-        } = event.currentTarget;
-        const caretPosition = selectionDirection === 'backward' ? selectionStart : selectionEnd;
-
-        if (caretPosition == null) {
-            return;
-        }
-
-        const lineStart = event.currentTarget.value.lastIndexOf('\n', caretPosition - 1) + 1;
-        const nextDesiredCaretPosition = caretPosition - lineStart;
-
-        desiredCaretPositionRef.current = nextDesiredCaretPosition;
     }
 
     function isCaretOnFirstLine(input: HTMLTextAreaElement) {
@@ -205,15 +168,49 @@ export function NotePage({ noteId }: { noteId: string }) {
                 : isCaretOnLastLine(event.currentTarget));
 
             if (!shouldMoveToAdjacentItem) {
-                ignoreNextSelectionRef.current = true;
+                ignoreNextSelection = true;
 
                 return;
             }
 
             event.preventDefault();
-            moveCaretBetweenItems({
-                id: item.id,
-                direction: event.key === 'ArrowUp' ? 'up' : 'down',
+            const sourceInputId = item.id;
+            const direction = event.key === 'ArrowUp' ? 'up' : 'down';
+
+            const currentParentGroups = list.getItemGroupsSplit();
+            const currentUnchecked = flattenGroups(currentParentGroups.unchecked);
+            const currentChecked = flattenGroups(currentParentGroups.checked);
+
+            const sortedItems = currentUnchecked.find((currentItem) => currentItem.id === sourceInputId)
+                ? currentUnchecked
+                : currentChecked;
+
+            const currentIndex = sortedItems.findIndex((currentItem) => currentItem.id === sourceInputId);
+
+            if (currentIndex === -1) {
+                showError('Unable to find item to move caret from');
+
+                return;
+            }
+
+            const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            const targetItem = sortedItems[targetIndex];
+
+            if (!targetItem) {
+                return;
+            }
+
+            const firstLineLength = targetItem.title.indexOf('\n');
+            const maxPositionInFirstLine = firstLineLength === -1 ? targetItem.title.length : firstLineLength;
+            const selectionPosition = Math.min(
+                desiredCaretPosition,
+                maxPositionInFirstLine
+            );
+
+            PENDING_FOCUS_SIGNAL.dispatch({
+                inputElementId: targetItem.id,
+                selectionStart: selectionPosition,
+                selectionEnd: selectionPosition,
             });
         }
 
@@ -447,7 +444,7 @@ export function NotePage({ noteId }: { noteId: string }) {
                   });
               }}
               resizeTextarea={resizeTextarea}
-              inputRefs={inputRefs}
+              onNoteItemInputElementRefChange={onNoteItemInputElementRefChange}
               readonlyText={false}
           />)}
           <button
@@ -489,7 +486,7 @@ export function NotePage({ noteId }: { noteId: string }) {
                       return <NoteItemElement
                           key={i}
                           dragState={'overlay'}
-                          inputRefs={inputRefs}
+                          onNoteItemInputElementRefChange={onNoteItemInputElementRefChange}
                           item={{
                               ...item,
                               is_child,
@@ -525,7 +522,7 @@ export function NotePage({ noteId }: { noteId: string }) {
                   dragState={undefined}
                   onDragStart={undefined}
                   resizeTextarea={noop}
-                  inputRefs={inputRefs}
+                  onNoteItemInputElementRefChange={onNoteItemInputElementRefChange}
                   readonlyText={true}
               />)}
           </>}

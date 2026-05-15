@@ -15,6 +15,11 @@ const _TABLE_COLUMNS = 'id, note_id, is_child, title, position, created_at, upda
 
 type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
 
+export type NoteItemCreateParams = Pick<
+    NoteItem,
+    'id' | 'note_id' | 'title' | 'position' | 'completed_at' | 'is_child'
+>;
+
 function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> {
     return {
         id: row.id,
@@ -63,10 +68,7 @@ export class NoteItemsStore {
         position,
         completed_at,
         is_child,
-    }: Pick<
-        NoteItem,
-    'id' | 'note_id' | 'title' | 'position' | 'completed_at' | 'is_child'
-    >): Promise<Pick<NoteItem, TableColumns>> {
+    }: NoteItemCreateParams): Promise<Pick<NoteItem, TableColumns>> {
         const now = new Date().toISOString();
         const localRow: LocalNoteItemRow = {
             id,
