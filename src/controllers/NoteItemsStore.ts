@@ -78,6 +78,7 @@ export class NoteItemsStore {
             created_at: now,
             updated_at: now,
             _modified: now,
+            _deleted: false,
         };
 
         await this.params.localDbFacade.note_items_temp.put(localRow);
@@ -158,7 +159,9 @@ export class NoteItemsStore {
             collectionName: 'note_items_temp',
             supabase: client,
             localDbFacade: this.params.localDbFacade,
-            onError: (_error) => {
+            onError: (error) => {
+                // eslint-disable-next-line no-console
+                console.error('Replication error: ', error);
             },
             onActiveChange: (_isActive) => {
             },

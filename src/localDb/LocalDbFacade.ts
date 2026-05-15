@@ -17,6 +17,7 @@ export type LocalNoteRow = {
     created_at: string;
     updated_at: string;
     _modified: string;
+    _deleted: boolean;
 };
 
 export type LocalNoteItemRow = {
@@ -29,6 +30,7 @@ export type LocalNoteItemRow = {
     updated_at: string;
     completed_at: string | null;
     _modified: string;
+    _deleted: boolean;
 };
 
 type LocalMetaRow = {

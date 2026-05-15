@@ -116,35 +116,10 @@ export class Note {
                 : item));
     }
 
-    public removeItemLocally(id: string): void {
-        const itemToRemove = this.itemsSignal.getValue().find((item) => item.id === id);
-
-        if (!itemToRemove) {
-            this.params.showError(`removeItem: item with id ${id} not found`);
-
-            return;
-        }
-
-        this.itemsSignal.dispatch(this.itemsSignal.getValue().filter((item) => item.id !== id));
-    }
-
-    public removeItemRemotely(id: string): void {
+    public removeItem(id: string) {
         this.params.noteItemsStore.deleteNoteItem(id).catch((error) => {
             this.params.showError(error.message);
         });
-    }
-
-    public removeItem(id: string) {
-        const item = this.itemsSignal.getValue().find((candidate) => candidate.id === id);
-
-        if (!item) {
-            this.params.showError(`removeItem: item with id ${id} not found`);
-
-            return;
-        }
-
-        this.removeItemLocally(id);
-        this.removeItemRemotely(id);
     }
 
     public persistItem(
@@ -468,8 +443,9 @@ export class Note {
         }));
 
         this.persistItem(previousItem.id, { title: mergedTitle });
-        this.removeItemLocally(currentItem.id);
-        this.removeItemRemotely(currentItem.id);
+
+        this.removeItem(currentItem.id);
+
         PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: previousItem.id,
             selectionStart: cursorPosition,

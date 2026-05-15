@@ -89,6 +89,7 @@ export class NotesListStore {
             created_at: now,
             updated_at: now,
             _modified: now,
+            _deleted: false,
         };
 
         await this.params.localDbFacade.notes_temp.put(localRow);
