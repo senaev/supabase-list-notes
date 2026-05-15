@@ -10,8 +10,9 @@ import {
 } from 'react';
 import { captureDragAndDrop } from 'senaev-utils/src/utils/DOM/captureDragAndDrop/captureDragAndDrop';
 import { noop } from 'senaev-utils/src/utils/Function/noop';
+import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
-import { PENDING_FOCUS_SIGNAL } from '../../const/PENDING_FOCUS_SIGNAL';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { flattenGroups } from '../../controllers/Note';
 import { NoteItem } from '../../types/NoteItem';
@@ -30,6 +31,16 @@ type DragState = {
     x: number;
     y: number;
 };
+
+export type PendingFocus = {
+    inputElementId: string;
+    selectionStart: number;
+    selectionEnd: number;
+};
+
+export type PendingFocusSignalValue = PendingFocus | null;
+
+export const PENDING_FOCUS_SIGNAL = new Signal<PendingFocusSignalValue>(null, deepEqual);
 
 function checkPendingFocus(): void {
     const pendingFocus = PENDING_FOCUS_SIGNAL.getValue();

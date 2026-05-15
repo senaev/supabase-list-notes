@@ -3,7 +3,7 @@ import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
-import { PENDING_FOCUS_SIGNAL } from '../const/PENDING_FOCUS_SIGNAL';
+import { PENDING_FOCUS_SIGNAL } from '../components/NotePage/NotePage';
 import { NoteItem } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
 
