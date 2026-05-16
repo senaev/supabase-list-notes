@@ -15,11 +15,12 @@ export type ItemsInfo = {
     uncheckedParentGroupMap: ItemParentGroupMap;
     uncheckedFlatten: NoteItem[];
     checkedParentGroupMap: ItemParentGroupMap;
+    checkedFlatten: NoteItem[];
     itemMap: Map<NoteItemId, NoteItem>;
     childToParentMap: Map<NoteItemId, NoteItem>;
 };
 
-export function flattenGroups(groups: ItemParentGroupMap): NoteItem[] {
+function flattenGroups(groups: ItemParentGroupMap): NoteItem[] {
     return [...groups.entries()].reduce<NoteItem[]>((acc, [
         parent,
         children,
@@ -123,6 +124,7 @@ export class Note {
                 });
 
                 const uncheckedFlatten = flattenGroups(uncheckedParentGroupMap);
+                const checkedFlatten = flattenGroups(checkedParentGroupMap);
 
                 const grouped: ItemsInfo = {
                     allItems: sorted,
@@ -131,6 +133,7 @@ export class Note {
                     checkedParentGroupMap,
                     uncheckedParentGroupMap,
                     uncheckedFlatten,
+                    checkedFlatten,
                 };
 
                 return grouped;

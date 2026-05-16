@@ -8,6 +8,7 @@ import { LocalDbFacade, LocalNoteItemRow } from '../localDb/LocalDbFacade';
 import { startReplication } from '../localDb/replication';
 import { NoteItem } from '../types/NoteItem';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
+import { getUpdatedAtTime } from '../utils/getUpdatedAtTime';
 
 import { SupabaseClientSignal } from './SupabaseController';
 
@@ -49,7 +50,24 @@ export class NoteItemsStore {
                 .sort((first, second) => first.position - second.position)
                 .map(toNoteItem);
 
-            this.recordsSignal.dispatch(items);
+            const currentById = new Map(this.recordsSignal.getValue().map((item) => [
+                item.id,
+                item,
+            ]));
+
+            const nextState = items.map((incomingItem) => {
+                const currentItem = currentById.get(incomingItem.id);
+
+                if (
+                    currentItem && getUpdatedAtTime(currentItem) > getUpdatedAtTime(incomingItem)
+                ) {
+                    return currentItem;
+                }
+
+                return incomingItem;
+            });
+
+            this.recordsSignal.dispatch(nextState);
         })
             .catch((error) => {
                 this.params.showError(error.message);

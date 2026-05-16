@@ -14,7 +14,6 @@ import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { useToastsContext } from '../../contexts/ToastsContext';
-import { flattenGroups } from '../../controllers/Note';
 import { NoteItem } from '../../types/NoteItem';
 import { useNote } from '../hooks/useNote';
 import { NoteItemElement, OnNoteItemInputElementRefChangeCallback } from '../NoteItemElement/NoteItemElement';
@@ -137,8 +136,8 @@ export function NotePage({ noteId }: { noteId: string }) {
     const itemsContainer = itemsContainerRef.current;
 
     const parentGroups = note.getItemsInfo();
-    const unchecked = flattenGroups(parentGroups.uncheckedParentGroupMap);
-    const checked = flattenGroups(parentGroups.checkedParentGroupMap);
+    const unchecked = parentGroups.uncheckedFlatten;
+    const checked = parentGroups.checkedFlatten;
 
     useEffect(() => {
         inputElements.forEach((input) => {
@@ -209,8 +208,8 @@ export function NotePage({ noteId }: { noteId: string }) {
             const direction = event.key === 'ArrowUp' ? 'up' : 'down';
 
             const currentParentGroups = note.getItemsInfo();
-            const currentUnchecked = flattenGroups(currentParentGroups.uncheckedParentGroupMap);
-            const currentChecked = flattenGroups(currentParentGroups.checkedParentGroupMap);
+            const currentUnchecked = currentParentGroups.uncheckedFlatten;
+            const currentChecked = currentParentGroups.checkedFlatten;
 
             const sortedItems = currentUnchecked.find((currentItem) => currentItem.id === sourceInputId)
                 ? currentUnchecked

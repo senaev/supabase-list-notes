@@ -11,6 +11,8 @@ import { noop } from 'senaev-utils/src/utils/Function/noop';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { omitKeys } from 'senaev-utils/src/utils/Object/omitKeys/omitKeys';
 
+import { getUpdatedAtTime } from '../utils/getUpdatedAtTime';
+
 export type LocalNoteRow = {
     id: string;
     title: string;
@@ -174,10 +176,6 @@ const metaSchema = {
         'value',
     ],
 } as const;
-
-function getUpdatedAtTime(note: WithDeleted<{ updated_at: string }>): number {
-    return new Date(note.updated_at).getTime();
-}
 
 /**
  * RxDB passes this context when checking whether an incoming remote document
