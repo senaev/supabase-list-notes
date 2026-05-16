@@ -263,7 +263,7 @@ export class Note {
         }
     }
 
-    public insertItem({
+    public insertItemAtPosition({
         title,
         completed_at,
         position,
@@ -295,7 +295,6 @@ export class Note {
 
         this.params.noteItemsStore
             .createNoteItem(newItem)
-            .then(() => {})
             .catch((error) => {
                 this.params.showError(error.message);
             });
@@ -304,7 +303,7 @@ export class Note {
     public createNewItemAtTheEnd() {
         const nextPosition = Date.now();
 
-        this.insertItem({
+        this.insertItemAtPosition({
             title: '',
             completed_at: null,
             position: nextPosition,
@@ -338,7 +337,7 @@ export class Note {
 
         const nextPosition = currentItem.position + 1;
 
-        this.insertItem({
+        this.insertItemAtPosition({
             title: titleNew,
             is_child: currentItem.is_child,
             completed_at: currentItem.completed_at,
@@ -401,9 +400,8 @@ export class Note {
 
         const cursorPosition = previousItem.title.length;
 
-        this.persistItem(previousItem.id, { title: mergedTitle });
-
         this.removeItem(currentItem.id);
+        this.persistItem(previousItem.id, { title: mergedTitle });
 
         PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: previousItem.id,
