@@ -20,9 +20,9 @@ export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
 }
 
 export class Note {
-    public itemsSignal = new Signal<NoteItem[]>([], deepEqual);
+    private readonly itemsSignal = new Signal<NoteItem[]>([], deepEqual);
 
-    private destroyLatch = new Latch();
+    private readonly destroyLatch = new Latch();
 
     public constructor(private readonly params: {
         noteItemsStore: NoteItemsStore;

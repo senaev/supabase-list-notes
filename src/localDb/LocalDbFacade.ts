@@ -299,7 +299,20 @@ export class LocalDbFacade {
                     return;
                 }
 
-                await document.incrementalRemove();
+                const now = new Date().toISOString();
+
+                await document.incrementalModify((docData) => {
+                    const nextDocData = {
+                        ...docData,
+                        // Bump timestamps with the tombstone so stale Supabase
+                        // realtime echoes cannot resurrect a just-deleted row.
+                        updated_at: now,
+                        _modified: now,
+                        _deleted: true,
+                    };
+
+                    return nextDocData;
+                });
             },
 
             toArray: async (): Promise<T[]> => {
