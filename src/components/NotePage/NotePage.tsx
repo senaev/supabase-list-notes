@@ -98,7 +98,6 @@ const onNoteItemInputElementRefChange: OnNoteItemInputElementRefChangeCallback =
 };
 
 function saveCaretPosition(event: SyntheticEvent<HTMLTextAreaElement>) {
-    console.log('saveCaretPosition', { ignoreNextSelection });
     if (ignoreNextSelection) {
         ignoreNextSelection = false;
 
