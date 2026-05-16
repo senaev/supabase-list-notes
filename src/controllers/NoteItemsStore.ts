@@ -29,8 +29,8 @@ function toNoteItem(row: LocalNoteItemRow): Pick<NoteItem, TableColumns> {
         position: row.position,
         created_at: row.created_at,
         updated_at: row.updated_at,
-        _modified: row._modified,
         completed_at: row.completed_at,
+        _modified: row._modified,
     };
 }
 
@@ -89,57 +89,16 @@ export class NoteItemsStore {
     }
 
     public async updateNoteItem(
-        itemId: string,
-        updates: Partial<
-            Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
-        >
-    ): Promise<Pick<NoteItem, 'updated_at' | '_modified'>> {
-        const localRow = await this.params.localDbFacade.note_items_temp.get(itemId);
-
-        if (!localRow) {
-            throw new Error(`NoteItemsTable.update(${itemId}) error: note item not found`);
-        }
-
-        const now = new Date().toISOString();
+        now: Date,
+        nextState: LocalNoteItemRow
+    ): Promise<void> {
+        const nowString = now.toISOString();
 
         await this.params.localDbFacade.note_items_temp.put({
-            ...localRow,
-            ...updates,
-            updated_at: now,
-            _modified: now,
+            ...nextState,
+            updated_at: nowString,
+            _modified: nowString,
         });
-
-        return {
-            updated_at: now,
-            _modified: now,
-        };
-    }
-
-    public async setNoteItemCompleted(
-        itemId: string,
-        checked: boolean
-    ): Promise<Pick<NoteItem, 'completed_at' | 'updated_at' | '_modified'>> {
-        const localRow = await this.params.localDbFacade.note_items_temp.get(itemId);
-
-        if (!localRow) {
-            throw new Error(`NoteItemsTable.setCompleted(${itemId}) error: note item not found`);
-        }
-
-        const now = new Date().toISOString();
-        const completed_at = checked ? now : null;
-
-        await this.params.localDbFacade.note_items_temp.put({
-            ...localRow,
-            completed_at,
-            updated_at: now,
-            _modified: now,
-        });
-
-        return {
-            completed_at,
-            updated_at: now,
-            _modified: now,
-        };
     }
 
     public async deleteNoteItem(itemId: string): Promise<void> {

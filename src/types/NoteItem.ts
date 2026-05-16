@@ -1,5 +1,7 @@
+export type NoteItemId = string;
+
 export type NoteItem = {
-    id: string;
+    id: NoteItemId;
     note_id: string;
     title: string;
     position: number;

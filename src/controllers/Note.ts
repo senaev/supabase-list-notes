@@ -1,26 +1,61 @@
 import { Latch } from 'senaev-utils/src/utils/Latch/Latch';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
-import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+import { combineSignalsIntoNewOne } from 'senaev-utils/src/utils/Signal/combineSignalsIntoNewOne/combineSignalsIntoNewOne';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { PENDING_FOCUS_SIGNAL } from '../components/NotePage/NotePage';
-import { NoteItem } from '../types/NoteItem';
+import { NoteItem, NoteItemId } from '../types/NoteItem';
 import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
 
 import { NoteItemCreateParams, NoteItemsStore } from './NoteItemsStore';
 
-export type ItemParentGroup = { parent: NoteItem; children: NoteItem[] };
+export type ItemParentGroupMap = Map<NoteItem, NoteItem[]>;
+export type ItemsInfo = {
+    allItems: NoteItem[];
+    uncheckedParentGroupMap: ItemParentGroupMap;
+    uncheckedFlatten: NoteItem[];
+    checkedParentGroupMap: ItemParentGroupMap;
+    itemMap: Map<NoteItemId, NoteItem>;
+    childToParentMap: Map<NoteItemId, NoteItem>;
+};
 
-export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
-    return groups.reduce<NoteItem[]>((acc, group) => {
-        acc.push(group.parent, ...group.children);
+export function flattenGroups(groups: ItemParentGroupMap): NoteItem[] {
+    return [...groups.entries()].reduce<NoteItem[]>((acc, [
+        parent,
+        children,
+    ]) => {
+        acc.push(parent, ...children);
 
         return acc;
     }, []);
 }
 
+function getItemsSortedGroupedByParent(sorted: NoteItem[]): {
+    parentToChildrenMap: ItemParentGroupMap;
+    childToParentMap: Map<NoteItemId, NoteItem>;
+} {
+    const parentToChildrenMap: ItemParentGroupMap = new Map();
+    const childToParentMap: Map<NoteItemId, NoteItem> = new Map();
+    let currentParent: NoteItem | null = null;
+
+    for (const item of sorted) {
+        if (item.is_child && currentParent) {
+            parentToChildrenMap.get(currentParent)!.push(item);
+            childToParentMap.set(item.id, currentParent);
+        } else {
+            currentParent = item;
+            parentToChildrenMap.set(currentParent, []);
+        }
+    }
+
+    return {
+        parentToChildrenMap,
+        childToParentMap,
+    };
+}
+
 export class Note {
-    private readonly itemsSignal = new Signal<NoteItem[]>([], deepEqual);
+    public readonly getItemsInfo: () => ItemsInfo;
 
     private readonly destroyLatch = new Latch();
 
@@ -30,88 +65,90 @@ export class Note {
         onChange: () => void;
         showError: (message: string) => void;
     }) {
-        const unsubscribeSignal = subscribeSignalAndCallWithCurrentValue(this.params.noteItemsStore.recordsSignal, (nextRecords) => {
-            const noteRecords = nextRecords.filter((item) => item.note_id === this.params.noteId);
+        const {
+            signal: currentNoteRecordsSignal,
+            teardown,
+        } = combineSignalsIntoNewOne(
+            [this.params.noteItemsStore.recordsSignal],
+            (noteItems) => {
+                const filtered = noteItems
+                    .filter((item) => item.note_id === this.params.noteId);
 
-            this.itemsSignal.dispatch(noteRecords);
+                const itemMap = new Map<string, NoteItem>();
+
+                filtered.forEach((item) => {
+                    itemMap.set(item.id, item);
+                });
+
+                const sorted = filtered.sort((first, second) => first.position - second.position);
+
+                const { parentToChildrenMap, childToParentMap } = getItemsSortedGroupedByParent(sorted);
+
+                const checkedArr: {
+                    parent: NoteItem;
+                    children: NoteItem[];
+                }[] = [];
+                const uncheckedParentGroupMap: ItemParentGroupMap = new Map();
+
+                for (const [
+                    parent,
+                    children,
+                ] of parentToChildrenMap.entries()) {
+                    if (
+                        parent.completed_at && children.every((child) => child.completed_at)
+                    ) {
+                        checkedArr.push({
+                            parent,
+                            children,
+                        });
+                    } else {
+                        uncheckedParentGroupMap.set(parent, children);
+                    }
+                }
+
+                checkedArr.sort((first, second) => {
+                    const firstCheckTime = new Date(first.parent.completed_at!).getTime();
+                    const secondCheckTime = new Date(second.parent.completed_at!).getTime();
+
+                    return secondCheckTime - firstCheckTime;
+                });
+
+                const checkedParentGroupMap: ItemParentGroupMap = new Map();
+
+                checkedArr.forEach(({
+                    parent,
+                    children,
+                }) => {
+                    checkedParentGroupMap.set(parent, children);
+                });
+
+                const uncheckedFlatten = flattenGroups(uncheckedParentGroupMap);
+
+                const grouped: ItemsInfo = {
+                    allItems: sorted,
+                    itemMap,
+                    childToParentMap,
+                    checkedParentGroupMap,
+                    uncheckedParentGroupMap,
+                    uncheckedFlatten,
+                };
+
+                return grouped;
+            },
+            deepEqual
+        );
+
+        this.getItemsInfo = () => currentNoteRecordsSignal.getValue();
+
+        subscribeSignalAndCallWithCurrentValue(currentNoteRecordsSignal, () => {
+            params.onChange();
         });
 
-        this.destroyLatch.subscribe(unsubscribeSignal);
-
-        this.itemsSignal.subscribe(params.onChange);
+        this.destroyLatch.subscribe(teardown);
     }
 
     public destroy(): void {
         this.destroyLatch.dispatch(undefined);
-    }
-
-    public getItemsSorted(): NoteItem[] {
-        return [...this.itemsSignal.getValue()].sort((first, second) => first.position - second.position);
-    }
-
-    public getItemsSortedGroupedByParent(): ItemParentGroup[] {
-        const sorted = this.getItemsSorted();
-
-        const grouped: ItemParentGroup[] = [];
-        let currentGroup: ItemParentGroup | null = null;
-
-        for (const item of sorted) {
-            if (item.is_child && currentGroup) {
-                currentGroup.children.push(item);
-            } else {
-                currentGroup = {
-                    parent: item,
-                    children: [],
-                };
-                grouped.push(currentGroup);
-            }
-        }
-
-        return grouped;
-    }
-
-    public getItemGroupsSplit(): {
-        checked: ItemParentGroup[];
-        unchecked: ItemParentGroup[];
-    } {
-        const groupedByParent = this.getItemsSortedGroupedByParent();
-
-        const checked: ItemParentGroup[] = [];
-        const unchecked: ItemParentGroup[] = [];
-
-        for (const group of groupedByParent) {
-            const { parent, children } = group;
-
-            if (
-                parent.completed_at && children.every((child) => child.completed_at)
-            ) {
-                checked.push(group);
-            } else {
-                unchecked.push(group);
-            }
-        }
-
-        checked.sort((first, second) => {
-            const firstCheckTime = new Date(first.parent.completed_at!).getTime();
-            const secondCheckTime = new Date(second.parent.completed_at!).getTime();
-
-            return secondCheckTime - firstCheckTime;
-        });
-
-        return {
-            checked,
-            unchecked,
-        };
-    }
-
-    public changeItemLocally(id: string, updates: Partial<NoteItem>): void {
-        this.itemsSignal.dispatch(this.itemsSignal.getValue().map((item) =>
-            item.id === id
-                ? {
-                    ...item,
-                    ...updates,
-                }
-                : item));
     }
 
     public removeItem(id: string) {
@@ -125,24 +162,29 @@ export class Note {
         updates: Partial<
             Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
         >
-    ): Promise<void> {
-        return this.params.noteItemsStore
-            .updateNoteItem(id, updates)
-            .then((result) => {
-                // Check that local item has not been removed during update
-                const localItem = this.itemsSignal.getValue().find((item) => item.id === id);
+    ): void {
+        const now = new Date();
+        const nowString = now.toISOString();
 
-                if (localItem) {
-                    this.changeItemLocally(id, {
-                        updated_at: result.updated_at,
-                        _modified: result._modified,
-                    });
-                }
+        const nextItem = this.changeItemLocally(id, {
+            ...updates,
+            updated_at: nowString,
+            _modified: nowString,
+        });
+
+        if (!nextItem) {
+            this.params.showError(`persistItem: item not found id=[${id}]`);
+
+            return;
+        }
+
+        this.params.noteItemsStore
+            .updateNoteItem(now, {
+                ...nextItem,
+                _deleted: false,
             })
             .catch((error) => {
-                const itemStillExists = this.itemsSignal.getValue().some((item) => item.id === id);
-
-                this.params.showError(`persistItem: error id=[${id}] [${error.message}] itemStillExists=[${itemStillExists}]`);
+                this.params.showError(`persistItem: error id=[${id}] [${error.message}]`);
             });
     }
 
@@ -158,9 +200,9 @@ export class Note {
             count: number;
         }
     ) {
-        const uncheckedGroups = this.getItemGroupsSplit();
+        const uncheckedGroups = this.getItemsInfo();
 
-        const unchecked = flattenGroups(uncheckedGroups.unchecked);
+        const unchecked = flattenGroups(uncheckedGroups.uncheckedParentGroupMap);
 
         const sourceIndex = unchecked.findIndex((item) => item.id === id);
 
@@ -211,10 +253,6 @@ export class Note {
             const position = startPosition + i;
             const is_child = i === 0 ? firstItemIsChild : true;
 
-            this.changeItemLocally(item.id, {
-                position,
-                is_child,
-            });
             this.persistItem(item.id, {
                 position,
                 is_child,
@@ -260,12 +298,8 @@ export class Note {
             });
     }
 
-    public getPositionAtTheEnd(): number {
-        return Math.max(...this.itemsSignal.getValue().map((item) => item.position), 0) + 1;
-    }
-
     public createNewItemAtTheEnd() {
-        const nextPosition = this.getPositionAtTheEnd();
+        const nextPosition = Date.now();
 
         this.insertItem({
             title: '',
@@ -284,7 +318,7 @@ export class Note {
         selectionStart: number;
         selectionEnd: number;
     }) {
-        const currentItem = this.itemsSignal.getValue().find((item) => item.id === id);
+        const currentItem = this.getItemsInfo().itemMap.get(id);
 
         if (!currentItem) {
             this.params.showError(`createItemAfter: item not found id=[${id}]`);
@@ -310,17 +344,8 @@ export class Note {
     }
 
     public toggleChecked(id: string, checked: boolean): void {
-        const itemsSorted = this.getItemsSorted();
-
-        const itemIndex = itemsSorted.findIndex((item) => item.id === id);
-
-        if (itemIndex === -1) {
-            this.params.showError(`toggleChecked: item not found id=[${id}]`);
-
-            return;
-        }
-
-        const item = itemsSorted[itemIndex];
+        const { itemMap, childToParentMap } = this.getItemsInfo();
+        const item = itemMap.get(id);
 
         if (!item) {
             this.params.showError(`toggleChecked: item not found id=[${id}]`);
@@ -328,34 +353,13 @@ export class Note {
             return;
         }
 
-        this.params.noteItemsStore
-            .setNoteItemCompleted(id, checked)
-            .then((result) => {
-                const localItem = this.itemsSignal.getValue().find((currentItem) => currentItem.id === id);
+        const now = new Date().toISOString();
+        const completed_at = checked ? now : null;
 
-                if (localItem) {
-                    this.changeItemLocally(id, {
-                        completed_at: result.completed_at,
-                        updated_at: result.updated_at,
-                        _modified: result._modified,
-                    });
-                }
-            })
-            .catch((error) => {
-                this.params.showError(`toggleChecked: error id=[${id}] [${error.message}]`);
-            });
+        this.persistItem(id, { completed_at });
 
         if (item.is_child) {
-            let parentItem: NoteItem | undefined;
-
-            for (let i = itemIndex - 1; i >= 0; i--) {
-                const isParent = !itemsSorted[i].is_child;
-
-                if (isParent) {
-                    parentItem = itemsSorted[i];
-                    break;
-                }
-            }
+            const parentItem: NoteItem | undefined = childToParentMap.get(id);
 
             if (!parentItem) {
                 this.params.showError(`toggleChecked: parent item not found for id=[${id}]`);
@@ -368,15 +372,28 @@ export class Note {
     }
 
     public mergeItemWithPrevious(id: string) {
-        const sortedItems = [...this.itemsSignal.getValue()].sort((first, second) => first.position - second.position);
-        const currentIndex = sortedItems.findIndex((item) => item.id === id);
+        const { uncheckedFlatten, itemMap } = this.getItemsInfo();
 
-        if (currentIndex <= 0) {
+        const currentIndex = uncheckedFlatten.findIndex((item) => item.id === id);
+        const currentItem = itemMap.get(id);
+
+        if (!currentItem) {
+            this.params.showError(`mergeItemWithPrevious: item not found id=[${id}]`);
+
             return;
         }
 
-        const currentItem = sortedItems[currentIndex];
-        const previousItem = sortedItems[currentIndex - 1];
+        if (currentIndex === -1) {
+            this.params.showError(`mergeItemWithPrevious: item not found in uncheckedFlatten id=[${id}]`);
+
+            return;
+        }
+
+        if (currentIndex === 0) {
+            return;
+        }
+
+        const previousItem = uncheckedFlatten[currentIndex - 1];
         const mergedTitle = previousItem.title + currentItem.title;
 
         const cursorPosition = previousItem.title.length;
@@ -394,16 +411,39 @@ export class Note {
         });
     }
 
-    private async shiftElementsToInsertOnPosition(position: number, count: number) {
+    private shiftElementsToInsertOnPosition(position: number, count: number) {
         const shiftedItems = shiftItemsToInsertOnPosition(
-            this.itemsSignal.getValue(),
+            this.getItemsInfo().allItems,
             position,
             count
         );
 
-        await Promise.all(shiftedItems.entries().map(([
+        for (const [
             id,
             nextPosition,
-        ]) => this.persistItem(id, { position: nextPosition })));
+        ] of shiftedItems.entries()) {
+            this.persistItem(id, { position: nextPosition });
+        }
+    }
+
+    private changeItemLocally(id: string, updates: Partial<NoteItem>): NoteItem | undefined {
+        const { recordsSignal } = this.params.noteItemsStore;
+
+        let nextItem: NoteItem | undefined = undefined;
+
+        recordsSignal.dispatch(recordsSignal.getValue().map((item) => {
+            if (item.id !== id) {
+                return item;
+            }
+
+            nextItem = {
+                ...item,
+                ...updates,
+            };
+
+            return nextItem;
+        }));
+
+        return nextItem;
     }
 }
