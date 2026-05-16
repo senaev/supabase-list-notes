@@ -34,8 +34,15 @@ type DragState = {
 
 export type PendingFocus = {
     inputElementId: string;
+    /**
+     * If we set cursor position before react apply the value to the input,
+     * the position might be incorrect after apply,
+     * so we should wait for the value to be applied
+     */
+    expectedTitle: string;
     selectionStart: number;
     selectionEnd: number;
+    saveCaretPositionAfterChange: boolean;
 };
 
 export type PendingFocusSignalValue = PendingFocus | null;
@@ -51,8 +58,10 @@ function checkPendingFocus(): void {
 
     const {
         inputElementId,
+        expectedTitle,
         selectionEnd,
         selectionStart,
+        saveCaretPositionAfterChange,
     } = pendingFocus;
 
     const input = inputElements.get(inputElementId);
@@ -61,7 +70,14 @@ function checkPendingFocus(): void {
         return;
     }
 
-    ignoreNextSelection = true;
+    if (input.value !== expectedTitle) {
+        return;
+    }
+
+    if (!saveCaretPositionAfterChange) {
+        ignoreNextSelection = true;
+    }
+
     input.focus();
     input.setSelectionRange(selectionStart, selectionEnd);
     PENDING_FOCUS_SIGNAL.dispatch(null);
@@ -82,6 +98,7 @@ const onNoteItemInputElementRefChange: OnNoteItemInputElementRefChangeCallback =
 };
 
 function saveCaretPosition(event: SyntheticEvent<HTMLTextAreaElement>) {
+    console.log('saveCaretPosition', { ignoreNextSelection });
     if (ignoreNextSelection) {
         ignoreNextSelection = false;
 
@@ -220,8 +237,10 @@ export function NotePage({ noteId }: { noteId: string }) {
 
             PENDING_FOCUS_SIGNAL.dispatch({
                 inputElementId: targetItem.id,
+                expectedTitle: targetItem.title,
                 selectionStart: selectionPosition,
                 selectionEnd: selectionPosition,
+                saveCaretPositionAfterChange: false,
             });
         }
 

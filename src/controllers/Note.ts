@@ -246,8 +246,10 @@ export class Note {
 
         PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: newItem.id,
+            expectedTitle: newItem.title,
             selectionStart: 0,
             selectionEnd: 0,
+            saveCaretPositionAfterChange: true,
         });
 
         this.params.noteItemsStore
@@ -376,18 +378,8 @@ export class Note {
         const currentItem = sortedItems[currentIndex];
         const previousItem = sortedItems[currentIndex - 1];
         const mergedTitle = previousItem.title + currentItem.title;
+
         const cursorPosition = previousItem.title.length;
-
-        this.itemsSignal.dispatch(this.itemsSignal.getValue().map((item) => {
-            if (item.id === previousItem.id) {
-                return {
-                    ...item,
-                    title: mergedTitle,
-                };
-            }
-
-            return item;
-        }));
 
         this.persistItem(previousItem.id, { title: mergedTitle });
 
@@ -395,8 +387,10 @@ export class Note {
 
         PENDING_FOCUS_SIGNAL.dispatch({
             inputElementId: previousItem.id,
+            expectedTitle: mergedTitle,
             selectionStart: cursorPosition,
             selectionEnd: cursorPosition,
+            saveCaretPositionAfterChange: true,
         });
     }
 
