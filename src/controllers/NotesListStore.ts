@@ -77,7 +77,7 @@ export class NotesListStore {
 
     public async createNote({
         id,
-    title,
+        title,
     }: {
         id: string;
         title: string;

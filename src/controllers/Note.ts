@@ -168,8 +168,8 @@ export class Note {
         id: string,
         {
             dropIndex,
-      isChild,
-      count,
+            isChild,
+            count,
         }: {
             dropIndex: number;
             isChild: boolean;
