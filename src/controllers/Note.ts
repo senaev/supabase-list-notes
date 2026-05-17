@@ -160,35 +160,8 @@ export class Note {
         });
     }
 
-    public persistItem(
-        id: string,
-        updates: Partial<
-            Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
-        >
-    ): void {
-        const now = new Date();
-        const nowString = now.toISOString();
-
-        const nextItem = this.changeItemLocally(id, {
-            ...updates,
-            updated_at: nowString,
-            _modified: nowString,
-        });
-
-        if (!nextItem) {
-            this.params.showError(`persistItem: item not found id=[${id}]`);
-
-            return;
-        }
-
-        this.params.noteItemsStore
-            .updateNoteItem(now, {
-                ...nextItem,
-                _deleted: false,
-            })
-            .catch((error) => {
-                this.params.showError(`persistItem: error id=[${id}] [${error.message}]`);
-            });
+    public setItemTitle(id: string, title: string) {
+        this.persistItem(id, { title });
     }
 
     public moveItems(
@@ -346,7 +319,7 @@ export class Note {
     }
 
     public toggleChecked(id: string, checked: boolean): void {
-        const { itemMap, childToParentMap } = this.getItemsInfo();
+        const { itemMap } = this.getItemsInfo();
         const item = itemMap.get(id);
 
         if (!item) {
@@ -359,18 +332,6 @@ export class Note {
         const completed_at = checked ? now : null;
 
         this.persistItem(id, { completed_at });
-
-        if (item.is_child) {
-            const parentItem: NoteItem | undefined = childToParentMap.get(id);
-
-            if (!parentItem) {
-                this.params.showError(`toggleChecked: parent item not found for id=[${id}]`);
-
-                return;
-            }
-
-            this.persistItem(parentItem.id, {});
-        }
     }
 
     public mergeItemWithPrevious(id: string) {
@@ -446,5 +407,36 @@ export class Note {
         }));
 
         return nextItem;
+    }
+
+    private persistItem(
+        id: string,
+        updates: Partial<
+            Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
+        >
+    ): void {
+        const now = new Date();
+        const nowString = now.toISOString();
+
+        const nextItem = this.changeItemLocally(id, {
+            ...updates,
+            updated_at: nowString,
+            _modified: nowString,
+        });
+
+        if (!nextItem) {
+            this.params.showError(`persistItem: item not found id=[${id}]`);
+
+            return;
+        }
+
+        this.params.noteItemsStore
+            .updateNoteItem(now, {
+                ...nextItem,
+                _deleted: false,
+            })
+            .catch((error) => {
+                this.params.showError(`persistItem: error id=[${id}] [${error.message}]`);
+            });
     }
 }

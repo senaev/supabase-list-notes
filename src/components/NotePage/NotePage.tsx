@@ -295,7 +295,7 @@ export function NotePage({ noteId }: { noteId: string }) {
                     note.toggleChecked(item.id, nextChecked);
                 }}
                 onChange={(value) => {
-                    note.persistItem(item.id, { title: value });
+                    note.setItemTitle(item.id, value);
                 }}
                 onKeyDown={(event) => {
                     handleItemKeyDown(event, item);
