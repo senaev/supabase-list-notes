@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { RxDatabase } from "rxdb";
+import type { RxDatabase, RxDocument } from "rxdb";
 import type { RxSupabaseReplicationState } from "rxdb/plugins/replication-supabase";
 import type { Subscription } from "rxjs";
 import { createLocalDatabase, LocalCollections, LocalItemRow } from "./localDb";
@@ -48,6 +48,18 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState<string | null>(null);
   const collectionRef = useRef<LocalCollections["items"] | null>(null);
+  // Live RxDocument instances keyed by id, refreshed on every query emission
+  // and eagerly on insert (see addItem). updateItem/removeItem call
+  // `.incrementalPatch()`/`.remove()` on these *synchronously* instead of
+  // going through an extra `findOne(id).exec()` per call: RxDB's internal
+  // incremental write queue serializes writes to the same RxDocument in the
+  // order they're *called*, not the order some intermediate promise happens
+  // to resolve in. Without this, two `findOne(id).exec()` calls for two
+  // fast keystrokes can resolve out of order, so the older keystroke's
+  // patch gets queued *after* the newer one and silently reverts it - and
+  // that, in turn, is what can make a stale replication echo of an old
+  // local write look "newer" than the local fork and win against it.
+  const docsRef = useRef<Map<string, RxDocument<LocalItemRow>>>(new Map());
   // Chains database lifecycles (create -> ... -> remove -> create -> ...)
   // strictly sequentially across effect re-runs; see the comment below.
   const lifecycleRef = useRef<Promise<void>>(Promise.resolve());
@@ -93,6 +105,7 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
       collectionRef.current = db.items;
 
       querySubscription = db.items.find().$.subscribe((docs) => {
+        docsRef.current = new Map(docs.map((doc) => [doc.primary, doc]));
         setItems(docs.map((doc) => toItem(doc.toMutableJSON())));
       });
 
@@ -119,6 +132,7 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
     return () => {
       cancelled = true;
       collectionRef.current = null;
+      docsRef.current = new Map();
 
       lifecycleRef.current = initPromise
         .catch(() => undefined)
@@ -150,12 +164,32 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
 
     collectionRef.current
       ?.insert(row)
+      .then((doc) => {
+        // Cache the freshly-inserted doc immediately, before the reactive
+        // query even re-emits, so an updateItem() call fired right after
+        // addItem() (e.g. typing into a just-created item) doesn't fall
+        // through to the findOne() fallback below.
+        docsRef.current.set(id, doc);
+      })
       .catch((insertError: Error) => setError(insertError.message));
 
     return id;
   }, []);
 
   const updateItem = useCallback((id: string, patch: Partial<EditableFields>) => {
+    const cachedDoc = docsRef.current.get(id);
+    if (cachedDoc) {
+      // Synchronous dispatch: see the docsRef comment above for why this
+      // matters for correctly ordering fast, consecutive edits.
+      cachedDoc
+        .incrementalPatch({ ...patch, _modified: new Date().toISOString() })
+        .catch((updateError: Error) => setError(updateError.message));
+      return;
+    }
+
+    // Fallback for the narrow window before a doc has been cached at all
+    // (e.g. updateItem racing addItem's own insert promise). Order isn't
+    // at risk here since there's nothing yet to race against.
     const collection = collectionRef.current;
     if (!collection) {
       return;
@@ -168,12 +202,20 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
         if (!doc) {
           return undefined;
         }
+        docsRef.current.set(id, doc);
         return doc.incrementalPatch({ ...patch, _modified: new Date().toISOString() });
       })
       .catch((updateError: Error) => setError(updateError.message));
   }, []);
 
   const removeItem = useCallback((id: string) => {
+    const cachedDoc = docsRef.current.get(id);
+    if (cachedDoc) {
+      docsRef.current.delete(id);
+      cachedDoc.remove().catch((removeError: Error) => setError(removeError.message));
+      return;
+    }
+
     const collection = collectionRef.current;
     if (!collection) {
       return;
