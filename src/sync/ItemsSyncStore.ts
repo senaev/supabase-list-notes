@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RxDatabase, RxDocument } from "rxdb";
 import type { RxSupabaseReplicationState } from "rxdb/plugins/replication-supabase";
 import type { Subscription } from "rxjs";
+import { deepEqual } from "senaev-utils/src/utils/Object/deepEqual/deepEqual";
 import { Signal } from "senaev-utils/src/utils/Signal/Signal";
 import { createLocalDatabase, LocalCollections, LocalItemRow } from "./localDb";
 import { startItemsReplication } from "./replication";
@@ -18,6 +19,13 @@ function toItem(row: LocalItemRow): Item {
   };
 }
 
+type PendingOptimisticCreate = {
+  item: Item;
+  // Always settles (resolves), never rejects - see addItem - so callers
+  // (removeItem) can await it without needing their own error handling.
+  writePromise: Promise<void>;
+};
+
 /**
  * Local-first sync engine backed by RxDB (IndexedDB via the Dexie storage
  * adapter) instead of a hand-rolled localStorage mirror. RxDB's Supabase
@@ -26,13 +34,23 @@ function toItem(row: LocalItemRow): Item {
  *
  * Plain, framework-agnostic class - React only touches it through
  * `itemsSignal`/`errorSignal` (see useItemsSync's `useSignal` wiring) and
- * the addItem/updateItem/removeItem methods. `itemsSignal` is driven
- * directly by the local collection's reactive query: a single source of
- * truth, no secondary optimistic-cache layer on top of it.
+ * the addItem/updateItem/removeItem methods.
+ *
+ * `itemsSignal` is driven by the local collection's reactive query, plus a
+ * thin optimistic-overlay reconciliation on top (ported from the reference
+ * NoteItemsStore design) for two cases the raw query can't cover by itself:
+ * - A just-created item needs to appear immediately, before its insert has
+ *   actually landed in the local database (pendingOptimisticCreatesById).
+ * - A just-removed item needs to disappear immediately, and incoming query
+ *   emissions racing the removal shouldn't be able to briefly resurrect it
+ *   (pendingOptimisticDeleteIds).
  */
 export class ItemsSyncStore {
-  public readonly itemsSignal = new Signal<Item[]>([]);
+  public readonly itemsSignal = new Signal<Item[]>([], deepEqual);
   public readonly errorSignal = new Signal<string | null>(null);
+
+  private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
+  private pendingOptimisticDeleteIds = new Set<string>();
 
   private collection: LocalCollections["items"] | null = null;
   // Live RxDocument instances keyed by id, refreshed on every query emission
@@ -84,6 +102,8 @@ export class ItemsSyncStore {
 
     this.collection = null;
     this.docs.clear();
+    this.pendingOptimisticCreatesById.clear();
+    this.pendingOptimisticDeleteIds.clear();
 
     this.querySubscription?.unsubscribe();
     this.errorSubscription?.unsubscribe();
@@ -134,7 +154,43 @@ export class ItemsSyncStore {
       docs.forEach((doc) => {
         this.docs.set(doc.primary, doc);
       });
-      this.itemsSignal.next(docs.map((doc) => toItem(doc.toMutableJSON())));
+
+      const allIncomingItems = docs.map((doc) => toItem(doc.toMutableJSON()));
+      const incomingIds = new Set(allIncomingItems.map((item) => item.id));
+      const incomingItems = allIncomingItems.filter(
+        (item) => !this.pendingOptimisticDeleteIds.has(item.id),
+      );
+
+      // Drop delete-tombstone tracking once the query confirms the item is
+      // actually gone, so a later item reusing the same id (can't happen
+      // with UUIDs, but keeps the set from growing unbounded regardless)
+      // isn't permanently filtered out.
+      this.pendingOptimisticDeleteIds = this.pendingOptimisticDeleteIds.intersection(incomingIds);
+
+      const currentById = new Map(this.itemsSignal.value().map((item) => [item.id, item]));
+
+      const nextItems = incomingItems.map((incomingItem) => {
+        // The query has now confirmed this item exists, so it's no longer
+        // "pending" even if the optimistic version stays displayed below.
+        this.pendingOptimisticCreatesById.delete(incomingItem.id);
+
+        const currentItem = currentById.get(incomingItem.id);
+
+        // Guard against a stale/slow emission clobbering a newer local
+        // edit with an older one (e.g. a delayed pull racing a fresh
+        // local write for the same item).
+        if (currentItem && Date.parse(currentItem._modified) > Date.parse(incomingItem._modified)) {
+          return currentItem;
+        }
+
+        return incomingItem;
+      });
+
+      for (const pendingOptimisticCreate of this.pendingOptimisticCreatesById.values()) {
+        nextItems.push(pendingOptimisticCreate.item);
+      }
+
+      this.itemsSignal.next(nextItems);
     });
 
     let replicationState: RxSupabaseReplicationState<LocalItemRow>;
@@ -161,8 +217,9 @@ export class ItemsSyncStore {
   /**
    * Creates an item (title may be empty, e.g. to start editing immediately)
    * and returns its id synchronously for optimistic focus handling. The
-   * item itself only appears in `itemsSignal` once the local database write
-   * completes (typically within a few ms).
+   * item is immediately reflected in `itemsSignal` (see
+   * pendingOptimisticCreatesById) rather than waiting for the local
+   * database write to complete.
    */
   public addItem = (title: string): string => {
     const id = crypto.randomUUID();
@@ -177,16 +234,33 @@ export class ItemsSyncStore {
       _deleted: false,
     };
 
-    this.collection
-      ?.insert(row)
-      .then((doc) => {
-        // Cache the freshly-inserted doc immediately, before the reactive
-        // query even re-emits, so an updateItem() call fired right after
-        // addItem() (e.g. typing into a just-created item) doesn't fall
-        // through to the findOne() fallback below.
-        this.docs.set(id, doc);
-      })
-      .catch((insertError: Error) => this.errorSignal.next(insertError.message));
+    const optimisticItem = toItem(row);
+
+    // Always settles (never rejects): on failure it surfaces the error and
+    // rolls back the optimistic entry itself, so callers (removeItem) can
+    // just await it without their own error handling.
+    const writePromise: Promise<void> = this.collection
+      ? this.collection.insert(row).then(
+          (doc) => {
+            // Cache the freshly-inserted doc immediately, before the
+            // reactive query even re-emits, so an updateItem() call fired
+            // right after addItem() (e.g. typing into a just-created item)
+            // doesn't fall through to the findOne() fallback there.
+            this.docs.set(id, doc);
+          },
+          (insertError: Error) => {
+            this.errorSignal.next(insertError.message);
+            this.removeOptimisticItem(id);
+          },
+        )
+      : Promise.resolve().then(() => {
+          this.errorSignal.next("Local database is not ready yet");
+          this.removeOptimisticItem(id);
+        });
+
+    this.pendingOptimisticCreatesById.set(id, { item: optimisticItem, writePromise });
+
+    this.itemsSignal.next([...this.itemsSignal.value(), optimisticItem]);
 
     return id;
   };
@@ -228,22 +302,46 @@ export class ItemsSyncStore {
    * tombstones are reliably delivered to other tabs/devices.
    */
   public removeItem = (id: string): void => {
-    const cachedDoc = this.docs.get(id);
-    if (cachedDoc) {
-      this.docs.delete(id);
-      cachedDoc.remove().catch((removeError: Error) => this.errorSignal.next(removeError.message));
+    const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
+
+    this.removeOptimisticItem(id);
+
+    if (pendingOptimisticCreate) {
+      // Wait for the item's own insert to land before removing it, so the
+      // remove can never race ahead of (and effectively no-op against) a
+      // create that hasn't been written yet.
+      pendingOptimisticCreate.writePromise.then(this.removeFromStorage(id));
       return;
     }
 
-    const collection = this.collection;
-    if (!collection) {
-      return;
-    }
-
-    collection
-      .findOne(id)
-      .exec()
-      .then((doc) => doc?.remove())
-      .catch((removeError: Error) => this.errorSignal.next(removeError.message));
+    this.removeFromStorage(id)();
   };
+
+  private removeOptimisticItem(id: string): void {
+    this.pendingOptimisticCreatesById.delete(id);
+    this.pendingOptimisticDeleteIds.add(id);
+    this.itemsSignal.next(this.itemsSignal.value().filter((item) => item.id !== id));
+  }
+
+  private removeFromStorage(id: string): VoidFunction {
+    return () => {
+      const cachedDoc = this.docs.get(id);
+      if (cachedDoc) {
+        this.docs.delete(id);
+        cachedDoc.remove().catch((removeError: Error) => this.errorSignal.next(removeError.message));
+        return;
+      }
+
+      const collection = this.collection;
+      if (!collection) {
+        return;
+      }
+
+      collection
+        .findOne(id)
+        .exec()
+        .then((doc) => doc?.remove())
+        .catch((removeError: Error) => this.errorSignal.next(removeError.message));
+    };
+  }
 }
