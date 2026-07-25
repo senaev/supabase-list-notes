@@ -1,32 +1,47 @@
-import { shiftItemsToInsertOnPosition } from "./shiftItemsToInsertOnPosition";
+import { shiftItemsToInsertOnPosition } from './shiftItemsToInsertOnPosition';
 
-function toObject(map: Map<number, number>) {
+function toObject(map: Map<string, number>) {
     return Object.fromEntries(map.entries());
 }
 
-describe("shiftItemsToInsertOnPosition", () => {
-    it("returns an empty map when nothing overlaps the inserted range", () => {
+describe('shiftItemsToInsertOnPosition', () => {
+    it('returns an empty map when nothing overlaps the inserted range', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 1, position: 4 },
-                { id: 2, position: 6 },
+                {
+                    id: '1',
+                    position: 4,
+                },
+                {
+                    id: '2',
+                    position: 6,
+                },
             ],
             1,
-            2,
+            2
         );
 
         expect(toObject(shiftedItems)).toEqual({});
     });
 
-    it("shifts a contiguous block by one position", () => {
+    it('shifts a contiguous block by one position', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 1, position: 2 },
-                { id: 2, position: 3 },
-                { id: 3, position: 4 },
+                {
+                    id: '1',
+                    position: 2,
+                },
+                {
+                    id: '2',
+                    position: 3,
+                },
+                {
+                    id: '3',
+                    position: 4,
+                },
             ],
             2,
-            1,
+            1
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -36,15 +51,24 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("shifts items that overlap a multi-slot insertion window", () => {
+    it('shifts items that overlap a multi-slot insertion window', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 1, position: 3 },
-                { id: 2, position: 4 },
-                { id: 3, position: 5 },
+                {
+                    id: '1',
+                    position: 3,
+                },
+                {
+                    id: '2',
+                    position: 4,
+                },
+                {
+                    id: '3',
+                    position: 5,
+                },
             ],
             2,
-            2,
+            2
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -54,15 +78,24 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("stops shifting at the first gap after the affected block", () => {
+    it('stops shifting at the first gap after the affected block', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 1, position: 2 },
-                { id: 2, position: 4 },
-                { id: 3, position: 5 },
+                {
+                    id: '1',
+                    position: 2,
+                },
+                {
+                    id: '2',
+                    position: 4,
+                },
+                {
+                    id: '3',
+                    position: 5,
+                },
             ],
             2,
-            1,
+            1
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -70,15 +103,24 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("custom test", () => {
+    it('custom test', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 2, position: 2 },
-                { id: 4, position: 4 },
-                { id: 6, position: 6 },
+                {
+                    id: '2',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 4,
+                },
+                {
+                    id: '6',
+                    position: 6,
+                },
             ],
             2,
-            4,
+            4
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -88,16 +130,28 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("custom test 2", () => {
+    it('custom test 2', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 2, position: 2 },
-                { id: 4, position: 4 },
-                { id: 6, position: 6 },
-                { id: 7, position: 7 },
+                {
+                    id: '2',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 4,
+                },
+                {
+                    id: '6',
+                    position: 6,
+                },
+                {
+                    id: '7',
+                    position: 7,
+                },
             ],
             2,
-            4,
+            4
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -108,16 +162,28 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("custom test 3", () => {
+    it('custom test 3', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 2, position: 2 },
-                { id: 4, position: 4 },
-                { id: 6, position: 6 },
-                { id: 8, position: 8 },
+                {
+                    id: '2',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 4,
+                },
+                {
+                    id: '6',
+                    position: 6,
+                },
+                {
+                    id: '8',
+                    position: 8,
+                },
             ],
             2,
-            4,
+            4
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -128,18 +194,36 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("custom test 4", () => {
+    it('custom test 4', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 0, position: 0 },
-                { id: 1, position: 1 },
-                { id: 2, position: 2 },
-                { id: 4, position: 4 },
-                { id: 6, position: 6 },
-                { id: 8, position: 8 },
+                {
+                    id: '0',
+                    position: 0,
+                },
+                {
+                    id: '1',
+                    position: 1,
+                },
+                {
+                    id: '2',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 4,
+                },
+                {
+                    id: '6',
+                    position: 6,
+                },
+                {
+                    id: '8',
+                    position: 8,
+                },
             ],
             2,
-            4,
+            4
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -150,35 +234,71 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("custom test 5", () => {
+    it('custom test 5', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 0, position: 0 },
-                { id: 1, position: 1 },
-                { id: 2, position: 2 },
-                { id: 4, position: 4 },
-                { id: 6, position: 6 },
-                { id: 8, position: 8 },
+                {
+                    id: '0',
+                    position: 0,
+                },
+                {
+                    id: '1',
+                    position: 1,
+                },
+                {
+                    id: '2',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 4,
+                },
+                {
+                    id: '6',
+                    position: 6,
+                },
+                {
+                    id: '8',
+                    position: 8,
+                },
             ],
             9,
-            100,
+            100
         );
 
         expect(toObject(shiftedItems)).toEqual({});
     });
 
-    it("custom test 6", () => {
+    it('custom test 6', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 0, position: 0 },
-                { id: 1, position: 1 },
-                { id: 2, position: 2 },
-                { id: 4, position: 4 },
-                { id: 6, position: 6 },
-                { id: 8, position: 8 },
+                {
+                    id: '0',
+                    position: 0,
+                },
+                {
+                    id: '1',
+                    position: 1,
+                },
+                {
+                    id: '2',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 4,
+                },
+                {
+                    id: '6',
+                    position: 6,
+                },
+                {
+                    id: '8',
+                    position: 8,
+                },
             ],
             7,
-            100,
+            100
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -186,18 +306,36 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("initially duplicated positions", () => {
+    it('initially duplicated positions', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 0, position: 0 },
-                { id: 1, position: 1 },
-                { id: 2, position: 1 },
-                { id: 3, position: 2 },
-                { id: 4, position: 3 },
-                { id: 5, position: 8 },
+                {
+                    id: '0',
+                    position: 0,
+                },
+                {
+                    id: '1',
+                    position: 1,
+                },
+                {
+                    id: '2',
+                    position: 1,
+                },
+                {
+                    id: '3',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 3,
+                },
+                {
+                    id: '5',
+                    position: 8,
+                },
             ],
             0,
-            3,
+            3
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -209,18 +347,36 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("initially duplicated positions 1", () => {
+    it('initially duplicated positions 1', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 0, position: 0 },
-                { id: 1, position: 1 },
-                { id: 2, position: 1 },
-                { id: 3, position: 2 },
-                { id: 4, position: 2 },
-                { id: 5, position: 8 },
+                {
+                    id: '0',
+                    position: 0,
+                },
+                {
+                    id: '1',
+                    position: 1,
+                },
+                {
+                    id: '2',
+                    position: 1,
+                },
+                {
+                    id: '3',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 2,
+                },
+                {
+                    id: '5',
+                    position: 8,
+                },
             ],
             2,
-            2,
+            2
         );
 
         expect(toObject(shiftedItems)).toEqual({
@@ -229,18 +385,36 @@ describe("shiftItemsToInsertOnPosition", () => {
         });
     });
 
-    it("unsorted and duplicated positions", () => {
+    it('unsorted and duplicated positions', () => {
         const shiftedItems = shiftItemsToInsertOnPosition(
             [
-                { id: 3, position: 2 },
-                { id: 4, position: 2 },
-                { id: 1, position: 1 },
-                { id: 5, position: 8 },
-                { id: 2, position: 1 },
-                { id: 0, position: 0 },
+                {
+                    id: '3',
+                    position: 2,
+                },
+                {
+                    id: '4',
+                    position: 2,
+                },
+                {
+                    id: '1',
+                    position: 1,
+                },
+                {
+                    id: '5',
+                    position: 8,
+                },
+                {
+                    id: '2',
+                    position: 1,
+                },
+                {
+                    id: '0',
+                    position: 0,
+                },
             ],
             2,
-            2,
+            2
         );
 
         expect(toObject(shiftedItems)).toEqual({

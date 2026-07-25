@@ -1,491 +1,442 @@
-import { NoteItemsTable } from "../tables/NoteItemsTable";
-import { NoteItem } from "../types/NoteItem";
-import { shiftItemsToInsertOnPosition } from "../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition";
+import { Latch } from 'senaev-utils/src/utils/Latch/Latch';
+import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { combineSignalsIntoNewOne } from 'senaev-utils/src/utils/Signal/combineSignalsIntoNewOne/combineSignalsIntoNewOne';
+import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
-export type PendingFocus = {
-  id: number;
-  selectionStart: number;
-  selectionEnd: number;
+import { PENDING_FOCUS_SIGNAL } from '../components/NotePage/NotePage';
+import { NoteItem, NoteItemId } from '../types/NoteItem';
+import { shiftItemsToInsertOnPosition } from '../utils/shiftItemsToInsertOnPosition/shiftItemsToInsertOnPosition';
+
+import { NoteItemCreateParams, NoteItemsStore } from './NoteItemsStore';
+
+export type ItemParentGroupMap = Map<NoteItem, NoteItem[]>;
+export type ItemsInfo = {
+    allItems: NoteItem[];
+    uncheckedParentGroupMap: ItemParentGroupMap;
+    uncheckedFlatten: NoteItem[];
+    checkedParentGroupMap: ItemParentGroupMap;
+    checkedFlatten: NoteItem[];
+    itemMap: Map<NoteItemId, NoteItem>;
+    childToParentMap: Map<NoteItemId, NoteItem>;
 };
 
-export type ItemParentGroup = { parent: NoteItem; children: NoteItem[] };
+function flattenGroups(groups: ItemParentGroupMap): NoteItem[] {
+    return [...groups.entries()].reduce<NoteItem[]>((acc, [
+        parent,
+        children,
+    ]) => {
+        acc.push(parent, ...children);
 
-export function flattenGroups(groups: ItemParentGroup[]): NoteItem[] {
-  return groups.reduce<NoteItem[]>((acc, group) => {
-    acc.push(group.parent, ...group.children);
-    return acc;
-  }, []);
+        return acc;
+    }, []);
+}
+
+function getItemsSortedGroupedByParent(sorted: NoteItem[]): {
+    parentToChildrenMap: ItemParentGroupMap;
+    childToParentMap: Map<NoteItemId, NoteItem>;
+} {
+    const parentToChildrenMap: ItemParentGroupMap = new Map();
+    const childToParentMap: Map<NoteItemId, NoteItem> = new Map();
+    let currentParent: NoteItem | null = null;
+
+    for (const item of sorted) {
+        if (item.is_child && currentParent) {
+            parentToChildrenMap.get(currentParent)!.push(item);
+            childToParentMap.set(item.id, currentParent);
+        } else {
+            currentParent = item;
+            parentToChildrenMap.set(currentParent, []);
+        }
+    }
+
+    return {
+        parentToChildrenMap,
+        childToParentMap,
+    };
 }
 
 export class Note {
-  pendingFocus: PendingFocus | null = null;
+    public readonly getItemsInfo: () => ItemsInfo;
 
-  private items: NoteItem[] = [];
+    private readonly destroyLatch = new Latch();
 
-  public constructor(
-    private readonly params: {
-      noteItemsTable: NoteItemsTable;
-      listId: number;
-      onChange: () => void;
-      showError: (message: string) => void;
-    },
-  ) {
-    this.params.noteItemsTable
-      .readAll(this.params.listId)
-      .then((data) => {
-        this.setItems(data.map((item) => ({ ...item, persisted: true })));
-        this.params.onChange();
-      })
-      .catch((error) => {
-        this.params.showError(error.message);
-      });
-  }
+    public constructor(private readonly params: {
+        noteItemsStore: NoteItemsStore;
+        noteId: string;
+        onChange: () => void;
+        showError: (message: string) => void;
+    }) {
+        const {
+            signal: currentNoteRecordsSignal,
+            teardown,
+        } = combineSignalsIntoNewOne(
+            [this.params.noteItemsStore.recordsSignal],
+            (noteItems) => {
+                const filtered = noteItems
+                    .filter((item) => item.note_id === this.params.noteId);
 
-  // Temp ids are used for optimistic rendering of newly created items
-  // They are also used when rendering items to avoid rerendering after getting real id
-  private nextTempId = -1;
-  private readonly generateNextItemId = () => this.nextTempId--;
-  private readonly tempIdsMap = new Map<number, number>();
-  private readonly tempIdsRemovedSet = new Set<number>();
-  private readonly tempUpdatesMap = new Map<
-    number,
-    Partial<Pick<NoteItem, "title" | "position" | "check_time">>
-  >();
+                const itemMap = new Map<string, NoteItem>();
 
-  public getItemsSorted(): NoteItem[] {
-    return [...this.items].sort(
-      (first, second) => first.position - second.position,
-    );
-  }
+                filtered.forEach((item) => {
+                    itemMap.set(item.id, item);
+                });
 
-  public getItemsSortedGroupedByParent(): ItemParentGroup[] {
-    const sorted = this.getItemsSorted();
+                const sorted = filtered.sort((first, second) => first.position - second.position);
 
-    const grouped: ItemParentGroup[] = [];
-    let currentGroup: ItemParentGroup | null = null;
-    for (const item of sorted) {
-      if (item.child && currentGroup) {
-        currentGroup.children.push(item);
-      } else {
-        currentGroup = { parent: item, children: [] };
-        grouped.push(currentGroup);
-      }
-    }
+                const { parentToChildrenMap, childToParentMap } = getItemsSortedGroupedByParent(sorted);
 
-    return grouped;
-  }
+                const checkedArr: {
+                    parent: NoteItem;
+                    children: NoteItem[];
+                }[] = [];
+                const uncheckedParentGroupMap: ItemParentGroupMap = new Map();
 
-  public getItemGroupsSplit(): {
-    checked: ItemParentGroup[];
-    unchecked: ItemParentGroup[];
-  } {
-    const groupedByParent = this.getItemsSortedGroupedByParent();
+                for (const [
+                    parent,
+                    children,
+                ] of parentToChildrenMap.entries()) {
+                    if (
+                        parent.completed_at && children.every((child) => child.completed_at)
+                    ) {
+                        checkedArr.push({
+                            parent,
+                            children,
+                        });
+                    } else {
+                        uncheckedParentGroupMap.set(parent, children);
+                    }
+                }
 
-    const checked: ItemParentGroup[] = [];
-    const unchecked: ItemParentGroup[] = [];
+                checkedArr.sort((first, second) => {
+                    const firstCheckTime = new Date(first.parent.completed_at!).getTime();
+                    const secondCheckTime = new Date(second.parent.completed_at!).getTime();
 
-    for (const group of groupedByParent) {
-      const { parent, children } = group;
-      if (parent.check_time && children.every((child) => child.check_time)) {
-        checked.push(group);
-      } else {
-        unchecked.push(group);
-      }
-    }
+                    return secondCheckTime - firstCheckTime;
+                });
 
-    checked.sort((first, second) => {
-      const firstCheckTime = new Date(first.parent.check_time!).getTime();
-      const secondCheckTime = new Date(second.parent.check_time!).getTime();
+                const checkedParentGroupMap: ItemParentGroupMap = new Map();
 
-      return secondCheckTime - firstCheckTime;
-    });
+                checkedArr.forEach(({
+                    parent,
+                    children,
+                }) => {
+                    checkedParentGroupMap.set(parent, children);
+                });
 
-    return { checked, unchecked };
-  }
+                const uncheckedFlatten = flattenGroups(uncheckedParentGroupMap);
+                const checkedFlatten = flattenGroups(checkedParentGroupMap);
 
-  public getItemClientKey(item: NoteItem): number {
-    return this.tempIdsMap.get(item.id) || item.id;
-  }
+                const grouped: ItemsInfo = {
+                    allItems: sorted,
+                    itemMap,
+                    childToParentMap,
+                    checkedParentGroupMap,
+                    uncheckedParentGroupMap,
+                    uncheckedFlatten,
+                    checkedFlatten,
+                };
 
-  public getItems() {
-    return this.items;
-  }
-
-  public setItems(items: NoteItem[]): void {
-    // TODO: use normal comparison
-    const itemsChanged = JSON.stringify(this.items) !== JSON.stringify(items);
-    if (itemsChanged) {
-      this.items = items;
-    }
-
-    if (itemsChanged) {
-      this.params.onChange();
-    }
-  }
-
-  public changeItemLocally(id: number, updates: Partial<NoteItem>): void {
-    this.setItems(
-      this.items.map((item) =>
-        item.id === id ? { ...item, ...updates } : item,
-      ),
-    );
-  }
-
-  public removeItemLocally(id: number): void {
-    const itemToRemove = this.items.find((item) => item.id === id);
-
-    if (!itemToRemove) {
-      this.params.showError(`removeItem: item with id ${id} not found`);
-      return;
-    }
-
-    this.setItems(this.items.filter((item) => item.id !== id));
-  }
-
-  public removeItemRemotely(id: number): void {
-    if (id < 0) {
-      // Item has NOT been persisted yet, add to list to remove after persistence
-      this.tempIdsRemovedSet.add(id);
-      return;
-    }
-
-    this.params.noteItemsTable.delete(id).catch((error) => {
-      this.params.showError(error.message);
-    });
-  }
-
-  public removeItem(id: number) {
-    this.removeItemLocally(id);
-    this.removeItemRemotely(id);
-  }
-
-  public persistItem(
-    id: number,
-    updates: Partial<
-      Pick<NoteItem, "title" | "position" | "check_time" | "child">
-    >,
-  ): void {
-    const itemToUpdate = this.items.find((item) => item.id === id);
-    if (!itemToUpdate) {
-      this.params.showError(`persistItem: item with id ${id} not found`);
-      return;
-    }
-
-    const update_index = itemToUpdate.update_index + 1;
-    const updated = new Date().toISOString();
-    this.changeItemLocally(id, { update_index, updated, persisted: false });
-
-    if (id < 0) {
-      this.tempUpdatesMap.set(id, {
-        ...this.tempUpdatesMap.get(id),
-        ...updates,
-      });
-      return;
-    }
-
-    this.params.noteItemsTable
-      .update(id, { ...updates, update_index })
-      .then((result) => {
-        if (result === "update_index_conflict") {
-          // Ignore conflicts, persistent state will be delivered through server-push
-          return;
-        }
-
-        // Check that local item has not been removed during update
-        const localItem = this.items.find((item) => item.id === id);
-        if (localItem) {
-          this.changeItemLocally(id, {
-            updated: result.updated,
-            persisted: true,
-          });
-        }
-      })
-      .catch((error) => {
-        const itemStillExists = this.items.some((item) => item.id === id);
-        this.params.showError(
-          `persistItem: error id=[${id}] [${error.message}] itemStillExists=[${itemStillExists}]`,
+                return grouped;
+            },
+            deepEqual
         );
-      });
-  }
 
-  public setPendingFocus(focus: PendingFocus | null) {
-    this.pendingFocus = focus;
-    this.params.onChange();
-  }
+        this.getItemsInfo = () => currentNoteRecordsSignal.getValue();
 
-  public moveItems(
-    id: number,
-    {
-      dropIndex,
-      child,
-      count,
-    }: {
-      dropIndex: number;
-      child: boolean;
-      count: number;
-    },
-  ) {
-    const uncheckedGroups = this.getItemGroupsSplit();
-
-    const unchecked = flattenGroups(uncheckedGroups.unchecked);
-
-    const sourceIndex = unchecked.findIndex((item) => item.id === id);
-    if (sourceIndex === -1) {
-      this.params.showError(`moveItem: item not found with id=[${id}]`);
-      return;
-    }
-
-    const sourceItem = unchecked[sourceIndex];
-    if (!sourceItem) {
-      this.params.showError(
-        `moveItem: item not found on sourceIndex=[${sourceIndex}]`,
-      );
-      return;
-    }
-
-    if (sourceIndex === dropIndex && sourceItem.child === child) {
-      return;
-    }
-
-    const itemsToMove = unchecked.slice(sourceIndex, sourceIndex + count);
-
-    let startPosition = 1;
-    let firstItemIsChild = false;
-    if (dropIndex > 0) {
-      const previousItem = unchecked[dropIndex - 1];
-      if (!previousItem) {
-        this.params.showError(
-          `moveItem: no previousItem for dropIndex=[${dropIndex}]`,
-        );
-        return;
-      }
-
-      startPosition = previousItem.position + 1;
-
-      if (child) {
-        firstItemIsChild = true;
-      }
-    }
-
-    this.shiftElementsToInsertOnPosition(startPosition, count);
-
-    for (let i = 0; i < count; i++) {
-      const item = itemsToMove[i];
-
-      const position = startPosition + i;
-      const child = i === 0 ? firstItemIsChild : true;
-
-      this.changeItemLocally(item.id, {
-        position,
-        child,
-        persisted: false,
-      });
-      this.persistItem(item.id, { position, child });
-    }
-  }
-
-  private shiftElementsToInsertOnPosition(position: number, count: number) {
-    const shiftedItems: Map<number, number> = shiftItemsToInsertOnPosition(
-      this.items,
-      position,
-      count,
-    );
-
-    shiftedItems.forEach((nextPosition, id) => {
-      this.changeItemLocally(id, {
-        position: nextPosition,
-        persisted: false,
-      });
-
-      this.persistItem(id, { position: nextPosition });
-    });
-  }
-
-  public insertItem({
-    title,
-    check_time,
-    position,
-    child,
-  }: {
-    title: string;
-    check_time: string | null;
-    position: number;
-    child: boolean;
-  }) {
-    this.shiftElementsToInsertOnPosition(position, 1);
-
-    const tempId = this.generateNextItemId();
-
-    const newItem: NoteItem = {
-      id: tempId,
-      list_id: this.params.listId,
-      title,
-      created: "",
-      updated: "",
-      position,
-      check_time,
-      update_index: 0,
-      persisted: false,
-      child,
-    };
-
-    this.setItems([...this.items, newItem]);
-
-    this.setPendingFocus({
-      id: tempId,
-      selectionStart: 0,
-      selectionEnd: 0,
-    });
-
-    this.params.noteItemsTable
-      .create(newItem)
-      .then((data) => {
-        // Item was deleted on the client
-        if (this.tempIdsRemovedSet.delete(tempId)) {
-          this.removeItemRemotely(data.id);
-          return;
-        }
-
-        this.tempIdsMap.set(data.id, tempId);
-
-        const tempUpdate = this.tempUpdatesMap.get(tempId);
-        this.changeItemLocally(tempId, {
-          id: data.id,
-          created: data.created,
-          updated: data.updated,
-          persisted: !tempUpdate,
+        subscribeSignalAndCallWithCurrentValue(currentNoteRecordsSignal, () => {
+            params.onChange();
         });
-        if (tempUpdate) {
-          this.tempUpdatesMap.delete(tempId);
-          this.persistItem(data.id, tempUpdate);
+
+        this.destroyLatch.subscribe(teardown);
+    }
+
+    public destroy(): void {
+        this.destroyLatch.dispatch(undefined);
+    }
+
+    public removeItem(id: string) {
+        this.params.noteItemsStore.deleteNoteItem(id).catch((error) => {
+            this.params.showError(error.message);
+        });
+    }
+
+    public setItemTitle(id: string, title: string) {
+        this.persistItem(id, { title });
+    }
+
+    public moveItems(
+        id: string,
+        {
+            dropIndex,
+            isChild,
+            count,
+        }: {
+            dropIndex: number;
+            isChild: boolean;
+            count: number;
         }
-      })
-      .catch((error) => {
-        this.params.showError(error.message);
-      });
-  }
+    ) {
+        const uncheckedGroups = this.getItemsInfo();
 
-  public getPositionAtTheEnd(): number {
-    return Math.max(...this.items.map((item) => item.position), 0) + 1;
-  }
+        const unchecked = flattenGroups(uncheckedGroups.uncheckedParentGroupMap);
 
-  public createNewItemAtTheEnd() {
-    const nextPosition = this.getPositionAtTheEnd();
-    this.insertItem({
-      title: "",
-      check_time: null,
-      position: nextPosition,
-      child: false,
-    });
-  }
+        const sourceIndex = unchecked.findIndex((item) => item.id === id);
 
-  public createItemAfter({
-    id,
-    selectionStart,
-    selectionEnd,
-  }: {
-    id: number;
-    selectionStart: number;
-    selectionEnd: number;
-  }) {
-    const currentItem = this.items.find((item) => item.id === id);
+        if (sourceIndex === -1) {
+            this.params.showError(`moveItem: item not found with id=[${id}]`);
 
-    if (!currentItem) {
-      this.params.showError(`createItemAfter: item not found id=[${id}]`);
-      return;
-    }
-
-    const titlePrevious = currentItem.title.slice(0, selectionStart);
-    const titleNew = currentItem.title.slice(selectionEnd);
-
-    const previousParams = { title: titlePrevious };
-    this.changeItemLocally(id, { ...previousParams, persisted: false });
-    this.persistItem(id, previousParams);
-
-    const nextPosition = currentItem.position + 1;
-    this.insertItem({
-      title: titleNew,
-      child: currentItem.child,
-      check_time: currentItem.check_time,
-      position: nextPosition,
-    });
-  }
-
-  public toggleChecked(id: number, checked: boolean): void {
-    const itemsSorted = this.getItemsSorted();
-
-    const itemIndex = itemsSorted.findIndex((item) => item.id === id);
-    if (itemIndex === -1) {
-      this.params.showError(`toggleChecked: item not found id=[${id}]`);
-      return;
-    }
-
-    const item = itemsSorted[itemIndex];
-    if (!item) {
-      this.params.showError(`toggleChecked: item not found id=[${id}]`);
-      return;
-    }
-
-    const check_time = checked ? new Date().toISOString() : null;
-    this.changeItemLocally(id, {
-      check_time,
-      persisted: false,
-    });
-    this.persistItem(id, { check_time });
-
-    if (item.child) {
-      let parentItem: NoteItem | undefined;
-      for (let i = itemIndex - 1; i >= 0; i--) {
-        const isParent = !itemsSorted[i].child;
-        if (isParent) {
-          parentItem = itemsSorted[i];
-          break;
+            return;
         }
-      }
 
-      if (!parentItem) {
-        this.params.showError(
-          `toggleChecked: parent item not found for id=[${id}]`,
+        const sourceItem = unchecked[sourceIndex];
+
+        if (!sourceItem) {
+            this.params.showError(`moveItem: item not found on sourceIndex=[${sourceIndex}]`);
+
+            return;
+        }
+
+        if (sourceIndex === dropIndex && sourceItem.is_child === isChild) {
+            return;
+        }
+
+        const itemsToMove = unchecked.slice(sourceIndex, sourceIndex + count);
+
+        let startPosition = 1;
+        let firstItemIsChild = false;
+
+        if (dropIndex > 0) {
+            const previousItem = unchecked[dropIndex - 1];
+
+            if (!previousItem) {
+                this.params.showError(`moveItem: no previousItem for dropIndex=[${dropIndex}]`);
+
+                return;
+            }
+
+            startPosition = previousItem.position + 1;
+
+            if (isChild) {
+                firstItemIsChild = true;
+            }
+        }
+
+        this.shiftElementsToInsertOnPosition(startPosition, count);
+
+        for (let i = 0; i < count; i++) {
+            const item = itemsToMove[i];
+
+            const position = startPosition + i;
+            const is_child = i === 0 ? firstItemIsChild : true;
+
+            this.persistItem(item.id, {
+                position,
+                is_child,
+            });
+        }
+    }
+
+    public insertItemAtPosition({
+        title,
+        completed_at,
+        position,
+        is_child,
+    }: {
+        title: string;
+        completed_at: string | null;
+        position: number;
+        is_child: boolean;
+    }) {
+        this.shiftElementsToInsertOnPosition(position, 1);
+
+        const newItem: NoteItemCreateParams = {
+            id: crypto.randomUUID(),
+            note_id: this.params.noteId,
+            title,
+            position,
+            completed_at,
+            is_child,
+        };
+
+        PENDING_FOCUS_SIGNAL.dispatch({
+            inputElementId: newItem.id,
+            expectedTitle: newItem.title,
+            selectionStart: 0,
+            selectionEnd: 0,
+            saveCaretPositionAfterChange: true,
+        });
+
+        this.params.noteItemsStore
+            .createNoteItem(newItem)
+            .catch((error) => {
+                this.params.showError(error.message);
+            });
+    }
+
+    public createNewItemAtTheEnd() {
+        const nextPosition = Date.now();
+
+        this.insertItemAtPosition({
+            title: '',
+            completed_at: null,
+            position: nextPosition,
+            is_child: false,
+        });
+    }
+
+    public createItemAfter({
+        id,
+        selectionStart,
+        selectionEnd,
+    }: {
+        id: string;
+        selectionStart: number;
+        selectionEnd: number;
+    }) {
+        const currentItem = this.getItemsInfo().itemMap.get(id);
+
+        if (!currentItem) {
+            this.params.showError(`createItemAfter: item not found id=[${id}]`);
+
+            return;
+        }
+
+        const titlePrevious = currentItem.title.slice(0, selectionStart);
+        const titleNew = currentItem.title.slice(selectionEnd);
+
+        const previousParams = { title: titlePrevious };
+
+        this.persistItem(id, previousParams);
+
+        const nextPosition = currentItem.position + 1;
+
+        this.insertItemAtPosition({
+            title: titleNew,
+            is_child: currentItem.is_child,
+            completed_at: currentItem.completed_at,
+            position: nextPosition,
+        });
+    }
+
+    public toggleChecked(id: string, checked: boolean): void {
+        const { itemMap } = this.getItemsInfo();
+        const item = itemMap.get(id);
+
+        if (!item) {
+            this.params.showError(`toggleChecked: item not found id=[${id}]`);
+
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const completed_at = checked ? now : null;
+
+        this.persistItem(id, { completed_at });
+    }
+
+    public mergeItemWithPrevious(id: string) {
+        const { uncheckedFlatten, itemMap } = this.getItemsInfo();
+
+        const currentIndex = uncheckedFlatten.findIndex((item) => item.id === id);
+        const currentItem = itemMap.get(id);
+
+        if (!currentItem) {
+            this.params.showError(`mergeItemWithPrevious: item not found id=[${id}]`);
+
+            return;
+        }
+
+        if (currentIndex === -1) {
+            this.params.showError(`mergeItemWithPrevious: item not found in uncheckedFlatten id=[${id}]`);
+
+            return;
+        }
+
+        if (currentIndex === 0) {
+            return;
+        }
+
+        const previousItem = uncheckedFlatten[currentIndex - 1];
+        const mergedTitle = previousItem.title + currentItem.title;
+
+        const cursorPosition = previousItem.title.length;
+
+        this.removeItem(currentItem.id);
+        this.persistItem(previousItem.id, { title: mergedTitle });
+
+        PENDING_FOCUS_SIGNAL.dispatch({
+            inputElementId: previousItem.id,
+            expectedTitle: mergedTitle,
+            selectionStart: cursorPosition,
+            selectionEnd: cursorPosition,
+            saveCaretPositionAfterChange: true,
+        });
+    }
+
+    private shiftElementsToInsertOnPosition(position: number, count: number) {
+        const shiftedItems = shiftItemsToInsertOnPosition(
+            this.getItemsInfo().allItems,
+            position,
+            count
         );
-        return;
-      }
 
-      this.persistItem(parentItem.id, {});
-    }
-  }
-
-  public mergeItemWithPrevious(id: number) {
-    const sortedItems = [...this.items].sort(
-      (first, second) => first.position - second.position,
-    );
-    const currentIndex = sortedItems.findIndex((item) => item.id === id);
-
-    if (currentIndex <= 0) {
-      return;
+        for (const [
+            id,
+            nextPosition,
+        ] of shiftedItems.entries()) {
+            this.persistItem(id, { position: nextPosition });
+        }
     }
 
-    const currentItem = sortedItems[currentIndex];
-    const previousItem = sortedItems[currentIndex - 1];
-    const mergedTitle = previousItem.title + currentItem.title;
-    const cursorPosition = previousItem.title.length;
+    private changeItemLocally(id: string, updates: Partial<NoteItem>): NoteItem | undefined {
+        const { recordsSignal } = this.params.noteItemsStore;
 
-    this.setItems(
-      this.items.map((item) => {
-        if (item.id === previousItem.id) {
-          return { ...item, title: mergedTitle };
+        let nextItem: NoteItem | undefined = undefined;
+
+        recordsSignal.dispatch(recordsSignal.getValue().map((item) => {
+            if (item.id !== id) {
+                return item;
+            }
+
+            nextItem = {
+                ...item,
+                ...updates,
+            };
+
+            return nextItem;
+        }));
+
+        return nextItem;
+    }
+
+    private persistItem(
+        id: string,
+        updates: Partial<
+            Pick<NoteItem, 'title' | 'position' | 'completed_at' | 'is_child'>
+        >
+    ): void {
+        const now = new Date();
+        const nowString = now.toISOString();
+
+        const nextItem = this.changeItemLocally(id, {
+            ...updates,
+            updated_at: nowString,
+            _modified: nowString,
+        });
+
+        if (!nextItem) {
+            this.params.showError(`persistItem: item not found id=[${id}]`);
+
+            return;
         }
 
-        return item;
-      }),
-    );
-
-    this.persistItem(previousItem.id, { title: mergedTitle });
-    this.removeItemLocally(currentItem.id);
-    this.removeItemRemotely(currentItem.id);
-    this.setPendingFocus({
-      id: previousItem.id,
-      selectionStart: cursorPosition,
-      selectionEnd: cursorPosition,
-    });
-  }
+        this.params.noteItemsStore
+            .updateNoteItem(now, {
+                ...nextItem,
+                _deleted: false,
+            })
+            .catch((error) => {
+                this.params.showError(`persistItem: error id=[${id}] [${error.message}]`);
+            });
+    }
 }

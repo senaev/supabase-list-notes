@@ -1,0 +1,36 @@
+.ConnectionStatusIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ConnectionStatusIndicator__localOnly {
+  background: rgba(196, 204, 255, 0.16);
+  color: #c4ccff;
+}
+
+.ConnectionStatusIndicator__initializing {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ConnectionStatusIndicator__syncing {
+  background: rgba(255, 202, 152, 0.18);
+  color: #ffca98;
+}
+
+.ConnectionStatusIndicator__idle {
+  background: rgba(152, 255, 174, 0.16);
+  color: #98ffae;
+}
+
+.ConnectionStatusIndicator__error {
+  background: rgba(255, 152, 152, 0.18);
+  color: #ff9898;
+}

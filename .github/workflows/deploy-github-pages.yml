@@ -43,7 +43,13 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: npm run test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run typecheck
+        run: npm run typecheck
 
       - name: Build app
         run: npm run build

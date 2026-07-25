@@ -1,0 +1,10 @@
+.ErrorPage__emoji {
+    font-size: 5rem;
+}
+
+.ErrorPage__message {
+    color: rgb(255, 175, 175);
+    margin: 1em;
+    white-space: pre;
+    text-wrap: auto;
+}

@@ -1,6 +1,13 @@
 {
   "cSpell.language": "en,ru",
-  "cSpell.words": ["Supabase"],
+  "cSpell.words": [
+    "Dexie",
+    "multilines",
+    "plpgsql",
+    "rxdb",
+    "senaev",
+    "Supabase"
+],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {

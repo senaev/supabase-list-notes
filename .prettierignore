@@ -1,0 +1,5 @@
+# Everything is handled with eslint
+*.js
+*.jsx
+*.ts
+*.tsx

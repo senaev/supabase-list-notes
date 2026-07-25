@@ -1,29 +1,49 @@
-import { useRef, useState } from "react";
-import { useTablesContext } from "../../contexts/TablesContext";
-import { Note } from "../../controllers/Note";
+import {
+    useEffect, useMemo,
+    useState,
+} from 'react';
 
-export function useNote(params: {
-  listId: number;
-  showError: (message: string) => void;
-}): [number, Note] {
-  const [ver, setVer] = useState<number>(0);
+import { useNoteItemsStore } from '../../contexts/NoteItemsStoreContext';
+import { Note } from '../../controllers/Note';
 
-  const { noteItemsTable } = useTablesContext();
+export function useNote({
+    noteId,
+    showError,
+}: {
+    noteId: string;
+    showError: (message: string) => void;
+}): Note {
+    const [
+        _ver,
+        setVer,
+    ] = useState<number>(0);
 
-  const ref = useRef<{ listId: number; note: Note } | null>(null);
-  if (!ref.current || ref.current.listId !== params.listId) {
-    ref.current = {
-      listId: params.listId,
-      note: new Note({
-        ...params,
-        noteItemsTable,
-        onChange: () => {
-          setVer((prev) => prev + 1);
-        },
-      }),
-    };
-  }
-  const val = ref.current.note;
+    const noteItemsStore = useNoteItemsStore();
+    const note = useMemo(() => {
+        const newNote = new Note({
+            noteItemsStore,
+            noteId,
+            onChange: () => {
+                setVer((prev) => prev + 1);
+            },
+            showError,
+        });
 
-  return [ver, val];
+        return newNote;
+    }, [
+        noteItemsStore,
+        noteId,
+        showError,
+    ]);
+
+    useEffect(() => () => {
+        note.destroy();
+    }, [
+        note,
+        noteItemsStore,
+        noteId,
+        showError,
+    ]);
+
+    return note;
 }
