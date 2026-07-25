@@ -1,6 +1,7 @@
 import "./NotePage.css";
 
 import { PlusIcon } from "@heroicons/react/24/solid";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   KeyboardEvent,
   SyntheticEvent,
@@ -9,46 +10,57 @@ import {
   useState,
 } from "react";
 import { useToastsContext } from "../../contexts/ToastsContext";
-import { flattenGroups } from "../../controllers/Note";
-import { NoteItem } from "../../types/NoteItem";
-import { captureDragAndDrop } from "../../utils/captureDragAndDrop";
-import { noop } from "../../utils/noop";
+import { useItemsSync } from "../../sync/useItemsSync";
+import { Item } from "../../sync/types";
 import { NoteItemElement } from "../NoteItemElement/NoteItemElement";
-import { useNote } from "../hooks/useNote";
 
-const PLACEHOLDER_ITEM_ID = -1_000_000_000;
-
-const CHILD_OFFSET = 25;
-
-type DragState = {
-  sourceIndex: number;
-  sourceCount: number;
-  dropIndex: number;
-  child: boolean;
-  x: number;
-  y: number;
+type PendingFocus = {
+  id: string;
+  selectionStart: number;
+  selectionEnd: number;
 };
 
-export function NotePage({ noteId }: { noteId: number }) {
+function sortUnchecked(items: Item[]): Item[] {
+  return items
+    .filter((item) => item.checked_at === null)
+    .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+}
+
+function sortChecked(items: Item[]): Item[] {
+  return items
+    .filter((item) => item.checked_at !== null)
+    .sort(
+      (a, b) => Date.parse(b.checked_at as string) - Date.parse(a.checked_at as string),
+    );
+}
+
+export function NotePage({
+  supabaseClient,
+}: {
+  supabaseClient: SupabaseClient;
+}) {
   const { showError } = useToastsContext();
-  const [itemsVer, list] = useNote({ listId: noteId, showError });
-  const [dragState, setDragState] = useState<DragState | null>(null);
-  const inputRefs = useRef(new Map<number, HTMLTextAreaElement>());
+  const sync = useItemsSync(supabaseClient);
+  const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null);
+  const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const desiredCaretPositionRef = useRef(0);
   const ignoreNextSelectionRef = useRef(false);
-  const itemsContainerRef = useRef<HTMLDivElement>(null);
-  const itemsContainer = itemsContainerRef.current;
-
-  const parentGroups = list.getItemGroupsSplit();
-  const unchecked = flattenGroups(parentGroups.unchecked);
-  const checked = flattenGroups(parentGroups.checked);
 
   useEffect(() => {
-    if (list.pendingFocus == null) {
+    if (sync.error) {
+      showError(sync.error);
+    }
+  }, [sync.error, showError]);
+
+  const unchecked = sortUnchecked(sync.items);
+  const checked = sortChecked(sync.items);
+
+  useEffect(() => {
+    if (pendingFocus == null) {
       return;
     }
 
-    const { selectionEnd, selectionStart, id } = list.pendingFocus;
+    const { selectionEnd, selectionStart, id } = pendingFocus;
 
     const input = inputRefs.current.get(id);
     if (!input) {
@@ -58,14 +70,14 @@ export function NotePage({ noteId }: { noteId: number }) {
     ignoreNextSelectionRef.current = true;
     input.focus();
     input.setSelectionRange(selectionStart, selectionEnd);
-    list.setPendingFocus(null);
-  }, [itemsVer, list]);
+    setPendingFocus(null);
+  }, [pendingFocus, sync.items]);
 
   useEffect(() => {
     inputRefs.current.forEach((input) => {
       resizeTextarea(input);
     });
-  }, [itemsVer]);
+  }, [sync.items]);
 
   function resizeTextarea(input: HTMLTextAreaElement) {
     input.style.height = "auto";
@@ -76,13 +88,9 @@ export function NotePage({ noteId }: { noteId: number }) {
     id,
     direction,
   }: {
-    id: number;
+    id: string;
     direction: "up" | "down";
   }) {
-    const parentGroups = list.getItemGroupsSplit();
-    const unchecked = flattenGroups(parentGroups.unchecked);
-    const checked = flattenGroups(parentGroups.checked);
-
     const sortedItems = unchecked.find((item) => item.id === id)
       ? unchecked
       : checked;
@@ -109,7 +117,7 @@ export function NotePage({ noteId }: { noteId: number }) {
       desiredCaretPositionRef.current,
       maxPositionInFirstLine,
     );
-    list.setPendingFocus({
+    setPendingFocus({
       id: targetItem.id,
       selectionStart: selectionPosition,
       selectionEnd: selectionPosition,
@@ -147,11 +155,57 @@ export function NotePage({ noteId }: { noteId: number }) {
     return !input.value.slice(caretPosition).includes("\n");
   }
 
+  function createItemAfter({
+    id,
+    selectionStart,
+    selectionEnd,
+  }: {
+    id: string;
+    selectionStart: number;
+    selectionEnd: number;
+  }) {
+    const currentItem = unchecked.find((item) => item.id === id);
+
+    if (!currentItem) {
+      showError(`createItemAfter: item not found id=[${id}]`);
+      return;
+    }
+
+    const titlePrevious = currentItem.title.slice(0, selectionStart);
+    const titleNew = currentItem.title.slice(selectionEnd);
+
+    sync.updateItem(id, { title: titlePrevious });
+
+    const newId = sync.addItem(titleNew);
+    setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
+  }
+
+  function mergeItemWithPrevious(id: string) {
+    const currentIndex = unchecked.findIndex((item) => item.id === id);
+
+    if (currentIndex <= 0) {
+      return;
+    }
+
+    const currentItem = unchecked[currentIndex];
+    const previousItem = unchecked[currentIndex - 1];
+    const mergedTitle = previousItem.title + currentItem.title;
+    const cursorPosition = previousItem.title.length;
+
+    sync.updateItem(previousItem.id, { title: mergedTitle });
+    sync.removeItem(currentItem.id);
+    setPendingFocus({
+      id: previousItem.id,
+      selectionStart: cursorPosition,
+      selectionEnd: cursorPosition,
+    });
+  }
+
   function handleItemKeyDown(
     event: KeyboardEvent<HTMLTextAreaElement>,
-    item: NoteItem,
+    item: Item,
   ) {
-    let { selectionStart, selectionEnd } = event.currentTarget;
+    const { selectionStart, selectionEnd } = event.currentTarget;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
 
@@ -160,11 +214,7 @@ export function NotePage({ noteId }: { noteId: number }) {
         return;
       }
 
-      list.createItemAfter({
-        id: item.id,
-        selectionStart,
-        selectionEnd,
-      });
+      createItemAfter({ id: item.id, selectionStart, selectionEnd });
     }
 
     if (
@@ -173,7 +223,9 @@ export function NotePage({ noteId }: { noteId: number }) {
       event.key.toLowerCase() === "l"
     ) {
       event.preventDefault();
-      list.toggleChecked(item.id, !item.check_time);
+      sync.updateItem(item.id, {
+        checked_at: item.checked_at ? null : new Date().toISOString(),
+      });
     }
 
     if (event.key === "ArrowUp" || event.key === "ArrowDown") {
@@ -203,46 +255,30 @@ export function NotePage({ noteId }: { noteId: number }) {
     ) {
       event.preventDefault();
 
-      list.mergeItemWithPrevious(item.id);
+      mergeItemWithPrevious(item.id);
     }
   }
 
-  function handleItemChange(id: number, title: string) {
-    list.changeItemLocally(id, { title, persisted: false });
-    list.persistItem(id, { title });
+  function handleItemChange(id: string, title: string) {
+    sync.updateItem(id, { title });
   }
 
-  type ListItemWithSortedIndex = NoteItem & {
-    sortedIndex: number;
-  };
-  const sortedItemsWithPlaceholders: ListItemWithSortedIndex[] = [
-    ...unchecked.map((item, index) => ({ ...item, sortedIndex: index })),
-  ];
-  if (dragState) {
-    const { sourceIndex, sourceCount, dropIndex } = dragState;
-    if (dropIndex !== sourceIndex) {
-      Array.from({ length: sourceCount }).forEach((_, i) => {
-        const placeholder: ListItemWithSortedIndex = {
-          ...unchecked[sourceIndex + i],
-          id: PLACEHOLDER_ITEM_ID - i,
-          sortedIndex: -1,
-        };
-        const placeholderIndex =
-          dropIndex > sourceIndex ? dropIndex + sourceCount : dropIndex;
-        sortedItemsWithPlaceholders.splice(placeholderIndex, 0, placeholder);
-      });
-    }
+  function createNewItemAtTheEnd() {
+    const newId = sync.addItem("");
+    setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
   }
 
   return (
     <>
-      <div className="NotePage__items" ref={itemsContainerRef}>
-        {sortedItemsWithPlaceholders.map((item) => (
+      <div className="NotePage__items">
+        {unchecked.map((item) => (
           <NoteItemElement
-            key={list.getItemClientKey(item)}
+            key={item.id}
             item={item}
-            toggleChecked={(checked) => {
-              list.toggleChecked(item.id, checked);
+            toggleChecked={(isChecked) => {
+              sync.updateItem(item.id, {
+                checked_at: isChecked ? new Date().toISOString() : null,
+              });
             }}
             onChange={(value) => {
               handleItemChange(item.id, value);
@@ -252,169 +288,7 @@ export function NotePage({ noteId }: { noteId: number }) {
             }}
             onTextSelectionChange={saveCaretPosition}
             onRemove={() => {
-              list.removeItem(item.id);
-            }}
-            dragState={(() => {
-              if (!dragState) {
-                return undefined;
-              }
-
-              if (item.id <= PLACEHOLDER_ITEM_ID) {
-                return "placeholder";
-              }
-
-              const { sourceIndex, sourceCount, dropIndex } = dragState;
-              if (item.sortedIndex >= 0) {
-                if (
-                  item.sortedIndex < sourceIndex ||
-                  item.sortedIndex >= sourceIndex + sourceCount
-                ) {
-                  return undefined;
-                }
-              }
-
-              if (dropIndex === sourceIndex) {
-                return "source";
-              }
-
-              return "source-collapsed";
-            })()}
-            onDragStart={(event) => {
-              if (!itemsContainer) {
-                showError(
-                  "Unable to start drag and drop: items container not found",
-                );
-                return;
-              }
-
-              const dragElement = event.target as HTMLElement;
-              const dragItemElement = dragElement.closest(".NoteItemElement")!;
-
-              const dragItemRect = dragItemElement.getBoundingClientRect();
-
-              const cursorToDragElementOffset = {
-                x: event.clientX - dragItemRect.left,
-                y: event.clientY - dragItemRect.top,
-              };
-
-              const itemsContainerRect = itemsContainer.getBoundingClientRect();
-              const initialCursorOffset = {
-                x: event.clientX - itemsContainerRect.left,
-                y: event.clientY - itemsContainerRect.top,
-              };
-
-              const initialItemContainerOffsetY =
-                dragItemRect.top - itemsContainerRect.top;
-
-              const sourceIndex = unchecked.findIndex((i) => i.id === item.id);
-              let sourceCount = 1;
-              if (!item.child) {
-                for (let i = sourceIndex + 1; i < unchecked.length; i++) {
-                  if (unchecked[i].child) {
-                    sourceCount++;
-                  } else {
-                    break;
-                  }
-                }
-              }
-
-              const otherItemsVerticalCenters: number[] = [];
-              const itemElements = Array.from(
-                itemsContainer.querySelectorAll(".NoteItemElement"),
-              );
-              let movingItemsHeight = 0;
-              itemElements.forEach((otherItemElement, i) => {
-                const rect = otherItemElement.getBoundingClientRect();
-                if (i >= sourceIndex && i < sourceIndex + sourceCount) {
-                  movingItemsHeight += rect.height;
-                  return;
-                }
-
-                let center =
-                  rect.top + rect.height / 2 - itemsContainerRect.top;
-
-                if (i > sourceIndex) {
-                  center -= movingItemsHeight;
-                }
-
-                otherItemsVerticalCenters.push(center);
-              });
-
-              let dragState: DragState = {
-                sourceIndex,
-                sourceCount,
-                dropIndex: sourceIndex,
-                child: item.child,
-                x: dragItemRect.left - itemsContainerRect.left,
-                y: dragItemRect.top - itemsContainerRect.top,
-              };
-              setDragState(dragState);
-
-              captureDragAndDrop(event.nativeEvent, (event, isStop) => {
-                if (isStop) {
-                  setDragState(null);
-
-                  const { dropIndex, child } = dragState;
-                  list.moveItems(item.id, {
-                    dropIndex:
-                      dropIndex > sourceIndex
-                        ? dropIndex + sourceCount
-                        : dropIndex,
-                    child,
-                    count: sourceCount,
-                  });
-
-                  return;
-                }
-
-                const itemsContainerRect =
-                  itemsContainer.getBoundingClientRect();
-                const offset = {
-                  x: event.clientX - itemsContainerRect.left,
-                  y: event.clientY - itemsContainerRect.top,
-                };
-
-                const dropIndex = (() => {
-                  const moveOffset =
-                    offset.y -
-                    initialCursorOffset.y +
-                    initialItemContainerOffsetY;
-
-                  for (let i = 0; i < otherItemsVerticalCenters.length; i++) {
-                    const center = otherItemsVerticalCenters[i];
-                    if (moveOffset < center) {
-                      return i;
-                    }
-                  }
-
-                  return otherItemsVerticalCenters.length;
-                })();
-
-                const dragRight = offset.x - cursorToDragElementOffset.x;
-                const child: boolean = (() => {
-                  if (dragRight >= CHILD_OFFSET) {
-                    return true;
-                  }
-
-                  if (dragRight < -CHILD_OFFSET) {
-                    return false;
-                  }
-
-                  return item.child;
-                })();
-
-                const nextDragState: DragState = {
-                  sourceIndex,
-                  sourceCount,
-                  dropIndex,
-                  child,
-                  x: offset.x - cursorToDragElementOffset.x,
-                  y: offset.y - cursorToDragElementOffset.y,
-                };
-
-                dragState = nextDragState;
-                setDragState(nextDragState);
-              });
+              sync.removeItem(item.id);
             }}
             resizeTextarea={resizeTextarea}
             inputRefs={inputRefs}
@@ -423,64 +297,12 @@ export function NotePage({ noteId }: { noteId: number }) {
         ))}
         <button
           className="NotePage__addItemButton"
-          onClick={() => {
-            list.createNewItemAtTheEnd();
-          }}
+          onClick={createNewItemAtTheEnd}
           type="button"
         >
           <PlusIcon className="NotePage_addItemButton__icon" />
           Item
         </button>
-
-        {dragState ? (
-          <div
-            className={"NotePage__dragOverlay"}
-            style={{
-              transform: `translateY(${dragState.y}px)`,
-            }}
-          >
-            {[
-              ...Array.from({ length: dragState.sourceCount }, (_, i) => i),
-            ].map((i) => {
-              const item = unchecked[dragState.sourceIndex + i];
-              const child: boolean = (() => {
-                if (i > 0) {
-                  return true;
-                }
-
-                if (dragState.dropIndex === 0) {
-                  return false;
-                }
-
-                if (dragState.child) {
-                  return true;
-                }
-
-                return false;
-              })();
-
-              return (
-                <NoteItemElement
-                  key={i}
-                  dragState="overlay"
-                  inputRefs={inputRefs}
-                  item={{
-                    ...item,
-                    child,
-                  }}
-                  onChange={noop}
-                  onKeyDown={noop}
-                  onRemove={noop}
-                  onTextSelectionChange={noop}
-                  onDragStart={noop}
-                  readonlyText
-                  resizeTextarea={resizeTextarea}
-                  toggleChecked={noop}
-                />
-              );
-            })}
-          </div>
-        ) : null}
       </div>
       <div>
         {checked.length > 0 && (
@@ -488,20 +310,20 @@ export function NotePage({ noteId }: { noteId: number }) {
             <hr className="items-separator" />
             {checked.map((item) => (
               <NoteItemElement
-                key={list.getItemClientKey(item)}
+                key={item.id}
                 item={item}
-                toggleChecked={(checked) => {
-                  list.toggleChecked(item.id, checked);
+                toggleChecked={(isChecked) => {
+                  sync.updateItem(item.id, {
+                    checked_at: isChecked ? new Date().toISOString() : null,
+                  });
                 }}
-                onChange={noop}
-                onKeyDown={noop}
+                onChange={() => {}}
+                onKeyDown={() => {}}
                 onTextSelectionChange={saveCaretPosition}
                 onRemove={() => {
-                  list.removeItem(item.id);
+                  sync.removeItem(item.id);
                 }}
-                dragState={undefined}
-                onDragStart={undefined}
-                resizeTextarea={noop}
+                resizeTextarea={() => {}}
                 inputRefs={inputRefs}
                 readonlyText={true}
               />

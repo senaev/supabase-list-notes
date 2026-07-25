@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { NOTES_LIST_TABLE_NAME } from "../const/NOTES_LIST_TABLE_NAME";
+import { ITEMS_TABLE_NAME } from "../const/ITEMS_TABLE_NAME";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 
 export type SupabaseCredentials = {
@@ -139,7 +139,7 @@ export class SupabaseController {
     );
 
     const { error } = await this.client
-      .from(NOTES_LIST_TABLE_NAME)
+      .from(ITEMS_TABLE_NAME)
       .select("id")
       .limit(1);
 

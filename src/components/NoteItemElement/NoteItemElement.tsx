@@ -1,23 +1,9 @@
 import "./NoteItemElement.css";
 
 import classNames from "classnames";
-import { KeyboardEvent, PointerEvent, SyntheticEvent } from "react";
+import { KeyboardEvent, SyntheticEvent } from "react";
 import { DEBUG_ENABLED } from "../../const/DEBUG_ENABLED";
-import { NoteItem } from "../../types/NoteItem";
-
-type DragState = "overlay" | "source" | "source-collapsed" | "placeholder";
-
-const DRAG_STATE_CLASSES: Record<DragState, string[]> = {
-  overlay: ["NoteItemElement_dragOverlay"],
-  source: ["NoteItemElement_dragSource"],
-  "source-collapsed": [
-    "NoteItemElement_dragSource",
-    "NoteItemElement_dragCollapsed",
-  ],
-  placeholder: ["NoteItemElement_dragSource"],
-};
-
-export type DragStartCallback = (event: PointerEvent<HTMLDivElement>) => void;
+import { Item } from "../../sync/types";
 
 export function NoteItemElement({
   item,
@@ -25,53 +11,31 @@ export function NoteItemElement({
   onChange,
   onKeyDown,
   onRemove,
-  dragState,
-  onDragStart,
   resizeTextarea,
   inputRefs,
   onTextSelectionChange,
   readonlyText,
 }: {
-  item: NoteItem;
+  item: Item;
   toggleChecked: (checked: boolean) => void;
   onChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onRemove: VoidFunction;
-  dragState: DragState | undefined;
-  onDragStart: DragStartCallback | undefined;
   resizeTextarea: (input: HTMLTextAreaElement) => void;
-  inputRefs: React.RefObject<Map<number, HTMLTextAreaElement>>;
+  inputRefs: React.RefObject<Map<string, HTMLTextAreaElement>>;
   readonlyText: boolean;
   onTextSelectionChange: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
 }) {
   return (
     <div
-      className={classNames(
-        "NoteItemElement",
-        DRAG_STATE_CLASSES[dragState as DragState],
-        {
-          NoteItemElement_child: item.child,
-          NoteItemElement_isChecked: Boolean(item.check_time),
-        },
-      )}
+      className={classNames("NoteItemElement", {
+        NoteItemElement_isChecked: Boolean(item.checked_at),
+      })}
     >
-      <div
-        className={classNames("NoteItemElement__dragHandle", {
-          NoteItemElement__dragHandle_disabled: !onDragStart,
-        })}
-        role={onDragStart ? "button" : undefined}
-        tabIndex={onDragStart ? 0 : undefined}
-        onPointerDown={onDragStart}
-        onContextMenu={(event) => {
-          event.preventDefault();
-        }}
-      >
-        <span className="NoteItemElement__dragHandle__visual" />
-      </div>
       <label className="NoteItemElement__checkboxLabel">
         <input
           aria-label={`Mark ${item.title || "item"} as checked`}
-          checked={Boolean(item.check_time)}
+          checked={Boolean(item.checked_at)}
           className="NoteItemElement__checkbox"
           onChange={(event) => {
             toggleChecked(event.target.checked);
@@ -117,33 +81,18 @@ export function NoteItemElement({
         >
           <span
             style={{
-              color: "#FFCA98",
-            }}
-          >
-            pos=[{item.position}]
-          </span>
-          <span
-            style={{
-              color: "#989AFF",
-            }}
-          >
-            upd=[{item.update_index}]
-          </span>
-          <span
-            style={{
               color: "#98FFAE",
             }}
           >
-            id=[{item.id}]
+            id=[{item.id.slice(0, 8)}]
           </span>
           <span
             style={{
               color: "#C1FF98",
             }}
           >
-            updated=[{new Date(item.updated).getTime()}]
+            updated=[{new Date(item._modified).getTime()}]
           </span>
-          <span>{item.persisted ? "✅" : "⏳"}</span>
         </span>
       )}
       <div

@@ -24,15 +24,6 @@
   height: 18px;
 }
 
-.NotePage__dragOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 30;
-  pointer-events: none;
-}
-
 .NotePage__items {
   position: relative;
 }
