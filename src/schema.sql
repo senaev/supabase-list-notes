@@ -7,7 +7,7 @@ drop table if exists public.items;
 create table public.items (
     id text primary key, -- generated client-side (crypto.randomUUID()); text type required by RxDB
     title text not null,
-    type text default null check (char_length(type) <= 32),
+    type text not null check (char_length(type) <= 32),
     checked_at timestamptz default null,
     created_at timestamptz not null,
     -- Modified-timestamp checkpoint field for the RxDB Supabase replication

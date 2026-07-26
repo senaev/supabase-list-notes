@@ -11,8 +11,10 @@ export interface UseItemsSyncResult {
   /** Creates an item (title may be empty, e.g. to start editing immediately)
    * and returns its id synchronously for optimistic focus handling. The
    * item itself only appears in `items` once the local database write
-   * completes (typically within a few ms). */
-  addItem: (title: string) => string;
+   * completes (typically within a few ms). `type` defaults to
+   * DEFAULT_ITEM_TYPE when omitted - pass it explicitly to copy an
+   * existing item's tag (e.g. when splitting an item into two). */
+  addItem: (title: string, type?: string) => string;
   updateItem: (id: string, patch: Partial<EditableFields>) => void;
   /** Soft-deletes the item (RxDB's `_deleted` tombstone) so Realtime
    * tombstones are reliably delivered to other tabs/devices. */

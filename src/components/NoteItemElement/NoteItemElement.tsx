@@ -95,6 +95,7 @@ export function NoteItemElement({
           </span>
         </span>
       )}
+      <span className="NoteItemElement__tag">{item.type}</span>
       <div
         aria-label={`Remove ${item.title || "item"}`}
         className="NoteItemElement__remove"

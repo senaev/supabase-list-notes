@@ -176,7 +176,8 @@ export function NotePage({
 
     sync.updateItem(id, { title: titlePrevious });
 
-    const newId = sync.addItem(titleNew);
+    // Copy the original item's tag onto the new item created by the split.
+    const newId = sync.addItem(titleNew, currentItem.type);
     setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
   }
 
@@ -192,6 +193,9 @@ export function NotePage({
     const mergedTitle = previousItem.title + currentItem.title;
     const cursorPosition = previousItem.title.length;
 
+    // Only `title` is patched here, so the merged item keeps the previous
+    // item's tag (its `type` is left untouched) rather than the current
+    // (removed) item's.
     sync.updateItem(previousItem.id, { title: mergedTitle });
     sync.removeItem(currentItem.id);
     setPendingFocus({

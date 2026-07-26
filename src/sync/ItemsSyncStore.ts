@@ -4,6 +4,7 @@ import type { RxSupabaseReplicationState } from "rxdb/plugins/replication-supaba
 import type { Subscription } from "rxjs";
 import { deepEqual } from "senaev-utils/src/utils/Object/deepEqual/deepEqual";
 import { Signal } from "senaev-utils/src/utils/Signal/Signal";
+import { DEFAULT_ITEM_TYPE } from "../const/DEFAULT_ITEM_TYPE";
 import { createLocalDatabase, LocalCollections, LocalItemRow } from "./localDb";
 import { startItemsReplication } from "./replication";
 import type { EditableFields, Item } from "./types";
@@ -220,14 +221,20 @@ export class ItemsSyncStore {
    * item is immediately reflected in `itemsSignal` (see
    * pendingOptimisticCreatesById) rather than waiting for the local
    * database write to complete.
+   *
+   * `type` defaults to DEFAULT_ITEM_TYPE client-side (the DB column is
+   * `not null` with no DB-level default - see schema.sql). Callers that
+   * split an existing item into two (see NotePage's createItemAfter) pass
+   * the original item's `type` through so the new item copies its tag
+   * instead of falling back to the default.
    */
-  public addItem = (title: string): string => {
+  public addItem = (title: string, type: string = DEFAULT_ITEM_TYPE): string => {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const row: LocalItemRow = {
       id,
       title,
-      type: null,
+      type,
       checked_at: null,
       created_at: now,
       _modified: now,

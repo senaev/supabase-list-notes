@@ -1,9 +1,9 @@
 export type Item = {
   id: string;
   title: string;
-  // Kept in the DB schema for parity with the reference sync design, but
-  // there's no UI for it in this app - always null.
-  type: string | null;
+  // Required; defaults to DEFAULT_ITEM_TYPE (see const/DEFAULT_ITEM_TYPE)
+  // client-side on creation - there's no DB-level default (see schema.sql).
+  type: string;
   checked_at: string | null;
   created_at: string;
   // Server-authoritative last-write timestamp. Named `_modified` (rather
@@ -12,4 +12,4 @@ export type Item = {
   _modified: string;
 };
 
-export type EditableFields = Pick<Item, "title" | "checked_at">;
+export type EditableFields = Pick<Item, "title" | "checked_at" | "type">;

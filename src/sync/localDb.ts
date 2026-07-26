@@ -24,7 +24,7 @@ export type LocalCollections = {
 // one, and this local database is a pure Supabase mirror, so it's always
 // safe to just abandon the old one and start fresh under a new name rather
 // than write a migration for what is effectively disposable cache data.
-const DATABASE_NAME = "supabase-list-notes-local-db-v2";
+const DATABASE_NAME = "supabase-list-notes-local-db-v3";
 
 const itemsSchema = {
   title: `${ITEMS_TABLE_NAME} schema`,
@@ -42,7 +42,7 @@ const itemsSchema = {
       maxLength: 10000,
     },
     type: {
-      type: ["string", "null"],
+      type: "string",
       maxLength: 32,
     },
     checked_at: {

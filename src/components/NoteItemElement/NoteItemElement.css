@@ -88,6 +88,19 @@
   background-size: 13px 13px;
 }
 
+.NoteItemElement__tag {
+  align-self: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: rgb(154 160 166 / 0.16);
+  color: var(--text-color-placeholder);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .NoteItemElement__remove {
   opacity: 0;
   pointer-events: none;
