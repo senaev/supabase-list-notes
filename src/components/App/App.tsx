@@ -6,6 +6,7 @@ import {
   SupabaseClientContextProvider,
   useSupabaseClientContext,
 } from "../../contexts/SupabaseClientContext";
+import { useItemsSync } from "../../sync/useItemsSync";
 import { AuthPage } from "../AuthPage/AuthPage";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
 import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
@@ -17,10 +18,15 @@ export function ItemsApp({
 }: {
   supabaseClient: SupabaseClient;
 }) {
+  // Lifted above NotePage so MainPageHeader can render the type filter nav
+  // (see ItemTypesNav) off the same live items list, without opening a
+  // second RxDB/Supabase replication instance.
+  const sync = useItemsSync(supabaseClient);
+
   return (
     <>
-      <MainPageHeader />
-      <NotePage supabaseClient={supabaseClient} />
+      <MainPageHeader items={sync.items} />
+      <NotePage sync={sync} />
     </>
   );
 }

@@ -3,12 +3,6 @@
   height: 32px;
 }
 
-.MainPageHeader__appTitle {
-  flex: 1;
-  margin: 0;
-  font-size: var(--title-font-size);
-}
-
 .MainPageHeader__icon {
   width: 32px;
   height: 32px;

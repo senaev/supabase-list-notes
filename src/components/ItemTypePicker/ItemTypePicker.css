@@ -6,29 +6,6 @@
   margin-left: 8px;
 }
 
-.ItemTypePicker__trigger {
-  padding: 2px 8px;
-  border: 0;
-  border-radius: 999px;
-  /* Background color is set inline per-type (see getItemTypeColor); these
-     colors are Chrome's tab-group palette, all light/pastel, so a fixed
-     dark text color reads well against every one of them. */
-  color: #202124;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.7rem;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.ItemTypePicker__trigger:hover,
-.ItemTypePicker__trigger:focus-visible {
-  outline: none;
-  /* Inline `style` (the per-type background-color) wins over any
-     background-color set here, so hover feedback uses filter instead. */
-  filter: brightness(0.92);
-}
-
 .ItemTypePicker__menu {
   position: absolute;
   top: calc(100% + 6px);

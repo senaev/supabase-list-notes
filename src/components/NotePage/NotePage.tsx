@@ -1,7 +1,6 @@
 import "./NotePage.css";
 
 import { PlusIcon } from "@heroicons/react/24/solid";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   KeyboardEvent,
   SyntheticEvent,
@@ -10,9 +9,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useToastsContext } from "../../contexts/ToastsContext";
-import { useItemsSync } from "../../sync/useItemsSync";
 import { Item } from "../../sync/types";
+import { UseItemsSyncResult } from "../../sync/useItemsSync";
 import { NoteItemElement } from "../NoteItemElement/NoteItemElement";
 
 type PendingFocus = {
@@ -35,13 +35,9 @@ function sortChecked(items: Item[]): Item[] {
     );
 }
 
-export function NotePage({
-  supabaseClient,
-}: {
-  supabaseClient: SupabaseClient;
-}) {
+export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
   const { showError } = useToastsContext();
-  const sync = useItemsSync(supabaseClient);
+  const [searchParams] = useSearchParams();
   const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null);
   const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const desiredCaretPositionRef = useRef(0);
@@ -53,11 +49,21 @@ export function NotePage({
     }
   }, [sync.error, showError]);
 
-  const unchecked = sortUnchecked(sync.items);
-  const checked = sortChecked(sync.items);
+  // Set by clicking a chip in ItemTypesNav (in MainPageHeader); cleared by
+  // the home button navigating back to ROUTES.home with no search params.
+  const typeFilter = searchParams.get("type");
 
-  // Distinct types across all items, alphabetical, for the type picker's
-  // "choose an existing one" list.
+  const visibleItems = typeFilter
+    ? sync.items.filter((item) => item.type === typeFilter)
+    : sync.items;
+
+  const unchecked = sortUnchecked(visibleItems);
+  const checked = sortChecked(visibleItems);
+
+  // Distinct types across *all* items (not just the currently filtered
+  // ones), alphabetical, for the per-item type picker's "choose an
+  // existing one" list - it should offer every type in the list, not just
+  // the ones visible under the current filter.
   const existingTypes = useMemo(
     () =>
       Array.from(new Set(sync.items.map((item) => item.type))).sort((a, b) =>
@@ -279,7 +285,10 @@ export function NotePage({
   }
 
   function createNewItemAtTheEnd() {
-    const newId = sync.addItem("");
+    // Default the new item to the active type filter (if any), so it
+    // doesn't immediately vanish from the filtered view it was just
+    // created in.
+    const newId = sync.addItem("", typeFilter ?? undefined);
     setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
   }
 

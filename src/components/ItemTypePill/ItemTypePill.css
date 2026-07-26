@@ -1,0 +1,32 @@
+.ItemTypePill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* Matches .NoteItemElement__remove__visual's 26px so the tag sits at the
+     same height as the remove button next to it. */
+  height: 24px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  color: #202124;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ItemTypePill:hover,
+.ItemTypePill:focus-visible {
+  outline: none;
+  /* Background color is set inline per-type (see getItemTypeColor), which
+     wins specificity over any background-color set here, so hover
+     feedback uses filter instead. */
+  filter: brightness(0.92);
+}
+
+.ItemTypePill_isActive {
+  box-shadow: 0 0 0 2px var(--text-color) inset;
+}

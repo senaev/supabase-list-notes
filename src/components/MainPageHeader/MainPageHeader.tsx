@@ -5,16 +5,17 @@ import {
   ShareIcon,
 } from "@heroicons/react/24/outline";
 import { APP_BASE_URL } from "../../const/APP_BASE_URL";
-import { APP_TITLE } from "../../const/APP_TITLE";
 import { NBSP } from "../../const/NBSP";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
+import { Item } from "../../sync/types";
 import { ContextMenu, ContextMenuItem } from "../ContextMenu/ContextMenu";
+import { ItemTypesNav } from "../ItemTypesNav/ItemTypesNav";
 import { PageHeader } from "../PageHeader/PageHeader";
 import appLogoUrl from "/logo.svg";
 
-export function MainPageHeader() {
+export function MainPageHeader({ items = [] }: { items?: Item[] }) {
   const { showError, showInfoMessage } = useToastsContext();
   const statusObject = useSupabaseClientContext();
 
@@ -66,7 +67,7 @@ export function MainPageHeader() {
         <img className="MainPageHeader__logo" src={appLogoUrl} alt="Home" />
       }
     >
-      <h1 className="MainPageHeader__appTitle">{APP_TITLE}</h1>
+      <ItemTypesNav items={items} />
       <ContextMenu items={menu} />
     </PageHeader>
   );

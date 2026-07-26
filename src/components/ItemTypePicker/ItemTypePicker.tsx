@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useToastsContext } from "../../contexts/ToastsContext";
 import { getItemTypeColor } from "../../utils/getItemTypeColor";
 import { validateItemType } from "../../utils/validateItemType";
+import { ItemTypePill } from "../ItemTypePill/ItemTypePill";
 
 /**
  * Small popup, anchored under the type tag, listing every distinct type
@@ -70,14 +71,10 @@ export function ItemTypePicker({
         setIsOpen(true);
       }}
     >
-      <button
-        aria-label={`Change type, currently ${currentType}`}
-        className="ItemTypePicker__trigger"
-        style={{ backgroundColor: getItemTypeColor(currentType) }}
-        type="button"
-      >
-        {currentType}
-      </button>
+      <ItemTypePill
+        ariaLabel={`Change type, currently ${currentType}`}
+        type={currentType}
+      />
       {isOpen && (
         <div className="ItemTypePicker__menu" role="menu">
           {allTypes.map((type) => (
