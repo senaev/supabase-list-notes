@@ -105,15 +105,14 @@ export function NoteItemElement({
         existingTypes={existingTypes}
         onSelect={onChangeType}
       />
-      <div
+      <button
         aria-label={`Remove ${item.title || "item"}`}
         className="NoteItemElement__remove"
         onClick={onRemove}
-        role="button"
-        tabIndex={0}
+        type="button"
       >
         <div className="NoteItemElement__remove__visual" />
-      </div>
+      </button>
     </div>
   );
 }

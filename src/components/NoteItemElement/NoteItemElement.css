@@ -10,14 +10,34 @@
     inset 0 -1px 0 var(--border-color);
 }
 
-.NoteItemElement:hover .NoteItemElement__remove,
+/* Keyboard-focus reveal always applies, regardless of hover support, so
+   tabbing into the row keeps working the same everywhere. */
 .NoteItemElement:focus-within .NoteItemElement__remove {
   opacity: 1;
   pointer-events: auto;
 }
 
-.NoteItemElement:hover .NoteItemElement__remove__visual {
-  background-color: rgb(154 160 166 / 0.16);
+/* Hiding the remove button until hover is a declutter feature that only
+   makes sense on devices with a real pointer. On touch devices there's no
+   hover to "reveal" it with, so gating opacity/pointer-events behind
+   :hover there just makes the button need two taps: the first tap has to
+   resolve :hover (unlocking pointer-events) before the second tap can
+   actually click it. Scoping this to `(hover: hover)` keeps the desktop
+   behavior and leaves it always-visible/always-tappable on touch. */
+@media (hover: hover) {
+  .NoteItemElement__remove {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .NoteItemElement:hover .NoteItemElement__remove {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .NoteItemElement:hover .NoteItemElement__remove__visual {
+    background-color: rgb(154 160 166 / 0.16);
+  }
 }
 
 .NoteItemElement.NoteItemElement_isChecked {
@@ -55,6 +75,12 @@
   justify-content: center;
   padding: 10px 10px 10px 20px;
   align-items: center;
+  /* Most real taps land on this label's padding, not the 16px input
+     itself. Without `cursor: pointer` directly on the tapped element,
+     iOS Safari treats the first tap as "resolve :hover" (since this row
+     has :hover/:focus-within styles) and only the second tap fires the
+     actual click/change. */
+  cursor: pointer;
 }
 
 .NoteItemElement__checkbox {
@@ -89,11 +115,10 @@
 }
 
 .NoteItemElement__remove {
-  opacity: 0;
-  pointer-events: none;
   place-items: center;
   padding: 4px;
   border: 1px solid transparent;
+  background: transparent;
   cursor: pointer;
   justify-self: end;
   color: transparent;
