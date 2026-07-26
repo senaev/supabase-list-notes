@@ -16,9 +16,10 @@
   box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
 }
 
-.Toasts__toastError {
-  border: 1px solid rgb(242 139 130 / 0.45);
-  background: rgb(68 23 22 / 0.95);
+.Toasts__errorModal {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
   color: rgb(255 218 214);
 }
 
