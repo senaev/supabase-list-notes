@@ -1,5 +1,4 @@
 .ItemTypePicker {
-  position: relative;
   display: flex;
   align-self: center;
   flex-shrink: 0;
@@ -7,23 +6,10 @@
 }
 
 .ItemTypePicker__menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 1000;
   display: grid;
   gap: 2px;
-  min-width: 140px;
+  min-width: 200px;
   padding: 6px;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.03)),
-    var(--background-color);
-  box-shadow:
-    0 18px 40px rgb(0 0 0 / 0.35),
-    0 4px 12px rgb(0 0 0 / 0.2);
-  backdrop-filter: blur(14px);
 }
 
 .ItemTypePicker__item {

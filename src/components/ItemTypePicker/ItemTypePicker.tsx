@@ -6,16 +6,18 @@ import { useToastsContext } from "../../contexts/ToastsContext";
 import { getItemTypeColor } from "../../utils/getItemTypeColor";
 import { validateItemType } from "../../utils/validateItemType";
 import { ItemTypePill } from "../ItemTypePill/ItemTypePill";
+import { Modal } from "../Modal/Modal";
 
 /**
- * Small popup, anchored under the type tag, listing every distinct type
- * currently in use (plus the item's own current type) so the user can pick
- * one, or create a brand new one via a prompt.
+ * Popup listing every distinct type currently in use (plus the item's own
+ * current type) so the user can pick one, or create a brand new one via a
+ * prompt.
  *
- * Follows the same focus/blur-driven open-close convention as ContextMenu
- * (see src/components/ContextMenu/ContextMenu.tsx) rather than introducing
- * a click-outside listener or portal, since that's the only floating-panel
- * precedent in this codebase.
+ * Opened by clicking the tag and rendered as a centered, backdrop-dimmed
+ * Modal (see src/components/Modal/Modal.tsx) rather than a panel anchored
+ * under the tag with `position: absolute` (as ContextMenu does) - an
+ * anchored panel can end up clipped or off-screen when the item is near
+ * the bottom of a scrollable page.
  */
 export function ItemTypePicker({
   currentType,
@@ -60,51 +62,51 @@ export function ItemTypePicker({
   }
 
   return (
-    <div
-      className="ItemTypePicker"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setIsOpen(false);
-        }
-      }}
-      onFocus={() => {
-        setIsOpen(true);
-      }}
-    >
+    <div className="ItemTypePicker">
       <ItemTypePill
         ariaLabel={`Change type, currently ${currentType}`}
+        onClick={() => {
+          setIsOpen(true);
+        }}
         type={currentType}
       />
       {isOpen && (
-        <div className="ItemTypePicker__menu" role="menu">
-          {allTypes.map((type) => (
+        <Modal
+          ariaLabel="Choose item type"
+          onClose={() => {
+            setIsOpen(false);
+          }}
+        >
+          <div className="ItemTypePicker__menu" role="menu">
+            {allTypes.map((type) => (
+              <button
+                key={type}
+                className={classNames("ItemTypePicker__item", {
+                  ItemTypePicker__item_isSelected: type === currentType,
+                })}
+                onClick={() => {
+                  selectType(type);
+                }}
+                role="menuitem"
+                type="button"
+              >
+                <span
+                  className="ItemTypePicker__itemSwatch"
+                  style={{ backgroundColor: getItemTypeColor(type) }}
+                />
+                {type}
+              </button>
+            ))}
             <button
-              key={type}
-              className={classNames("ItemTypePicker__item", {
-                ItemTypePicker__item_isSelected: type === currentType,
-              })}
-              onClick={() => {
-                selectType(type);
-              }}
+              className="ItemTypePicker__item ItemTypePicker__createItem"
+              onClick={createNewType}
               role="menuitem"
               type="button"
             >
-              <span
-                className="ItemTypePicker__itemSwatch"
-                style={{ backgroundColor: getItemTypeColor(type) }}
-              />
-              {type}
+              + Create new
             </button>
-          ))}
-          <button
-            className="ItemTypePicker__item ItemTypePicker__createItem"
-            onClick={createNewType}
-            role="menuitem"
-            type="button"
-          >
-            + Create new
-          </button>
-        </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
