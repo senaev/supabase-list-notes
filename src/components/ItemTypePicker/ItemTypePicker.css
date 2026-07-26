@@ -1,0 +1,92 @@
+.ItemTypePicker {
+  position: relative;
+  display: flex;
+  align-self: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.ItemTypePicker__trigger {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 999px;
+  /* Background color is set inline per-type (see getItemTypeColor); these
+     colors are Chrome's tab-group palette, all light/pastel, so a fixed
+     dark text color reads well against every one of them. */
+  color: #202124;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ItemTypePicker__trigger:hover,
+.ItemTypePicker__trigger:focus-visible {
+  outline: none;
+  /* Inline `style` (the per-type background-color) wins over any
+     background-color set here, so hover feedback uses filter instead. */
+  filter: brightness(0.92);
+}
+
+.ItemTypePicker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1000;
+  display: grid;
+  gap: 2px;
+  min-width: 140px;
+  padding: 6px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.03)),
+    var(--background-color);
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 0.35),
+    0 4px 12px rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(14px);
+}
+
+.ItemTypePicker__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ItemTypePicker__itemSwatch {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.ItemTypePicker__item:hover,
+.ItemTypePicker__item:focus-visible {
+  outline: none;
+  background-color: rgb(255 255 255 / 0.09);
+}
+
+.ItemTypePicker__item_isSelected {
+  color: var(--supabase-green);
+  font-weight: 600;
+}
+
+.ItemTypePicker__createItem {
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  color: var(--text-color-placeholder);
+}

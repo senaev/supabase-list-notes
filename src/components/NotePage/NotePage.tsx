@@ -6,6 +6,7 @@ import {
   KeyboardEvent,
   SyntheticEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -54,6 +55,16 @@ export function NotePage({
 
   const unchecked = sortUnchecked(sync.items);
   const checked = sortChecked(sync.items);
+
+  // Distinct types across all items, alphabetical, for the type picker's
+  // "choose an existing one" list.
+  const existingTypes = useMemo(
+    () =>
+      Array.from(new Set(sync.items.map((item) => item.type))).sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [sync.items],
+  );
 
   useEffect(() => {
     if (pendingFocus == null) {
@@ -176,7 +187,7 @@ export function NotePage({
 
     sync.updateItem(id, { title: titlePrevious });
 
-    // Copy the original item's tag onto the new item created by the split.
+    // Copy the original item's type onto the new item created by the split.
     const newId = sync.addItem(titleNew, currentItem.type);
     setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
   }
@@ -194,8 +205,8 @@ export function NotePage({
     const cursorPosition = previousItem.title.length;
 
     // Only `title` is patched here, so the merged item keeps the previous
-    // item's tag (its `type` is left untouched) rather than the current
-    // (removed) item's.
+    // item's type (left untouched) rather than the current (removed)
+    // item's.
     sync.updateItem(previousItem.id, { title: mergedTitle });
     sync.removeItem(currentItem.id);
     setPendingFocus({
@@ -287,6 +298,9 @@ export function NotePage({
             onChange={(value) => {
               handleItemChange(item.id, value);
             }}
+            onChangeType={(type) => {
+              sync.updateItem(item.id, { type });
+            }}
             onKeyDown={(event) => {
               handleItemKeyDown(event, item);
             }}
@@ -297,6 +311,7 @@ export function NotePage({
             resizeTextarea={resizeTextarea}
             inputRefs={inputRefs}
             readonlyText={false}
+            existingTypes={existingTypes}
           />
         ))}
         <button
@@ -322,6 +337,9 @@ export function NotePage({
                   });
                 }}
                 onChange={() => {}}
+                onChangeType={(type) => {
+                  sync.updateItem(item.id, { type });
+                }}
                 onKeyDown={() => {}}
                 onTextSelectionChange={saveCaretPosition}
                 onRemove={() => {
@@ -330,6 +348,7 @@ export function NotePage({
                 resizeTextarea={() => {}}
                 inputRefs={inputRefs}
                 readonlyText={true}
+                existingTypes={existingTypes}
               />
             ))}
           </>

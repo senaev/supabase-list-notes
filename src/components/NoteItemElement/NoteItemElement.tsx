@@ -4,27 +4,32 @@ import classNames from "classnames";
 import { KeyboardEvent, SyntheticEvent } from "react";
 import { DEBUG_ENABLED } from "../../const/DEBUG_ENABLED";
 import { Item } from "../../sync/types";
+import { ItemTypePicker } from "../ItemTypePicker/ItemTypePicker";
 
 export function NoteItemElement({
   item,
   toggleChecked,
   onChange,
+  onChangeType,
   onKeyDown,
   onRemove,
   resizeTextarea,
   inputRefs,
   onTextSelectionChange,
   readonlyText,
+  existingTypes,
 }: {
   item: Item;
   toggleChecked: (checked: boolean) => void;
   onChange: (value: string) => void;
+  onChangeType: (type: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onRemove: VoidFunction;
   resizeTextarea: (input: HTMLTextAreaElement) => void;
   inputRefs: React.RefObject<Map<string, HTMLTextAreaElement>>;
   readonlyText: boolean;
   onTextSelectionChange: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
+  existingTypes: string[];
 }) {
   return (
     <div
@@ -95,7 +100,11 @@ export function NoteItemElement({
           </span>
         </span>
       )}
-      <span className="NoteItemElement__tag">{item.type}</span>
+      <ItemTypePicker
+        currentType={item.type}
+        existingTypes={existingTypes}
+        onSelect={onChangeType}
+      />
       <div
         aria-label={`Remove ${item.title || "item"}`}
         className="NoteItemElement__remove"

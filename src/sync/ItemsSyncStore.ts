@@ -13,7 +13,12 @@ function toItem(row: LocalItemRow): Item {
   return {
     id: row.id,
     title: row.title,
-    type: row.type,
+    // Defensive fallback: `type` is typed as `string` (non-null) end to
+    // end, but a row pulled from Supabase before the "require item type"
+    // migration (see schema.sql) has run against that project's table can
+    // still come back with `type: null` at runtime despite the TS type,
+    // since the replication pull isn't schema-validated.
+    type: row.type ?? DEFAULT_ITEM_TYPE,
     checked_at: row.checked_at,
     created_at: row.created_at,
     _modified: row._modified,
@@ -225,7 +230,7 @@ export class ItemsSyncStore {
    * `type` defaults to DEFAULT_ITEM_TYPE client-side (the DB column is
    * `not null` with no DB-level default - see schema.sql). Callers that
    * split an existing item into two (see NotePage's createItemAfter) pass
-   * the original item's `type` through so the new item copies its tag
+   * the original item's `type` through so the new item copies its type
    * instead of falling back to the default.
    */
   public addItem = (title: string, type: string = DEFAULT_ITEM_TYPE): string => {
