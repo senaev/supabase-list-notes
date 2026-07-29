@@ -42,6 +42,9 @@
 
 .NoteItemElement.NoteItemElement_isChecked {
   color: rgb(154 160 166);
+}
+
+.NoteItemElement.NoteItemElement_isChecked .NoteItemElement__input {
   text-decoration: line-through;
 }
 
