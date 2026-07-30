@@ -23,10 +23,14 @@ export function ItemTypePicker({
   currentType,
   existingTypes,
   onSelect,
+  truncateTrigger,
 }: {
   currentType: string;
   existingTypes: string[];
   onSelect: (type: string) => void;
+  // Shorten the pill shown on the item (not the picker list) to a few
+  // characters + "…". Passed down while a type filter is active.
+  truncateTrigger?: boolean;
 }) {
   const { showError } = useToastsContext();
   const [isOpen, setIsOpen] = useState(false);
@@ -68,6 +72,7 @@ export function ItemTypePicker({
         onClick={() => {
           setIsOpen(true);
         }}
+        truncate={truncateTrigger}
         type={currentType}
       />
       {isOpen && (

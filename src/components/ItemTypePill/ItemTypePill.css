@@ -16,6 +16,11 @@
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
+  /* The global `button { touch-action: none }` rule blocks touch panning
+     that starts on a pill - and pills cover almost the whole nav strip, so
+     that's what made horizontal scrolling glitchy. `manipulation` restores
+     panning/scrolling while still suppressing the double-tap-zoom delay. */
+  touch-action: manipulation;
 }
 
 .ItemTypePill:hover,
@@ -29,4 +34,5 @@
 
 .ItemTypePill_isActive {
   box-shadow: 0 0 0 2px var(--text-color) inset;
+  font-weight: 700;
 }

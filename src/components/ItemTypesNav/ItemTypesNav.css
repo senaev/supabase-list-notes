@@ -5,6 +5,11 @@
   gap: 8px;
   min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  /* Keep the horizontal pan from bubbling out into a page bounce / back-swipe
+     gesture, which is what made the strip feel jittery on touch. */
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 

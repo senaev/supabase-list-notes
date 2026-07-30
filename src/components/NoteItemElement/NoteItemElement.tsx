@@ -18,6 +18,7 @@ export function NoteItemElement({
   onTextSelectionChange,
   readonlyText,
   existingTypes,
+  truncateType,
 }: {
   item: Item;
   toggleChecked: (checked: boolean) => void;
@@ -30,6 +31,8 @@ export function NoteItemElement({
   readonlyText: boolean;
   onTextSelectionChange: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
   existingTypes: string[];
+  // Shorten the type pill to a few characters + "…" (active type filter).
+  truncateType?: boolean;
 }) {
   return (
     <div
@@ -104,6 +107,7 @@ export function NoteItemElement({
         currentType={item.type}
         existingTypes={existingTypes}
         onSelect={onChangeType}
+        truncateTrigger={truncateType}
       />
       <button
         aria-label={`Remove ${item.title || "item"}`}

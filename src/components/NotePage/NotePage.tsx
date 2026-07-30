@@ -321,6 +321,7 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
             inputRefs={inputRefs}
             readonlyText={false}
             existingTypes={existingTypes}
+            truncateType={Boolean(typeFilter)}
           />
         ))}
         <button
@@ -358,6 +359,7 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
                 inputRefs={inputRefs}
                 readonlyText={true}
                 existingTypes={existingTypes}
+                truncateType={Boolean(typeFilter)}
               />
             ))}
           </>
