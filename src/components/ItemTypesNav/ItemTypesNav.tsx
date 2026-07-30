@@ -38,6 +38,7 @@ export function ItemTypesNav({ items }: { items: Item[] }) {
       {typesByPopularity.map((type) => (
         <ItemTypePill
           key={type}
+          className="ItemTypesNav__pill"
           isActive={type === currentType}
           onClick={() => {
             setSearchParams({ type });
