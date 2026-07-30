@@ -48,7 +48,14 @@ export function ItemTypePill({
         className,
       )}
       onClick={onClick}
-      style={{ backgroundColor: getItemTypeColor(type) }}
+      style={
+        {
+          backgroundColor: getItemTypeColor(type),
+          // Exposed as a CSS var so the active-state highlight ring can be
+          // drawn in the pill's own type color (see ItemTypePill.css).
+          "--pill-color": getItemTypeColor(type),
+        } as React.CSSProperties
+      }
       title={type}
       type="button"
     >

@@ -33,6 +33,12 @@
 }
 
 .ItemTypePill_isActive {
-  box-shadow: 0 0 0 2px var(--text-color) inset;
+  /* Highlight the active pill with a ring in its own type color rather than
+     a neutral one. A 2px gap (background-colored ring) separates the pill
+     from the colored ring so the same-color halo stays visible against the
+     pill itself. */
+  box-shadow:
+    0 0 0 2px var(--background-color),
+    0 0 0 4px var(--pill-color);
   font-weight: 700;
 }
