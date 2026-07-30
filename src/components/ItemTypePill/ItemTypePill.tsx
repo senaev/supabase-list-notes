@@ -3,8 +3,12 @@ import "./ItemTypePill.css";
 import classNames from "classnames";
 import { getItemTypeColor } from "../../utils/getItemTypeColor";
 
-// When a pill is truncated, show at most this many characters of the type
-// name before the ellipsis (e.g. "grocery" -> "gro…").
+// Types this short (or shorter) are always shown in full - they're already
+// compact enough that shortening them isn't worth the lost readability.
+const TRUNCATE_MIN_LENGTH = 6;
+
+// When a longer type is truncated, show at most this many characters before
+// the ellipsis (e.g. "groceries" -> "gro…").
 const TRUNCATED_TYPE_LENGTH = 3;
 
 /**
@@ -34,7 +38,7 @@ export function ItemTypePill({
   className?: string;
 }) {
   const label =
-    truncate && type.length > TRUNCATED_TYPE_LENGTH
+    truncate && type.length > TRUNCATE_MIN_LENGTH
       ? `${type.slice(0, TRUNCATED_TYPE_LENGTH)}…`
       : type;
 
