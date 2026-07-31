@@ -23,6 +23,17 @@
   touch-action: manipulation;
 }
 
+/* Deliberately inherits the pill's own 0.75rem rather than being enlarged
+   the way the per-item avatars are: the pill is a fixed 24px tall, so a
+   bigger glyph would either blow out its height or sit off-centre. */
+.ItemTypePill__emojis {
+  margin-left: 4px;
+  /* Emojis have no meaningful ascender/descender to align to, so the
+     default line box would push the label off-centre. */
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .ItemTypePill:hover,
 .ItemTypePill:focus-visible {
   outline: none;

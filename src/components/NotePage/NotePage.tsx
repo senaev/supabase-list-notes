@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useToastsContext } from "../../contexts/ToastsContext";
+import { UseActiveItemsPresenceResult } from "../../presence/useActiveItemsPresence";
 import { Item } from "../../sync/types";
 import { UseItemsSyncResult } from "../../sync/useItemsSync";
 import { NoteItemElement } from "../NoteItemElement/NoteItemElement";
@@ -35,7 +36,13 @@ function sortChecked(items: Item[]): Item[] {
     );
 }
 
-export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
+export function NotePage({
+  sync,
+  presence,
+}: {
+  sync: UseItemsSyncResult;
+  presence: UseActiveItemsPresenceResult;
+}) {
   const { showError } = useToastsContext();
   const [searchParams] = useSearchParams();
   const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null);
@@ -281,6 +288,11 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
   }
 
   function handleItemChange(id: string, title: string) {
+    // Also reported on focus (see the onFocus props below); repeating it
+    // here is what keeps the claim from going idle while the user is
+    // actively typing without ever re-focusing. Only an actual change of
+    // item reaches the network, so this is safe per keystroke.
+    presence.setActiveItem(id);
     sync.updateItem(id, { title });
   }
 
@@ -310,6 +322,9 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
             onChangeType={(type) => {
               sync.updateItem(item.id, { type });
             }}
+            onFocus={() => {
+              presence.setActiveItem(item.id);
+            }}
             onKeyDown={(event) => {
               handleItemKeyDown(event, item);
             }}
@@ -319,6 +334,7 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
             }}
             resizeTextarea={resizeTextarea}
             inputRefs={inputRefs}
+            activeEditorEmojis={presence.emojisByItemId[item.id]}
             readonlyText={false}
             existingTypes={existingTypes}
             truncateType={Boolean(typeFilter)}
@@ -350,6 +366,7 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
                 onChangeType={(type) => {
                   sync.updateItem(item.id, { type });
                 }}
+                onFocus={() => {}}
                 onKeyDown={() => {}}
                 onTextSelectionChange={saveCaretPosition}
                 onRemove={() => {
@@ -357,6 +374,11 @@ export function NotePage({ sync }: { sync: UseItemsSyncResult }) {
                 }}
                 resizeTextarea={() => {}}
                 inputRefs={inputRefs}
+                // A checked item can't be focused (it renders as plain
+                // text), but it can still be someone's active item from
+                // just before they checked it, so avatars are shown here
+                // too rather than silently disappearing.
+                activeEditorEmojis={presence.emojisByItemId[item.id]}
                 readonlyText={true}
                 existingTypes={existingTypes}
                 truncateType={Boolean(typeFilter)}

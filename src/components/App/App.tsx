@@ -6,6 +6,7 @@ import {
   SupabaseClientContextProvider,
   useSupabaseClientContext,
 } from "../../contexts/SupabaseClientContext";
+import { useActiveItemsPresence } from "../../presence/useActiveItemsPresence";
 import { useItemsSync } from "../../sync/useItemsSync";
 import { AuthPage } from "../AuthPage/AuthPage";
 import { LoadingPageContent } from "../LoadingPageContent/LoadingPageContent";
@@ -22,11 +23,18 @@ export function ItemsApp({
   // (see ItemTypesNav) off the same live items list, without opening a
   // second RxDB/Supabase replication instance.
   const sync = useItemsSync(supabaseClient);
+  // Realtime Presence for "who is editing what" - a separate channel from
+  // the one RxDB replication uses, and intentionally independent of the
+  // item data itself: presence is ephemeral and never persisted.
+  const presence = useActiveItemsPresence(supabaseClient);
 
   return (
     <>
-      <MainPageHeader items={sync.items} />
-      <NotePage sync={sync} />
+      <MainPageHeader
+        activeEditorEmojisByItemId={presence.emojisByItemId}
+        items={sync.items}
+      />
+      <NotePage presence={presence} sync={sync} />
     </>
   );
 }

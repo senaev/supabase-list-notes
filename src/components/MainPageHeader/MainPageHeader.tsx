@@ -9,13 +9,23 @@ import { NBSP } from "../../const/NBSP";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
+import { ActiveEditorEmojisByItemId } from "../../presence/ActiveItemsPresenceStore";
 import { Item } from "../../sync/types";
 import { ContextMenu, ContextMenuItem } from "../ContextMenu/ContextMenu";
 import { ItemTypesNav } from "../ItemTypesNav/ItemTypesNav";
 import { PageHeader } from "../PageHeader/PageHeader";
 import appLogoUrl from "/logo.svg";
 
-export function MainPageHeader({ items = [] }: { items?: Item[] }) {
+// Both props are optional because the header is also rendered on its own
+// while the Supabase client is still initializing (see App), when there are
+// neither items nor a presence channel yet.
+export function MainPageHeader({
+  items = [],
+  activeEditorEmojisByItemId = {},
+}: {
+  items?: Item[];
+  activeEditorEmojisByItemId?: ActiveEditorEmojisByItemId;
+}) {
   const { showError, showInfoMessage } = useToastsContext();
   const statusObject = useSupabaseClientContext();
 
@@ -67,7 +77,10 @@ export function MainPageHeader({ items = [] }: { items?: Item[] }) {
         <img className="MainPageHeader__logo" src={appLogoUrl} alt="Home" />
       }
     >
-      <ItemTypesNav items={items} />
+      <ItemTypesNav
+        activeEditorEmojisByItemId={activeEditorEmojisByItemId}
+        items={items}
+      />
       <ContextMenu items={menu} />
     </PageHeader>
   );

@@ -25,6 +25,7 @@ export function ItemTypePill({
   truncate,
   ariaLabel,
   className,
+  emojis,
 }: {
   type: string;
   onClick?: VoidFunction;
@@ -36,6 +37,11 @@ export function ItemTypePill({
   truncate?: boolean;
   ariaLabel?: string;
   className?: string;
+  // Animal avatars of anyone currently editing an item of this type (see
+  // ActiveItemsPresenceStore), shown inside the pill. Only the nav's filter
+  // chips use this - the per-item pill's neighbours already show them (see
+  // NoteItemElement), so repeating them there would be noise.
+  emojis?: string[];
 }) {
   const label =
     truncate && type.length > TRUNCATE_MIN_LENGTH
@@ -64,6 +70,15 @@ export function ItemTypePill({
       type="button"
     >
       {label}
+      {emojis && emojis.length > 0 && (
+        // Decorative here on purpose: it would otherwise pollute the
+        // button's accessible name ("groceries bear face"). The
+        // authoritative, properly-labelled indicator is the per-item one in
+        // NoteItemElement, one tap away.
+        <span aria-hidden="true" className="ItemTypePill__emojis">
+          {emojis.join("")}
+        </span>
+      )}
     </button>
   );
 }

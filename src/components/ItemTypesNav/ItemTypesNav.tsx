@@ -2,6 +2,7 @@ import "./ItemTypesNav.css";
 
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ActiveEditorEmojisByItemId } from "../../presence/ActiveItemsPresenceStore";
 import { Item } from "../../sync/types";
 import { ItemTypePill } from "../ItemTypePill/ItemTypePill";
 
@@ -12,7 +13,13 @@ import { ItemTypePill } from "../ItemTypePill/ItemTypePill";
  * clicking the home button (see PageHeader) navigates back to `ROUTES.home`
  * with no search params, resetting the filter.
  */
-export function ItemTypesNav({ items }: { items: Item[] }) {
+export function ItemTypesNav({
+  items,
+  activeEditorEmojisByItemId,
+}: {
+  items: Item[];
+  activeEditorEmojisByItemId: ActiveEditorEmojisByItemId;
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentType = searchParams.get("type");
 
@@ -29,6 +36,32 @@ export function ItemTypesNav({ items }: { items: Item[] }) {
       .map(([type]) => type);
   }, [items]);
 
+  // Rolls the per-item avatars up to the type level, so a chip shows who is
+  // editing something inside it even while that item is scrolled out of
+  // view (or filtered out entirely). Kept separate from the popularity memo
+  // above so a presence change doesn't recount every type.
+  const emojisByType = useMemo(() => {
+    const result = new Map<string, string[]>();
+
+    for (const item of items) {
+      const itemEmojis = activeEditorEmojisByItemId[item.id];
+      if (!itemEmojis) {
+        continue;
+      }
+
+      const typeEmojis = result.get(item.type) ?? [];
+      for (const emoji of itemEmojis) {
+        // One person editing two items of the same type is still one avatar.
+        if (!typeEmojis.includes(emoji)) {
+          typeEmojis.push(emoji);
+        }
+      }
+      result.set(item.type, typeEmojis);
+    }
+
+    return result;
+  }, [items, activeEditorEmojisByItemId]);
+
   if (typesByPopularity.length === 0) {
     return <div className="ItemTypesNav" />;
   }
@@ -39,6 +72,7 @@ export function ItemTypesNav({ items }: { items: Item[] }) {
         <ItemTypePill
           key={type}
           className="ItemTypesNav__pill"
+          emojis={emojisByType.get(type)}
           isActive={type === currentType}
           onClick={() => {
             setSearchParams({ type });

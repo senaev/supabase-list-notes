@@ -11,6 +11,7 @@ export function NoteItemElement({
   toggleChecked,
   onChange,
   onChangeType,
+  onFocus,
   onKeyDown,
   onRemove,
   resizeTextarea,
@@ -19,11 +20,13 @@ export function NoteItemElement({
   readonlyText,
   existingTypes,
   truncateType,
+  activeEditorEmojis,
 }: {
   item: Item;
   toggleChecked: (checked: boolean) => void;
   onChange: (value: string) => void;
   onChangeType: (type: string) => void;
+  onFocus: VoidFunction;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onRemove: VoidFunction;
   resizeTextarea: (input: HTMLTextAreaElement) => void;
@@ -33,6 +36,10 @@ export function NoteItemElement({
   existingTypes: string[];
   // Shorten the type pill to a few characters + "…" (active type filter).
   truncateType?: boolean;
+  // Animal avatars of the other tabs/people currently on this item (see
+  // ActiveItemsPresenceStore). Undefined when nobody else is here, which is
+  // the overwhelmingly common case.
+  activeEditorEmojis?: string[];
 }) {
   return (
     <div
@@ -71,6 +78,7 @@ export function NoteItemElement({
               resizeTextarea(event.currentTarget);
               onChange(event.currentTarget.value);
             }}
+            onFocus={onFocus}
             onSelect={onTextSelectionChange}
             onKeyDown={onKeyDown}
             rows={1}
@@ -101,6 +109,15 @@ export function NoteItemElement({
           >
             updated=[{new Date(item._modified).getTime()}]
           </span>
+        </span>
+      )}
+      {activeEditorEmojis && activeEditorEmojis.length > 0 && (
+        <span
+          aria-label={`Also being edited by ${activeEditorEmojis.join(", ")}`}
+          className="NoteItemElement__activeEditors"
+          title="Being edited right now"
+        >
+          {activeEditorEmojis.join("")}
         </span>
       )}
       <ItemTypePicker

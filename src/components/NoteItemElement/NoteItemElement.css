@@ -146,3 +146,23 @@
   width: 100%;
   display: flex;
 }
+
+/* Sits immediately left of the type pill, matching .ItemTypePicker's
+   `align-self: center` + `flex-shrink: 0` so it stays vertically centered
+   on a multi-line item and never gets squeezed by a long title. */
+.NoteItemElement__activeEditors {
+  display: flex;
+  align-self: center;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: 8px;
+  font-size: 1.35rem;
+  /* Emojis have no meaningful ascender/descender to align to, and the
+     default line box at this size would make the row taller than the 24px
+     type pill next to it. */
+  line-height: 1;
+  /* Emojis are decoration here, and the row is one big click target for
+     focusing the textarea - don't let them be selected by a drag. */
+  user-select: none;
+  white-space: nowrap;
+}
