@@ -1,0 +1,23 @@
+{
+  // Project-local overrides. This project uses plain npm + TypeScript 5.8
+  // (no Yarn PnP, no typescript-go/tsgo, no eslint, no prettier).
+  // The global ~/.config/zed/settings.json is tuned for DataDog web-ui and
+  // must NOT apply here, so we reset the TS/JS toolchain to Zed defaults.
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["vtsls", "!tsgo", "!eslint"],
+      "formatter": "language_server",
+      "code_actions_on_format": {}
+    },
+    "TSX": {
+      "language_servers": ["vtsls", "!tsgo", "!eslint"],
+      "formatter": "language_server",
+      "code_actions_on_format": {}
+    },
+    "JavaScript": {
+      "language_servers": ["vtsls", "!tsgo", "!eslint"],
+      "formatter": "language_server",
+      "code_actions_on_format": {}
+    }
+  }
+}
