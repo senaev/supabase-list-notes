@@ -5,7 +5,9 @@ import { noop } from "../utils/noop";
 type ToastsContextType = {
   showError: (error: string) => void;
   showInfoMessage: (message: string) => void;
-  hideError: (errorIndex: number) => void;
+  /** Dismisses every currently shown error at once - see Toasts, which
+   * stacks all of them into a single modal rather than one per error. */
+  clearErrors: VoidFunction;
   hideInfoMessage: (messageIndex: number) => void;
   errors: string[];
 };
@@ -13,7 +15,7 @@ type ToastsContextType = {
 const ToastsContextDefaultValue: ToastsContextType = {
   showError: noop,
   showInfoMessage: noop,
-  hideError: noop,
+  clearErrors: noop,
   hideInfoMessage: noop,
   errors: [],
 };
@@ -27,10 +29,8 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
   const [errors, setErrors] = useState<string[]>([]);
   const [infoMessages, setInfoMessages] = useState<string[]>([]);
 
-  function hideError(index: number) {
-    setErrors((current) =>
-      current.filter((_, currentErrorIndex) => currentErrorIndex !== index),
-    );
+  function clearErrors() {
+    setErrors([]);
   }
 
   function hideInfoMessage(index: number) {
@@ -50,7 +50,7 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
           console.info(message);
           setInfoMessages((current) => [...current, message]);
         },
-        hideError,
+        clearErrors,
         hideInfoMessage,
         errors,
       }}
@@ -59,7 +59,7 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
       <Toasts
         errors={errors}
         infoMessages={infoMessages}
-        onCloseError={hideError}
+        onClearErrors={clearErrors}
         onCloseInfoMessage={hideInfoMessage}
       />
     </ToastsContext.Provider>

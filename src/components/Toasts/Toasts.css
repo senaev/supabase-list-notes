@@ -35,6 +35,16 @@
   white-space: pre-wrap;
 }
 
+/* Separates stacked errors within the single ErrorsModal (see Toasts.tsx). */
+.Toasts__errorDivider {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: currentColor;
+  opacity: 0.25;
+}
+
 .Toasts__close {
   justify-self: end;
   padding: 6px 10px;

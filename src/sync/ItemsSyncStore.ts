@@ -269,8 +269,15 @@ export class ItemsSyncStore {
     this.replicationState = replicationState;
 
     this.errorSubscription = replicationState.error$.subscribe((replicationError) => {
+      // Deliberately console-only, not errorSignal (the modal, see
+      // NotePage.tsx/Toasts.tsx): RxDB retries a failing pull/push
+      // indefinitely and reports every single attempt here, so a flaky or
+      // dropped connection would otherwise spam the user with a wall of
+      // raw RxDB error dumps. The header's badge (see
+      // networkSyncStatusSignal below) already tells them sync isn't
+      // going through - a technical error dump on top of that isn't
+      // actionable for them, only for us.
       console.error("Replication error:", replicationError);
-      this.errorSignal.next(replicationError.message);
       this.hasReplicationErrorSignal.next(true);
     });
 

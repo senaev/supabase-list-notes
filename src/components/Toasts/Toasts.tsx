@@ -1,11 +1,12 @@
 import "./Toasts.css";
 
+import { Fragment } from "react";
 import { Modal } from "../Modal/Modal";
 
 type ToastsProps = {
   errors: string[];
   infoMessages: string[];
-  onCloseError: (index: number) => void;
+  onClearErrors: VoidFunction;
   onCloseInfoMessage: (index: number) => void;
 };
 
@@ -36,42 +37,45 @@ function InfoToast({
 }
 
 /**
- * Errors render in a centered Modal instead of a corner toast: a corner
- * toast has no cap on its height and no way to scroll it, so a long error
- * message (e.g. a raw sync/Supabase error, see NotePage.tsx) could grow
- * past the visible viewport on mobile with no way to read the rest of it.
- * Modal's panel already caps height at 80vh and scrolls internally
- * (see src/components/Modal/Modal.css), so long errors stay fully
- * readable and dismissible.
+ * Errors render in a single centered Modal instead of a corner toast: a
+ * corner toast has no cap on its height and no way to scroll it, so a long
+ * error message (e.g. a raw sync/Supabase error, see NotePage.tsx) could
+ * grow past the visible viewport on mobile with no way to read the rest of
+ * it. Modal's panel already caps height at 80vh and scrolls internally
+ * (see src/components/Modal/Modal.css), so long errors stay fully readable
+ * and dismissible.
+ *
+ * All currently pending errors stack into this one modal (separated by
+ * <hr/>) rather than one modal per error - a flaky sync connection can
+ * legitimately produce a fresh error every few seconds (RxDB retries
+ * indefinitely and reports every attempt), which would otherwise pop a new
+ * modal on top of the last one the user hasn't even read yet. One "Close"
+ * dismisses all of them at once.
  */
-function ErrorModal({
-  index,
-  message,
+function ErrorsModal({
+  errors,
   onClose,
 }: {
-  index: number;
-  message: string;
-  onClose: (index: number) => void;
+  errors: string[];
+  onClose: VoidFunction;
 }) {
   return (
-    <Modal
-      ariaLabel="Error"
-      onClose={() => {
-        onClose(index);
-      }}
-    >
+    <Modal ariaLabel="Error" onClose={onClose}>
       <div className="Toasts__errorModal" role="alert">
-        <div className="Toasts__message">{message}</div>
         <button
-          aria-label={`Dismiss error ${index + 1}`}
+          aria-label="Dismiss errors"
           className="Toasts__close"
-          onClick={() => {
-            onClose(index);
-          }}
+          onClick={onClose}
           type="button"
         >
           Close
         </button>
+        {errors.map((error, index) => (
+          <Fragment key={`${index}_${error}`}>
+            {index > 0 && <hr className="Toasts__errorDivider" />}
+            <div className="Toasts__message">{error}</div>
+          </Fragment>
+        ))}
       </div>
     </Modal>
   );
@@ -80,19 +84,14 @@ function ErrorModal({
 export function Toasts({
   errors,
   infoMessages,
-  onCloseError,
+  onClearErrors,
   onCloseInfoMessage,
 }: ToastsProps) {
   return (
     <>
-      {errors.map((error, index) => (
-        <ErrorModal
-          key={`error_${error}_${index}`}
-          index={index}
-          message={error}
-          onClose={onCloseError}
-        />
-      ))}
+      {errors.length > 0 && (
+        <ErrorsModal errors={errors} onClose={onClearErrors} />
+      )}
       {infoMessages.length > 0 && (
         <div className="Toasts" aria-live="polite" aria-label="Notifications">
           {infoMessages.map((message, index) => (
