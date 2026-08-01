@@ -2,12 +2,14 @@ import { useEffect, useRef } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useSignal } from "senaev-utils/src/utils/Signal/useSignal";
 import { ItemsSyncStore } from "./ItemsSyncStore";
-import type { EditableFields, Item } from "./types";
+import type { EditableFields, Item, NetworkSyncStatus } from "./types";
 
 export interface UseItemsSyncResult {
   /** All non-deleted items, in no particular order - callers decide sorting. */
   items: Item[];
   error: string | null;
+  /** Drives the badge on MainPageHeader's logo - see NetworkSyncStatus. */
+  networkSyncStatus: NetworkSyncStatus;
   /** Creates an item (title may be empty, e.g. to start editing immediately)
    * and returns its id synchronously for optimistic focus handling. The
    * item itself only appears in `items` once the local database write
@@ -50,10 +52,12 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
 
   const items = useSignal(store.itemsSignal);
   const error = useSignal(store.errorSignal);
+  const networkSyncStatus = useSignal(store.networkSyncStatusSignal);
 
   return {
     items,
     error,
+    networkSyncStatus,
     addItem: store.addItem,
     updateItem: store.updateItem,
     removeItem: store.removeItem,

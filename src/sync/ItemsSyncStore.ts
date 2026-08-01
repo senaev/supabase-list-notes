@@ -3,11 +3,12 @@ import type { RxDatabase, RxDocument } from "rxdb";
 import type { RxSupabaseReplicationState } from "rxdb/plugins/replication-supabase";
 import type { Subscription } from "rxjs";
 import { deepEqual } from "senaev-utils/src/utils/Object/deepEqual/deepEqual";
+import { combineSignalsIntoNewOne } from "senaev-utils/src/utils/Signal/combineSignalsIntoNewOne/combineSignalsIntoNewOne";
 import { Signal } from "senaev-utils/src/utils/Signal/Signal";
 import { DEFAULT_ITEM_TYPE } from "../const/DEFAULT_ITEM_TYPE";
 import { createLocalDatabase, LocalCollections, LocalItemRow } from "./localDb";
 import { startItemsReplication } from "./replication";
-import type { EditableFields, Item } from "./types";
+import type { EditableFields, Item, NetworkSyncStatus } from "./types";
 
 function toItem(row: LocalItemRow): Item {
   return {
@@ -55,6 +56,28 @@ export class ItemsSyncStore {
   public readonly itemsSignal = new Signal<Item[]>([], deepEqual);
   public readonly errorSignal = new Signal<string | null>(null);
 
+  // --- Network/sync status (see MainPageHeader's logo badge) ---
+  // Browser-level connectivity - the primary signal, since it fires even
+  // during an idle offline period with no replication activity at all to
+  // observe.
+  private readonly isOnlineSignal = new Signal<boolean>(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  // True whenever replication's pull/push handler is stuck in its retry
+  // loop after an error (e.g. Supabase itself unreachable, RLS/schema
+  // errors). RxDB's replication primitives never let `active$` go false
+  // while stuck retrying, so this only ever gets cleared once a cycle
+  // completes successfully (see the active$ subscription in init()).
+  private readonly hasReplicationErrorSignal = new Signal<boolean>(false);
+  // Direct mirror of replicationState.active$.
+  private readonly isSyncingSignal = new Signal<boolean>(false);
+
+  /** offline > syncing > synced - see NetworkSyncStatus. */
+  public readonly networkSyncStatusSignal: Signal<NetworkSyncStatus>;
+
+  private readonly boundHandleOnline = (): void => this.isOnlineSignal.next(true);
+  private readonly boundHandleOffline = (): void => this.isOnlineSignal.next(false);
+
   private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
   private pendingOptimisticDeleteIds = new Set<string>();
 
@@ -76,6 +99,7 @@ export class ItemsSyncStore {
   private replicationState?: RxSupabaseReplicationState<LocalItemRow>;
   private querySubscription?: Subscription;
   private errorSubscription?: Subscription;
+  private activeSubscription?: Subscription;
 
   // Chains lifecycles (create -> ... -> remove -> create -> ...) strictly
   // sequentially across setClient()/dispose() calls; see teardown() below.
@@ -84,6 +108,23 @@ export class ItemsSyncStore {
   // setClient() call (e.g. rapid project switches, or React StrictMode's
   // mount/unmount/mount double-invoke in development).
   private generation = 0;
+
+  public constructor() {
+    this.networkSyncStatusSignal = combineSignalsIntoNewOne(
+      [this.isOnlineSignal, this.hasReplicationErrorSignal, this.isSyncingSignal],
+      (isOnline, hasReplicationError, isSyncing): NetworkSyncStatus => {
+        if (!isOnline || hasReplicationError) {
+          return "offline";
+        }
+        return isSyncing ? "syncing" : "synced";
+      },
+    ).signal;
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", this.boundHandleOnline);
+      window.addEventListener("offline", this.boundHandleOffline);
+    }
+  }
 
   /**
    * (Re)points replication + the local database at the given Supabase
@@ -101,6 +142,11 @@ export class ItemsSyncStore {
   public dispose(): void {
     this.generation++;
     this.lifecycle = this.teardown();
+
+    if (typeof window !== "undefined") {
+      window.removeEventListener("online", this.boundHandleOnline);
+      window.removeEventListener("offline", this.boundHandleOffline);
+    }
   }
 
   private async teardown(): Promise<void> {
@@ -113,8 +159,16 @@ export class ItemsSyncStore {
 
     this.querySubscription?.unsubscribe();
     this.errorSubscription?.unsubscribe();
+    this.activeSubscription?.unsubscribe();
     this.querySubscription = undefined;
     this.errorSubscription = undefined;
+    this.activeSubscription = undefined;
+
+    // Reset rather than leave stale: the previous client's replication no
+    // longer applies (isOnlineSignal is untouched - it's browser-level, not
+    // per-client).
+    this.hasReplicationErrorSignal.next(false);
+    this.isSyncingSignal.next(false);
 
     if (this.replicationState) {
       await this.replicationState.remove().catch(() => undefined);
@@ -217,6 +271,18 @@ export class ItemsSyncStore {
     this.errorSubscription = replicationState.error$.subscribe((replicationError) => {
       console.error("Replication error:", replicationError);
       this.errorSignal.next(replicationError.message);
+      this.hasReplicationErrorSignal.next(true);
+    });
+
+    this.activeSubscription = replicationState.active$.subscribe((isActive) => {
+      if (!isActive) {
+        // `active$` only ever goes false once a cycle completes without
+        // getting stuck in the retry loop above, so this is the one place
+        // it's safe to clear a previously-flagged error.
+        this.hasReplicationErrorSignal.next(false);
+      }
+
+      this.isSyncingSignal.next(isActive);
     });
   }
 

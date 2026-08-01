@@ -13,3 +13,11 @@ export type Item = {
 };
 
 export type EditableFields = Pick<Item, "title" | "checked_at" | "type">;
+
+/**
+ * "offline" also covers a persistently failing sync (e.g. Supabase itself
+ * unreachable, RLS/schema errors) - from the user's perspective that looks
+ * the same as no network, and this app has no separate UI for it (see
+ * ItemsSyncStore's hasReplicationErrorSignal).
+ */
+export type NetworkSyncStatus = "offline" | "syncing" | "synced";

@@ -6,25 +6,28 @@ import {
 } from "@heroicons/react/24/outline";
 import { APP_BASE_URL } from "../../const/APP_BASE_URL";
 import { NBSP } from "../../const/NBSP";
+import { NETWORK_SYNC_STATUS_META } from "../../const/NETWORK_SYNC_STATUS_META";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
 import { ActiveEditorEmojisByItemId } from "../../presence/ActiveItemsPresenceStore";
-import { Item } from "../../sync/types";
+import { Item, NetworkSyncStatus } from "../../sync/types";
 import { ContextMenu, ContextMenuItem } from "../ContextMenu/ContextMenu";
 import { ItemTypesNav } from "../ItemTypesNav/ItemTypesNav";
 import { PageHeader } from "../PageHeader/PageHeader";
 import appLogoUrl from "/logo.svg";
 
-// Both props are optional because the header is also rendered on its own
+// All three are optional because the header is also rendered on its own
 // while the Supabase client is still initializing (see App), when there are
-// neither items nor a presence channel yet.
+// neither items, a presence channel, nor a sync engine yet.
 export function MainPageHeader({
   items = [],
   activeEditorEmojisByItemId = {},
+  networkSyncStatus,
 }: {
   items?: Item[];
   activeEditorEmojisByItemId?: ActiveEditorEmojisByItemId;
+  networkSyncStatus?: NetworkSyncStatus;
 }) {
   const { showError, showInfoMessage } = useToastsContext();
   const statusObject = useSupabaseClientContext();
@@ -71,10 +74,36 @@ export function MainPageHeader({
         ]
       : [];
 
+  // "synced" has no badge - a quiet, unbadged logo is the "everything is
+  // fine" state, rather than a fourth emoji competing for attention.
+  const statusMeta =
+    networkSyncStatus && networkSyncStatus !== "synced"
+      ? NETWORK_SYNC_STATUS_META[networkSyncStatus]
+      : undefined;
+
   return (
     <PageHeader
       homeButtonIcon={
-        <img className="MainPageHeader__logo" src={appLogoUrl} alt="Home" />
+        <span className="MainPageHeader__logoWrapper">
+          <img
+            className={
+              statusMeta
+                ? "MainPageHeader__logo MainPageHeader__logo--muted"
+                : "MainPageHeader__logo"
+            }
+            src={appLogoUrl}
+            alt="Home"
+          />
+          {statusMeta && (
+            <span
+              aria-label={statusMeta.label}
+              className="MainPageHeader__syncBadge"
+              title={statusMeta.label}
+            >
+              {statusMeta.emoji}
+            </span>
+          )}
+        </span>
       }
     >
       <ItemTypesNav
