@@ -1,6 +1,7 @@
 import './MainPageHeader.css';
 
 import { ArrowLeftOnRectangleIcon, ShareIcon } from '@heroicons/react/24/outline';
+
 import { APP_BASE_URL } from '../../const/APP_BASE_URL';
 import { NBSP } from '../../const/NBSP';
 import { HEADER_BADGE_STATUS_META, HeaderBadgeStatus } from '../../const/HEADER_BADGE_STATUS_META';
@@ -37,26 +38,28 @@ export function MainPageHeader({
                       Icon: ShareIcon,
                       onSelect: () => {
                           const shareUrl = new URL(APP_BASE_URL, window.location.origin);
+
                           Object.entries(SUPABASE_CREDENTIALS_QUERY_PARAMS).forEach(
                               ([credentialKey, queryParam]) => {
                                   const credentialValue =
                                       statusObject.credentials[
                                           credentialKey as keyof typeof statusObject.credentials
                                       ];
+
                                   shareUrl.searchParams.set(queryParam, credentialValue);
-                              },
+                              }
                           );
 
                           navigator.clipboard
                               .writeText(shareUrl.toString())
                               .then(() => {
                                   showInfoMessage(
-                                      'Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.',
+                                      'Share link copied to clipboard. ⚠️ Anyone with this link can view and edit your notes.'
                                   );
                               })
                               .catch((error) => {
                                   showError(
-                                      `Failed to copy credentials to clipboard. Error: ${error.message}`,
+                                      `Failed to copy credentials to clipboard. Error: ${error.message}`
                                   );
                               });
                       },
@@ -76,21 +79,23 @@ export function MainPageHeader({
     // to act on first anyway. "initialization" deliberately gets no badge -
     // it's a brief transient state, and flashing a "not logged in" key at
     // someone who *is* logged in would be worse than showing nothing.
-    const badgeStatus: HeaderBadgeStatus | undefined =
-        statusObject.status === 'require-credentials' || statusObject.status === 'wrong-credentials'
-            ? 'unauthenticated'
-            : // "synced" has no badge - a quiet, unbadged logo is the
-              // "everything is fine" state.
-              networkSyncStatus && networkSyncStatus !== 'synced'
-              ? networkSyncStatus
-              : undefined;
+    let badgeStatus: HeaderBadgeStatus | undefined;
+
+    if (
+        statusObject.status === 'require-credentials' ||
+        statusObject.status === 'wrong-credentials'
+    ) {
+        badgeStatus = 'unauthenticated';
+    } else if (networkSyncStatus && networkSyncStatus !== 'synced') {
+        badgeStatus = networkSyncStatus;
+    }
 
     const statusMeta = badgeStatus ? HEADER_BADGE_STATUS_META[badgeStatus] : undefined;
 
     return (
         <PageHeader
             homeButtonIcon={
-                <span className="MainPageHeader__logoWrapper">
+                <span className={'MainPageHeader__logoWrapper'}>
                     <img
                         className={
                             statusMeta
@@ -98,12 +103,12 @@ export function MainPageHeader({
                                 : 'MainPageHeader__logo'
                         }
                         src={appLogoUrl}
-                        alt="Home"
+                        alt={'Home'}
                     />
                     {statusMeta && (
                         <span
                             aria-label={statusMeta.label}
-                            className="MainPageHeader__syncBadge"
+                            className={'MainPageHeader__syncBadge'}
                             title={statusMeta.label}
                         >
                             {statusMeta.emoji}

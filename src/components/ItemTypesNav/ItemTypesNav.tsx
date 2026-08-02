@@ -2,6 +2,7 @@ import './ItemTypesNav.css';
 
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+
 import { ActiveEditorEmojisByItemId } from '../../presence/ActiveItemsPresenceStore';
 import { Item } from '../../sync/types';
 import { ItemTypePill } from '../ItemTypePill/ItemTypePill';
@@ -27,6 +28,7 @@ export function ItemTypesNav({
     // have each type - most popular first.
     const typesByPopularity = useMemo(() => {
         const countByType = new Map<string, number>();
+
         for (const item of items) {
             countByType.set(item.type, (countByType.get(item.type) ?? 0) + 1);
         }
@@ -45,17 +47,20 @@ export function ItemTypesNav({
 
         for (const item of items) {
             const itemEmojis = activeEditorEmojisByItemId[item.id];
+
             if (!itemEmojis) {
                 continue;
             }
 
             const typeEmojis = result.get(item.type) ?? [];
+
             for (const emoji of itemEmojis) {
                 // One person editing two items of the same type is still one avatar.
                 if (!typeEmojis.includes(emoji)) {
                     typeEmojis.push(emoji);
                 }
             }
+
             result.set(item.type, typeEmojis);
         }
 
@@ -63,15 +68,15 @@ export function ItemTypesNav({
     }, [items, activeEditorEmojisByItemId]);
 
     if (typesByPopularity.length === 0) {
-        return <div className="ItemTypesNav" />;
+        return <div className={'ItemTypesNav'} />;
     }
 
     return (
-        <nav aria-label="Filter items by type" className="ItemTypesNav">
+        <nav aria-label={'Filter items by type'} className={'ItemTypesNav'}>
             {typesByPopularity.map((type) => (
                 <ItemTypePill
                     key={type}
-                    className="ItemTypesNav__pill"
+                    className={'ItemTypesNav__pill'}
                     emojis={emojisByType.get(type)}
                     isActive={type === currentType}
                     onClick={() => {

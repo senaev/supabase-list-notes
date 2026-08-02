@@ -8,10 +8,12 @@ import { CHROME_TAB_GROUP_COLORS } from '../const/CHROME_TAB_GROUP_COLORS';
  */
 export function getItemTypeColor(type: string): string {
     let hash = 0;
+
     for (let i = 0; i < type.length; i++) {
         hash = (hash * 31 + type.charCodeAt(i)) | 0;
     }
 
     const index = Math.abs(hash) % CHROME_TAB_GROUP_COLORS.length;
+
     return CHROME_TAB_GROUP_COLORS[index];
 }

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+
 import { ROUTES } from '../../const/ROUTES';
 import './PageHeader.css';
 
@@ -12,9 +13,9 @@ export function PageHeader({
     const navigate = useNavigate();
 
     return (
-        <header className="PageHeader">
+        <header className={'PageHeader'}>
             <button
-                type="button"
+                type={'button'}
                 onClick={() => {
                     navigate(ROUTES.home);
                 }}

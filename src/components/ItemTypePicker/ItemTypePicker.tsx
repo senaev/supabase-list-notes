@@ -2,6 +2,7 @@ import './ItemTypePicker.css';
 
 import classNames from 'classnames';
 import { useState } from 'react';
+
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { getItemTypeColor } from '../../utils/getItemTypeColor';
 import { validateItemType } from '../../utils/validateItemType';
@@ -38,7 +39,7 @@ export function ItemTypePicker({
     // De-duped, alphabetical, and guaranteed to include the item's own
     // current type even if it's otherwise unused by any other item.
     const allTypes = Array.from(new Set([currentType, ...existingTypes])).sort((a, b) =>
-        a.localeCompare(b),
+        a.localeCompare(b)
     );
 
     function selectType(type: string) {
@@ -50,15 +51,19 @@ export function ItemTypePicker({
         // Hide the popup first, then prompt for the new type name.
         setIsOpen(false);
 
+        // eslint-disable-next-line no-alert
         const rawInput = window.prompt('New type name:');
+
         if (rawInput === null) {
             // User cancelled the prompt.
             return;
         }
 
         const validationError = validateItemType(rawInput);
+
         if (validationError) {
             showError(validationError);
+
             return;
         }
 
@@ -66,7 +71,7 @@ export function ItemTypePicker({
     }
 
     return (
-        <div className="ItemTypePicker">
+        <div className={'ItemTypePicker'}>
             <ItemTypePill
                 ariaLabel={`Change type, currently ${currentType}`}
                 onClick={() => {
@@ -77,12 +82,12 @@ export function ItemTypePicker({
             />
             {isOpen && (
                 <Modal
-                    ariaLabel="Choose item type"
+                    ariaLabel={'Choose item type'}
                     onClose={() => {
                         setIsOpen(false);
                     }}
                 >
-                    <div className="ItemTypePicker__menu" role="menu">
+                    <div className={'ItemTypePicker__menu'} role={'menu'}>
                         {allTypes.map((type) => (
                             <button
                                 key={type}
@@ -92,23 +97,23 @@ export function ItemTypePicker({
                                 onClick={() => {
                                     selectType(type);
                                 }}
-                                role="menuitem"
-                                type="button"
+                                role={'menuitem'}
+                                type={'button'}
                             >
                                 <span
-                                    className="ItemTypePicker__itemSwatch"
+                                    className={'ItemTypePicker__itemSwatch'}
                                     style={{ backgroundColor: getItemTypeColor(type) }}
                                 />
                                 {type}
                             </button>
                         ))}
                         <button
-                            className="ItemTypePicker__item ItemTypePicker__createItem"
+                            className={'ItemTypePicker__item ItemTypePicker__createItem'}
                             onClick={createNewType}
-                            role="menuitem"
-                            type="button"
+                            role={'menuitem'}
+                            type={'button'}
                         >
-                            + Create new
+                            {'+ Create new'}
                         </button>
                     </div>
                 </Modal>

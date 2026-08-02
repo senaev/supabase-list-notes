@@ -1,7 +1,7 @@
 import { EllipsisHorizontalCircleIcon } from '@heroicons/react/24/outline';
-import './ContextMenu.css';
-
 import { useState } from 'react';
+
+import './ContextMenu.css';
 
 export type ContextMenuItem = {
     label: string;
@@ -14,7 +14,7 @@ export function ContextMenu({ items }: { items: ContextMenuItem[] }) {
 
     return (
         <div
-            className="ContextMenu__root"
+            className={'ContextMenu__root'}
             onFocus={() => {
                 setIsOpen(true);
             }}
@@ -24,23 +24,23 @@ export function ContextMenu({ items }: { items: ContextMenuItem[] }) {
                 }
             }}
         >
-            <button type="button" aria-label="Open menu" className="ContextMenu__trigger">
-                <EllipsisHorizontalCircleIcon className="MainPageHeader__icon" />
+            <button type={'button'} aria-label={'Open menu'} className={'ContextMenu__trigger'}>
+                <EllipsisHorizontalCircleIcon className={'MainPageHeader__icon'} />
             </button>
             {isOpen && items.length > 0 ? (
-                <div className="ContextMenu" role="menu">
+                <div className={'ContextMenu'} role={'menu'}>
                     {items.map((item, i) => (
                         <button
                             key={i}
-                            type="button"
-                            role="menuitem"
-                            className="ContextMenu__item"
+                            type={'button'}
+                            role={'menuitem'}
+                            className={'ContextMenu__item'}
                             onClick={() => {
                                 item.onSelect();
                                 setIsOpen(false);
                             }}
                         >
-                            {item.Icon && <item.Icon className="ContextMenu__itemIcon" />}{' '}
+                            {item.Icon && <item.Icon className={'ContextMenu__itemIcon'} />}{' '}
                             {item.label}
                         </button>
                     ))}

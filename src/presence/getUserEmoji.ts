@@ -15,6 +15,7 @@ const LOCAL_STORAGE_KEY = 'presence-user-emoji';
  */
 export function getUserEmoji(): string {
     const storedEmoji = localStorage.getItem(LOCAL_STORAGE_KEY);
+
     if (storedEmoji && PRESENCE_ANIMAL_EMOJIS.includes(storedEmoji)) {
         return storedEmoji;
     }
@@ -27,6 +28,7 @@ export function getUserEmoji(): string {
         // Storage can be unavailable (Safari private mode, quota). Presence
         // still works this session; the avatar just won't be stable across
         // reloads, which is strictly better than failing to render the list.
+        // eslint-disable-next-line no-console -- surface storage failures in devtools
         console.error('Failed to persist the presence emoji:', error);
     }
 

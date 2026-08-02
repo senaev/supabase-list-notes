@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
+
 import { collectActiveEditorEmojis } from './ActiveItemsPresenceStore';
 
 const OWN_KEY = 'own-tab';
 
 /** Shapes one meta the way realtime-js hands it to us after transformState. */
 function meta(emoji: string, itemId: string | null, presenceRef: string) {
-    return { emoji, itemId, presence_ref: presenceRef };
+    return {
+        emoji,
+        itemId,
+        presence_ref: presenceRef,
+    };
 }
 
 describe('collectActiveEditorEmojis', () => {
@@ -16,14 +21,17 @@ describe('collectActiveEditorEmojis', () => {
                     'tab-a': [meta('🐻', 'item-1', '1')],
                     'tab-b': [meta('🦊', 'item-2', '2')],
                 },
-                OWN_KEY,
-            ),
-        ).toEqual({ 'item-1': ['🐻'], 'item-2': ['🦊'] });
+                OWN_KEY
+            )
+        ).toEqual({
+            'item-1': ['🐻'],
+            'item-2': ['🦊'],
+        });
     });
 
     it("ignores this tab's own presence", () => {
         expect(
-            collectActiveEditorEmojis({ [OWN_KEY]: [meta('🐻', 'item-1', '1')] }, OWN_KEY),
+            collectActiveEditorEmojis({ [OWN_KEY]: [meta('🐻', 'item-1', '1')] }, OWN_KEY)
         ).toEqual({});
     });
 
@@ -36,8 +44,8 @@ describe('collectActiveEditorEmojis', () => {
                 {
                     'tab-a': [meta('🐻', 'item-1', '1'), meta('🐻', 'item-2', '2')],
                 },
-                OWN_KEY,
-            ),
+                OWN_KEY
+            )
         ).toEqual({ 'item-2': ['🐻'] });
     });
 
@@ -47,8 +55,8 @@ describe('collectActiveEditorEmojis', () => {
                 {
                     'tab-a': [meta('🐻', 'item-1', '1'), meta('🐻', null, '2')],
                 },
-                OWN_KEY,
-            ),
+                OWN_KEY
+            )
         ).toEqual({});
     });
 
@@ -59,8 +67,8 @@ describe('collectActiveEditorEmojis', () => {
                     'tab-a': [meta('🐻', 'item-1', '1')],
                     'tab-b': [meta('🐻', 'item-1', '2')],
                 },
-                OWN_KEY,
-            ),
+                OWN_KEY
+            )
         ).toEqual({ 'item-1': ['🐻'] });
     });
 
@@ -71,9 +79,11 @@ describe('collectActiveEditorEmojis', () => {
                     'tab-a': [meta('🐻', 'item-1', '1')],
                     'tab-b': [meta('🦊', 'item-1', '2')],
                 },
-                OWN_KEY,
-            ),
-        ).toEqual({ 'item-1': ['🐻', '🦊'] });
+                OWN_KEY
+            )
+        ).toEqual({
+            'item-1': ['🐻', '🦊'],
+        });
     });
 
     it('skips malformed payloads from other app versions', () => {
@@ -84,8 +94,8 @@ describe('collectActiveEditorEmojis', () => {
                     'tab-b': [meta('', 'item-1', '2')],
                     'tab-c': [meta('🦉', 'item-2', '3')],
                 },
-                OWN_KEY,
-            ),
+                OWN_KEY
+            )
         ).toEqual({ 'item-2': ['🦉'] });
     });
 });

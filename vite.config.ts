@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 function normalizeBasePath(basePath: string) {
     const withLeadingSlash = basePath.startsWith('/') ? basePath : `/${basePath}`;
+
     return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 

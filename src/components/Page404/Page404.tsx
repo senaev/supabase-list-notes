@@ -9,8 +9,8 @@ export function Page404() {
             <MainPageHeader />
 
             <FullPageContent>
-                <span className="Page404__content_emoji">🤷</span>
-                <h1>404: Not found</h1>
+                <span className={'Page404__content_emoji'}>{'🤷'}</span>
+                <h1>{'404: Not found'}</h1>
             </FullPageContent>
         </div>
     );

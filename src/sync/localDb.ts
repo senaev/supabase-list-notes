@@ -1,6 +1,8 @@
 import { createRxDatabase, RxCollection, RxConflictHandler, RxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
+
 import type { Item } from './types';
 
 /**
@@ -99,11 +101,12 @@ const conflictHandler: RxConflictHandler<LocalItemRow> = {
         ) {
             return true;
         }
+
         return isSameIgnoringModified(a, b);
     },
     resolve: ({ realMasterState, newDocumentState }) =>
         Promise.resolve(
-            isNewer(realMasterState, newDocumentState) ? realMasterState : newDocumentState,
+            isNewer(realMasterState, newDocumentState) ? realMasterState : newDocumentState
         ),
 };
 

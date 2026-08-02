@@ -2,6 +2,7 @@ import './App.css';
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Route, Routes } from 'react-router-dom';
+
 import {
     SupabaseClientContextProvider,
     useSupabaseClientContext,
@@ -39,8 +40,8 @@ export function ItemsApp({ supabaseClient }: { supabaseClient: SupabaseClient })
 export function NotesApp({ supabaseClient }: { supabaseClient: SupabaseClient }) {
     return (
         <Routes>
-            <Route path="/" element={<ItemsApp supabaseClient={supabaseClient} />} />
-            <Route path="*" element={<Page404 />} />
+            <Route path={'/'} element={<ItemsApp supabaseClient={supabaseClient} />} />
+            <Route path={'*'} element={<Page404 />} />
         </Routes>
     );
 }
@@ -66,8 +67,8 @@ export function NotesWithAuthApp() {
 
 export function App() {
     return (
-        <div className="App__page">
-            <main className="App__main">
+        <div className={'App__page'}>
+            <main className={'App__main'}>
                 <SupabaseClientContextProvider>
                     <NotesWithAuthApp />
                 </SupabaseClientContextProvider>

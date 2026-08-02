@@ -1,4 +1,5 @@
 import { PropsWithChildren, createContext, useContext, useState } from 'react';
+
 import { Toasts } from '../components/Toasts/Toasts';
 import { noop } from '../utils/noop';
 
@@ -33,7 +34,7 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
 
     function hideInfoMessage(index: number) {
         setInfoMessages((current) =>
-            current.filter((_, currentInfoIndex) => currentInfoIndex !== index),
+            current.filter((_, currentInfoIndex) => currentInfoIndex !== index)
         );
     }
 
@@ -41,10 +42,12 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
         <ToastsContext.Provider
             value={{
                 showError: (error) => {
+                    // eslint-disable-next-line no-console -- surface errors in devtools in addition to the UI toast
                     console.error(error);
                     setErrors((current) => [...current, error]);
                 },
                 showInfoMessage: (message) => {
+                    // eslint-disable-next-line no-console -- surface info messages in devtools in addition to the UI toast
                     console.info(message);
                     setInfoMessages((current) => [...current, message]);
                 },
@@ -64,6 +67,4 @@ export function ToastsContextProvider({ children }: PropsWithChildren) {
     );
 }
 
-export const useToastsContext = () => {
-    return useContext(ToastsContext);
-};
+export const useToastsContext = () => useContext(ToastsContext);

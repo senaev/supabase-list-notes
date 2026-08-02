@@ -1,6 +1,7 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+
 import { getUserEmoji } from './getUserEmoji';
 
 /**
@@ -63,7 +64,10 @@ function parseActiveItemPresence(payload: unknown): ActiveItemPresence | null {
         return null;
     }
 
-    return { emoji, itemId };
+    return {
+        emoji,
+        itemId,
+    };
 }
 
 /**
@@ -75,7 +79,7 @@ function parseActiveItemPresence(payload: unknown): ActiveItemPresence | null {
  */
 export function collectActiveEditorEmojis(
     presenceState: Record<string, unknown[]>,
-    ownPresenceKey: string,
+    ownPresenceKey: string
 ): ActiveEditorEmojisByItemId {
     const emojisByItemId: ActiveEditorEmojisByItemId = {};
 
@@ -99,6 +103,7 @@ export function collectActiveEditorEmojis(
         //
         // That `unshift` is also what makes the newest meta the last one.
         const activeItemPresence = parseActiveItemPresence(presences.at(-1));
+
         if (!activeItemPresence) {
             continue;
         }
@@ -176,6 +181,7 @@ export class ActiveItemsPresenceStore {
      */
     public setClient(client: SupabaseClient): void {
         const generation = ++this.generation;
+
         this.lifecycle = this.teardown().then(() => {
             this.subscribe(client, generation);
         });
@@ -223,7 +229,7 @@ export class ActiveItemsPresenceStore {
     };
 
     private publishActiveItem(): void {
-        const channel = this.channel;
+        const { channel } = this;
 
         // Nothing to publish into yet - `subscribe`'s callback re-publishes
         // once the channel is joined (and again after every reconnect), so the
@@ -240,6 +246,7 @@ export class ActiveItemsPresenceStore {
         channel.track(payload).catch((trackError: unknown) => {
             // Presence is cosmetic: a failed update must never surface as an
             // error toast the way a failed item write does.
+            // eslint-disable-next-line no-console -- surface presence failures in devtools without a UI toast
             console.error('Failed to publish presence:', trackError);
         });
     }
@@ -284,7 +291,8 @@ export class ActiveItemsPresenceStore {
     }
 
     private readPresenceState(): void {
-        const channel = this.channel;
+        const { channel } = this;
+
         if (!channel) {
             return;
         }
@@ -305,6 +313,7 @@ export class ActiveItemsPresenceStore {
         this.isSubscribed = false;
 
         const { channel, client } = this;
+
         this.channel = null;
         this.client = null;
 

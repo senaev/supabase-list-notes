@@ -32,6 +32,7 @@ export function Modal({
         }
 
         document.addEventListener('keydown', handleKeyDown);
+
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
@@ -39,7 +40,7 @@ export function Modal({
 
     return createPortal(
         <div
-            className="Modal__overlay"
+            className={'Modal__overlay'}
             onMouseDown={(event) => {
                 // Only close when the backdrop itself (not the panel or its
                 // contents) is the click target.
@@ -48,10 +49,10 @@ export function Modal({
                 }
             }}
         >
-            <div aria-label={ariaLabel} className="Modal__panel" role="dialog">
+            <div aria-label={ariaLabel} className={'Modal__panel'} role={'dialog'}>
                 {children}
             </div>
         </div>,
-        document.body,
+        document.body
     );
 }

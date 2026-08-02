@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RxCollection } from 'rxdb';
 import { replicateSupabase, RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
+
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
+
 import type { LocalItemRow } from './localDb';
 
 const BATCH_SIZE = 500;

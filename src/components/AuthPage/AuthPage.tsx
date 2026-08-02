@@ -6,6 +6,7 @@ import {
     NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+
 import { SQL_SCHEMA_IMPORT_PROMISE } from '../../const/SQL_SCHEMA_IMPORT_PROMISE';
 import { SUPABASE_DASHBOARD_LINK } from '../../const/SUPABASE_DASHBOARD_LINK';
 import { SUPABASE_SQL_REQUEST_LINK } from '../../const/SUPABASE_SQL_REQUEST_LINK';
@@ -38,13 +39,12 @@ export function AuthPage({
     const { showError } = useToastsContext();
 
     function copySqlRequestToClipboard() {
-        SQL_SCHEMA_IMPORT_PROMISE.then((sqlRequest) => {
-            return navigator.clipboard.writeText(sqlRequest);
-        })
+        SQL_SCHEMA_IMPORT_PROMISE.then((sqlRequest) => navigator.clipboard.writeText(sqlRequest))
             .then(() => {
                 setCopyStatus('success');
             })
             .catch((error) => {
+                // eslint-disable-next-line no-console
                 console.error('Failed to copy SQL request to clipboard:', error);
                 setCopyStatus('error');
             })
@@ -64,6 +64,7 @@ export function AuthPage({
 
                     if (!projectUrl || !publishableKey) {
                         showError('Both project URL and publishable key are required.');
+
                         return;
                     }
 
@@ -72,36 +73,40 @@ export function AuthPage({
                         publishableKey,
                     };
 
-                    statusObject.authenticate(nextCredentials).catch((error) => {
+                    statusObject.authenticate(nextCredentials).catch((_error) => {
                         showError(
-                            'Failed to authenticate with provided credentials. Please check them and try again.',
+                            'Failed to authenticate with provided credentials. Please check them and try again.'
                         );
                     });
                 }}
-                className="AuthPage__instruction"
+                className={'AuthPage__instruction'}
             >
                 <section>
-                    <h3>1. Create database</h3>
+                    <h3>{'1. Create database'}</h3>
                     <p>
-                        Log in to your Supabase account and create a new project on{' '}
-                        <a href={SUPABASE_DASHBOARD_LINK} target="_blank" rel="noopener noreferrer">
-                            dashboard
+                        {'Log in to your Supabase account and create a new project on'}{' '}
+                        <a
+                            href={SUPABASE_DASHBOARD_LINK}
+                            target={'_blank'}
+                            rel={'noopener noreferrer'}
+                        >
+                            {'dashboard'}
                         </a>
-                        .
+                        {'.'}
                     </p>
                     <p>
-                        Create tables using the{' '}
+                        {'Create tables using the'}{' '}
                         <a
                             href={SUPABASE_SQL_REQUEST_LINK}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            target={'_blank'}
+                            rel={'noopener noreferrer'}
                         >
-                            SQL request
+                            {'SQL request'}
                         </a>
-                        .
+                        {'.'}
                         <button
-                            type="button"
-                            className="AuthPage__copyButton"
+                            type={'button'}
+                            className={'AuthPage__copyButton'}
                             onClick={copySqlRequestToClipboard}
                         >
                             {CLIPBOARD_STATUS_ICONS[copyStatus]}
@@ -109,46 +114,47 @@ export function AuthPage({
                     </p>
                 </section>
                 <section>
-                    <h3>2. Input credentials</h3>
+                    <h3>{'2. Input credentials'}</h3>
                     {statusObject.status === 'wrong-credentials' && (
-                        <p className="AuthPage__wrongCredentialsMessage">
-                            Invalid credentials. {statusObject.message}
+                        <p className={'AuthPage__wrongCredentialsMessage'}>
+                            {'Invalid credentials. '}
+                            {statusObject.message}
                         </p>
                     )}
-                    <div className="AuthPage__credentialsInputs">
-                        <label className="AuthPage__field">
-                            <span>Project URL</span>
+                    <div className={'AuthPage__credentialsInputs'}>
+                        <label className={'AuthPage__field'}>
+                            <span>{'Project URL'}</span>
                             <input
-                                type="url"
-                                name="projectUrl"
+                                type={'url'}
+                                name={'projectUrl'}
                                 placeholder={PROJECT_URL_PLACEHOLDER}
                                 value={projectUrl}
                                 onChange={(event) => {
                                     setProjectUrl(event.target.value);
                                 }}
-                                required
+                                required={true}
                             />
                         </label>
-                        <label className="AuthPage__field">
-                            <span>Publishable key</span>
+                        <label className={'AuthPage__field'}>
+                            <span>{'Publishable key'}</span>
                             <input
-                                type="password"
-                                name="publishableKey"
+                                type={'password'}
+                                name={'publishableKey'}
                                 placeholder={PUBLISHABLE_KEY_PLACEHOLDER}
                                 value={publishableKey}
                                 onChange={(event) => {
                                     setPublishableKey(event.target.value);
                                 }}
-                                required
+                                required={true}
                             />
                         </label>
                     </div>
                     <button
-                        className="AuthPage__submitButton"
-                        type="submit"
+                        className={'AuthPage__submitButton'}
+                        type={'submit'}
                         disabled={!projectUrl || !publishableKey}
                     >
-                        Login
+                        {'Login'}
                     </button>
                 </section>
             </form>

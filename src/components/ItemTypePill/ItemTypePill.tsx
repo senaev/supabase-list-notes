@@ -1,6 +1,7 @@
 import './ItemTypePill.css';
 
 import classNames from 'classnames';
+
 import { getItemTypeColor } from '../../utils/getItemTypeColor';
 
 // Types this short (or shorter) are always shown in full - they're already
@@ -63,15 +64,11 @@ export function ItemTypePill({
                 } as React.CSSProperties
             }
             title={type}
-            type="button"
+            type={'button'}
         >
             {label}
             {emojis && emojis.length > 0 && (
-                // Decorative here on purpose: it would otherwise pollute the
-                // button's accessible name ("groceries bear face"). The
-                // authoritative, properly-labelled indicator is the per-item one in
-                // NoteItemElement, one tap away.
-                <span aria-hidden="true" className="ItemTypePill__emojis">
+                <span aria-hidden={'true'} className={'ItemTypePill__emojis'}>
                     {emojis.join('')}
                 </span>
             )}

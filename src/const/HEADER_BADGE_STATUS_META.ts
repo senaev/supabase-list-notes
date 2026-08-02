@@ -14,7 +14,16 @@ export type HeaderBadgeStatus = Exclude<NetworkSyncStatus, 'synced'> | 'unauthen
 
 export const HEADER_BADGE_STATUS_META: Record<HeaderBadgeStatus, { emoji: string; label: string }> =
     {
-        unauthenticated: { emoji: '🔑', label: 'Not logged in' },
-        offline: { emoji: '🤷', label: 'No connection' },
-        syncing: { emoji: '🔄', label: 'Syncing…' },
+        unauthenticated: {
+            emoji: '🔑',
+            label: 'Not logged in',
+        },
+        offline: {
+            emoji: '🤷',
+            label: 'No connection',
+        },
+        syncing: {
+            emoji: '🔄',
+            label: 'Syncing…',
+        },
     };

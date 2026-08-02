@@ -1,6 +1,7 @@
 import './Toasts.css';
 
 import { Fragment } from 'react';
+
 import { Modal } from '../Modal/Modal';
 
 type ToastsProps = {
@@ -20,17 +21,17 @@ function InfoToast({
     onClose: (index: number) => void;
 }) {
     return (
-        <div className="Toasts__toast Toasts__toastInfo" role="status">
-            <div className="Toasts__message">{message}</div>
+        <div className={'Toasts__toast Toasts__toastInfo'} role={'status'}>
+            <div className={'Toasts__message'}>{message}</div>
             <button
                 aria-label={`Dismiss info ${index + 1}`}
-                className="Toasts__close"
+                className={'Toasts__close'}
                 onClick={() => {
                     onClose(index);
                 }}
-                type="button"
+                type={'button'}
             >
-                Close
+                {'Close'}
             </button>
         </div>
     );
@@ -54,20 +55,20 @@ function InfoToast({
  */
 function ErrorsModal({ errors, onClose }: { errors: string[]; onClose: VoidFunction }) {
     return (
-        <Modal ariaLabel="Error" onClose={onClose}>
-            <div className="Toasts__errorModal" role="alert">
+        <Modal ariaLabel={'Error'} onClose={onClose}>
+            <div className={'Toasts__errorModal'} role={'alert'}>
                 <button
-                    aria-label="Dismiss errors"
-                    className="Toasts__close"
+                    aria-label={'Dismiss errors'}
+                    className={'Toasts__close'}
                     onClick={onClose}
-                    type="button"
+                    type={'button'}
                 >
-                    Close
+                    {'Close'}
                 </button>
                 {errors.map((error, index) => (
                     <Fragment key={`${index}_${error}`}>
-                        {index > 0 && <hr className="Toasts__errorDivider" />}
-                        <div className="Toasts__message">{error}</div>
+                        {index > 0 && <hr className={'Toasts__errorDivider'} />}
+                        <div className={'Toasts__message'}>{error}</div>
                     </Fragment>
                 ))}
             </div>
@@ -80,7 +81,7 @@ export function Toasts({ errors, infoMessages, onClearErrors, onCloseInfoMessage
         <>
             {errors.length > 0 && <ErrorsModal errors={errors} onClose={onClearErrors} />}
             {infoMessages.length > 0 && (
-                <div className="Toasts" aria-live="polite" aria-label="Notifications">
+                <div className={'Toasts'} aria-live={'polite'} aria-label={'Notifications'}>
                     {infoMessages.map((message, index) => (
                         <InfoToast
                             key={`info_${message}_${index}`}

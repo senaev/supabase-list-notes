@@ -2,17 +2,17 @@
     "format_on_save": "on",
     "languages": {
         "TypeScript": {
-            "language_servers": ["vtsls", "!tsgo", "!eslint"],
+            "language_servers": ["vtsls", "!tsgo", "eslint"],
             "formatter": "prettier",
             "code_actions_on_format": {}
         },
         "TSX": {
-            "language_servers": ["vtsls", "!tsgo", "!eslint"],
+            "language_servers": ["vtsls", "!tsgo", "eslint"],
             "formatter": "prettier",
             "code_actions_on_format": {}
         },
         "JavaScript": {
-            "language_servers": ["vtsls", "!tsgo", "!eslint"],
+            "language_servers": ["vtsls", "!tsgo", "eslint"],
             "formatter": "prettier",
             "code_actions_on_format": {}
         },

@@ -9,6 +9,8 @@ pre-push:
     commands:
         format:
             run: npm run format:check
+        lint:
+            run: npm run lint
         test:
             run: npm run test
         typecheck:

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useEffect, useRef } from 'react';
 import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
+
 import { ActiveEditorEmojisByItemId, ActiveItemsPresenceStore } from './ActiveItemsPresenceStore';
 
 export interface UseActiveItemsPresenceResult {
@@ -25,20 +26,25 @@ export interface UseActiveItemsPresenceResult {
  */
 export function useActiveItemsPresence(client: SupabaseClient): UseActiveItemsPresenceResult {
     const storeRef = useRef<ActiveItemsPresenceStore | undefined>(undefined);
+
+    /* eslint-disable react-hooks/refs -- intentional lazy useRef store init, per the docstring above;
+       storeRef.current is guaranteed set synchronously below, and is read (not mutated) for the rest of this render. */
     if (!storeRef.current) {
         storeRef.current = new ActiveItemsPresenceStore();
     }
+
     const store = storeRef.current;
 
     useEffect(() => {
         store.setClient(client);
     }, [store, client]);
 
-    useEffect(() => {
-        return () => {
+    useEffect(
+        () => () => {
             store.dispose();
-        };
-    }, [store]);
+        },
+        [store]
+    );
 
     const emojisByItemId = useSignal(store.emojisByItemIdSignal);
 
@@ -46,4 +52,5 @@ export function useActiveItemsPresence(client: SupabaseClient): UseActiveItemsPr
         emojisByItemId,
         setActiveItem: store.setActiveItem,
     };
+    /* eslint-enable react-hooks/refs */
 }

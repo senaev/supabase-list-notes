@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
+
 import { ItemsSyncStore } from './ItemsSyncStore';
 import type { EditableFields, Item, NetworkSyncStatus } from './types';
 
@@ -35,20 +36,25 @@ export interface UseItemsSyncResult {
  */
 export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
     const storeRef = useRef<ItemsSyncStore | undefined>(undefined);
+
+    /* eslint-disable react-hooks/refs -- intentional lazy useRef store init, per the docstring above;
+       storeRef.current is guaranteed set synchronously below, and is read (not mutated) for the rest of this render. */
     if (!storeRef.current) {
         storeRef.current = new ItemsSyncStore();
     }
+
     const store = storeRef.current;
 
     useEffect(() => {
         store.setClient(client);
     }, [store, client]);
 
-    useEffect(() => {
-        return () => {
+    useEffect(
+        () => () => {
             store.dispose();
-        };
-    }, [store]);
+        },
+        [store]
+    );
 
     const items = useSignal(store.itemsSignal);
     const error = useSignal(store.errorSignal);
@@ -62,4 +68,5 @@ export function useItemsSync(client: SupabaseClient): UseItemsSyncResult {
         updateItem: store.updateItem,
         removeItem: store.removeItem,
     };
+    /* eslint-enable react-hooks/refs */
 }

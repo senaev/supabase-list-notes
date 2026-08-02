@@ -3,6 +3,7 @@ import './NotePage.css';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { KeyboardEvent, SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { UseActiveItemsPresenceResult } from '../../presence/useActiveItemsPresence';
 import { Item } from '../../sync/types';
@@ -65,9 +66,9 @@ export function NotePage({
     const existingTypes = useMemo(
         () =>
             Array.from(new Set(sync.items.map((item) => item.type))).sort((a, b) =>
-                a.localeCompare(b),
+                a.localeCompare(b)
             ),
-        [sync.items],
+        [sync.items]
     );
 
     useEffect(() => {
@@ -78,6 +79,7 @@ export function NotePage({
         const { selectionEnd, selectionStart, id } = pendingFocus;
 
         const input = inputRefs.current.get(id);
+
         if (!input) {
             return;
         }
@@ -106,6 +108,7 @@ export function NotePage({
 
         if (currentIndex === -1) {
             showError('Unable to find item to move caret from');
+
             return;
         }
 
@@ -120,6 +123,7 @@ export function NotePage({
         const maxPositionInFirstLine =
             firstLineLength === -1 ? targetItem.title.length : firstLineLength;
         const selectionPosition = Math.min(desiredCaretPositionRef.current, maxPositionInFirstLine);
+
         setPendingFocus({
             id: targetItem.id,
             selectionStart: selectionPosition,
@@ -130,6 +134,7 @@ export function NotePage({
     function saveCaretPosition(event: SyntheticEvent<HTMLTextAreaElement>) {
         if (ignoreNextSelectionRef.current) {
             ignoreNextSelectionRef.current = false;
+
             return;
         }
 
@@ -142,16 +147,19 @@ export function NotePage({
 
         const lineStart = event.currentTarget.value.lastIndexOf('\n', caretPosition - 1) + 1;
         const nextDesiredCaretPosition = caretPosition - lineStart;
+
         desiredCaretPositionRef.current = nextDesiredCaretPosition;
     }
 
     function isCaretOnFirstLine(input: HTMLTextAreaElement) {
         const caretPosition = input.selectionStart ?? 0;
+
         return !input.value.slice(0, caretPosition).includes('\n');
     }
 
     function isCaretOnLastLine(input: HTMLTextAreaElement) {
         const caretPosition = input.selectionEnd ?? input.value.length;
+
         return !input.value.slice(caretPosition).includes('\n');
     }
 
@@ -168,6 +176,7 @@ export function NotePage({
 
         if (!currentItem) {
             showError(`createItemAfter: item not found id=[${id}]`);
+
             return;
         }
 
@@ -178,7 +187,12 @@ export function NotePage({
 
         // Copy the original item's type onto the new item created by the split.
         const newId = sync.addItem(titleNew, currentItem.type);
-        setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
+
+        setPendingFocus({
+            id: newId,
+            selectionStart: 0,
+            selectionEnd: 0,
+        });
     }
 
     function mergeItemWithPrevious(id: string) {
@@ -207,15 +221,21 @@ export function NotePage({
 
     function handleItemKeyDown(event: KeyboardEvent<HTMLTextAreaElement>, item: Item) {
         const { selectionStart, selectionEnd } = event.currentTarget;
+
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
 
             if (selectionStart == null || selectionEnd == null) {
                 showError('Unable to determine caret position');
+
                 return;
             }
 
-            createItemAfter({ id: item.id, selectionStart, selectionEnd });
+            createItemAfter({
+                id: item.id,
+                selectionStart,
+                selectionEnd,
+            });
         }
 
         if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'l') {
@@ -235,6 +255,7 @@ export function NotePage({
 
             if (!shouldMoveToAdjacentItem) {
                 ignoreNextSelectionRef.current = true;
+
                 return;
             }
 
@@ -266,60 +287,63 @@ export function NotePage({
         // doesn't immediately vanish from the filtered view it was just
         // created in.
         const newId = sync.addItem('', typeFilter ?? undefined);
-        setPendingFocus({ id: newId, selectionStart: 0, selectionEnd: 0 });
+
+        setPendingFocus({
+            id: newId,
+            selectionStart: 0,
+            selectionEnd: 0,
+        });
     }
 
     return (
         <>
-            <div className="NotePage__items">
-                {unchecked.map((item) => {
-                    return (
-                        <NoteItemElement
-                            key={item.id}
-                            item={item}
-                            toggleChecked={(isChecked) => {
-                                sync.updateItem(item.id, {
-                                    checked_at: isChecked ? new Date().toISOString() : null,
-                                });
-                            }}
-                            onChange={(value) => {
-                                handleItemChange(item.id, value);
-                            }}
-                            onChangeType={(type) => {
-                                sync.updateItem(item.id, { type });
-                            }}
-                            onFocus={() => {
-                                presence.setActiveItem(item.id);
-                            }}
-                            onKeyDown={(event) => {
-                                handleItemKeyDown(event, item);
-                            }}
-                            onTextSelectionChange={saveCaretPosition}
-                            onRemove={() => {
-                                sync.removeItem(item.id);
-                            }}
-                            resizeTextarea={resizeTextarea}
-                            inputRefs={inputRefs}
-                            activeEditorEmojis={presence.emojisByItemId[item.id]}
-                            readonlyText={false}
-                            existingTypes={existingTypes}
-                            truncateType={Boolean(typeFilter)}
-                        />
-                    );
-                })}
+            <div className={'NotePage__items'}>
+                {unchecked.map((item) => (
+                    <NoteItemElement
+                        key={item.id}
+                        item={item}
+                        toggleChecked={(isChecked) => {
+                            sync.updateItem(item.id, {
+                                checked_at: isChecked ? new Date().toISOString() : null,
+                            });
+                        }}
+                        onChange={(value) => {
+                            handleItemChange(item.id, value);
+                        }}
+                        onChangeType={(type) => {
+                            sync.updateItem(item.id, { type });
+                        }}
+                        onFocus={() => {
+                            presence.setActiveItem(item.id);
+                        }}
+                        onKeyDown={(event) => {
+                            handleItemKeyDown(event, item);
+                        }}
+                        onTextSelectionChange={saveCaretPosition}
+                        onRemove={() => {
+                            sync.removeItem(item.id);
+                        }}
+                        resizeTextarea={resizeTextarea}
+                        inputRefs={inputRefs}
+                        activeEditorEmojis={presence.emojisByItemId[item.id]}
+                        readonlyText={false}
+                        existingTypes={existingTypes}
+                        truncateType={Boolean(typeFilter)}
+                    />
+                ))}
                 <button
-                    className="NotePage__addItemButton"
+                    className={'NotePage__addItemButton'}
                     onClick={createNewItemAtTheEnd}
-                    type="button"
+                    type={'button'}
                 >
-                    <PlusIcon className="NotePage_addItemButton__icon" />
-                    Item
+                    <PlusIcon className={'NotePage_addItemButton__icon'} />
+                    {'Item'}
                 </button>
             </div>
             <div>
                 {checked.length > 0 && (
                     <>
-                        <hr className="items-separator" />
+                        <hr className={'items-separator'} />
                         {checked.map((item) => (
                             <NoteItemElement
                                 key={item.id}
