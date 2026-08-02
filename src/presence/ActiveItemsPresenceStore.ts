@@ -302,7 +302,7 @@ export class ActiveItemsPresenceStore {
         // Signal's deepEqual comparator swallows no-op emissions, which matters
         // because Presence re-sends the whole merged state on every change -
         // including changes that don't affect any item we render.
-        this.emojisByItemIdSignal.next(emojisByItemId);
+        this.emojisByItemIdSignal.dispatch(emojisByItemId);
     }
 
     private async teardown(): Promise<void> {
@@ -317,7 +317,7 @@ export class ActiveItemsPresenceStore {
         this.channel = null;
         this.client = null;
 
-        this.emojisByItemIdSignal.next({});
+        this.emojisByItemIdSignal.dispatch({});
 
         if (channel && client) {
             // Awaited (rather than fired and forgotten) so the chained

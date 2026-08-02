@@ -4,11 +4,18 @@ import {
     RxCollection,
     RxConflictHandler,
     RxDatabase,
+    RxDocument,
     RxStorage,
 } from 'rxdb';
+import { Subscription } from 'rxjs';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+
+import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
+import { noop } from '../utils/noop';
+
+import type { Item } from './types';
 
 const dexieStorage = getRxStorageDexie();
 const storage: RxStorage<unknown, unknown> = import.meta.env.DEV
@@ -18,10 +25,6 @@ const storage: RxStorage<unknown, unknown> = import.meta.env.DEV
 if (import.meta.env.DEV) {
     addRxPlugin(RxDBDevModePlugin);
 }
-
-import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
-
-import type { Item } from './types';
 
 /**
  * RxDB's own representation of a document always carries a `_deleted` flag
@@ -150,4 +153,91 @@ export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections
     });
 
     return database;
+}
+
+type LocalTable<T> = {
+    bulkPut: (rows: T[]) => Promise<void>;
+    get: (id: string) => Promise<T | undefined>;
+    observeAll: (onChange: (rows: T[]) => void) => Promise<Subscription>;
+    put: (row: T) => Promise<void>;
+    remove: (id: string) => Promise<void>;
+    toArray: () => Promise<T[]>;
+};
+
+function mapDocument<T>(document: RxDocument<T>): T {
+    return document.toMutableJSON();
+}
+
+export class LocalDbFacade {
+    public readonly notes_temp = this.createTable((database) => database.items);
+
+    public constructor(private readonly database: RxDatabase<LocalCollections>) {}
+
+    public getCollections(): LocalCollections {
+        return this.database.collections;
+    }
+
+    private createTable<T>(
+        getCollection: (database: RxDatabase<LocalCollections>) => RxCollection<T>
+    ): LocalTable<T> {
+        return {
+            bulkPut: async (rows): Promise<void> => {
+                if (rows.length === 0) {
+                    return;
+                }
+
+                await getCollection(this.database).bulkUpsert(rows);
+            },
+
+            get: async (id): Promise<T | undefined> => {
+                const document = await getCollection(this.database).findOne(id).exec();
+
+                if (!document) {
+                    return undefined;
+                }
+
+                return mapDocument(document);
+            },
+
+            observeAll: async (onChange): Promise<Subscription> => {
+                const query = getCollection(this.database).find();
+                const initialDocuments = await query.exec();
+
+                onChange(initialDocuments.map((document) => mapDocument(document)));
+
+                return query.$.subscribe((documents) => {
+                    onChange(documents.map((document) => mapDocument(document)));
+                });
+            },
+
+            put: (row): Promise<void> =>
+                getCollection(this.database).incrementalUpsert(row).then(noop),
+
+            remove: async (id): Promise<void> => {
+                const document = await getCollection(this.database).findOne(id).exec();
+
+                if (!document) {
+                    return;
+                }
+
+                const now = new Date().toISOString();
+
+                await document.incrementalModify((docData) => {
+                    const nextDocData = {
+                        ...docData,
+                        modified_at: now,
+                        _deleted: true,
+                    };
+
+                    return nextDocData;
+                });
+            },
+
+            toArray: async (): Promise<T[]> => {
+                const documents = await getCollection(this.database).find().exec();
+
+                return documents.map((document) => mapDocument(document));
+            },
+        };
+    }
 }

@@ -1,15 +1,15 @@
 import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { ItemsSyncStore } from './ItemsSyncStore';
-import type { EditableFields, Item, NetworkSyncStatus } from './types';
+import type { EditableFields, Item, NetworkSyncStatus, RequiredFields } from './types';
 
 export interface UseItemsSyncResult {
     items: Item[];
-    error: string | null;
     networkSyncStatus: NetworkSyncStatus;
-    addItem: (title: string, type: string) => string;
-    updateItem: (id: string, patch: Partial<EditableFields>) => void;
-    removeItem: (id: string) => void;
+    addItem: (newItem: RequiredFields) => void;
+    updateItem: (id: string, fields: Partial<EditableFields>) => void;
+    delete: (id: string) => void;
 }
 
 export function useItemsSync({
@@ -17,16 +17,17 @@ export function useItemsSync({
 }: {
     itemSyncStore: ItemsSyncStore;
 }): UseItemsSyncResult {
-    const items = useSignal(itemSyncStore.itemsSignal);
-    const error = useSignal(itemSyncStore.errorSignal);
-    const networkSyncStatus = useSignal(itemSyncStore.networkSyncStatusSignal);
+    const items = useSignal(itemSyncStore.recordsSignal);
+
+    // TODO: implement
+    const networkSyncStatusSignal = new Signal<NetworkSyncStatus>('synced');
+    const networkSyncStatus = useSignal(networkSyncStatusSignal);
 
     return {
         items,
-        error,
         networkSyncStatus,
         addItem: itemSyncStore.addItem,
         updateItem: itemSyncStore.updateItem,
-        removeItem: itemSyncStore.removeItem,
+        delete: itemSyncStore.delete,
     };
 }

@@ -43,12 +43,6 @@ export function NotePage({
     const desiredCaretPositionRef = useRef(0);
     const ignoreNextSelectionRef = useRef(false);
 
-    useEffect(() => {
-        if (sync.error) {
-            showError(sync.error);
-        }
-    }, [sync.error, showError]);
-
     // Set by clicking a chip in ItemTypesNav (in MainPageHeader); cleared by
     // the home button navigating back to ROUTES.home with no search params.
     const typeFilter = searchParams.get('type');
@@ -186,8 +180,9 @@ export function NotePage({
 
         sync.updateItem(id, { title: titlePrevious });
 
-        // Copy the original item's type onto the new item created by the split.
-        const newId = sync.addItem(titleNew, currentItem.type);
+        const newId = crypto.randomUUID();
+
+        sync.addItem({ id: newId, title: titleNew, type: currentItem.type });
 
         setPendingFocus({
             id: newId,
@@ -208,11 +203,10 @@ export function NotePage({
         const mergedTitle = previousItem.title + currentItem.title;
         const cursorPosition = previousItem.title.length;
 
-        // Only `title` is patched here, so the merged item keeps the previous
-        // item's type (left untouched) rather than the current (removed)
-        // item's.
-        sync.updateItem(previousItem.id, { title: mergedTitle });
-        sync.removeItem(currentItem.id);
+        sync.updateItem(previousItem.id, {
+            title: mergedTitle,
+        });
+        sync.delete(currentItem.id);
         setPendingFocus({
             id: previousItem.id,
             selectionStart: cursorPosition,
@@ -284,7 +278,13 @@ export function NotePage({
     }
 
     function createNewItemAtTheEnd() {
-        const newId = sync.addItem('', typeFilter ?? DEFAULT_ITEM_TYPE);
+        const newId = crypto.randomUUID();
+
+        sync.addItem({
+            id: newId,
+            title: '',
+            type: typeFilter ?? DEFAULT_ITEM_TYPE,
+        });
 
         setPendingFocus({
             id: newId,
@@ -319,7 +319,7 @@ export function NotePage({
                         }}
                         onTextSelectionChange={saveCaretPosition}
                         onRemove={() => {
-                            sync.removeItem(item.id);
+                            sync.delete(item.id);
                         }}
                         resizeTextarea={resizeTextarea}
                         inputRefs={inputRefs}
@@ -359,7 +359,7 @@ export function NotePage({
                                 onKeyDown={() => {}}
                                 onTextSelectionChange={saveCaretPosition}
                                 onRemove={() => {
-                                    sync.removeItem(item.id);
+                                    sync.delete(item.id);
                                 }}
                                 resizeTextarea={() => {}}
                                 inputRefs={inputRefs}

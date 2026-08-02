@@ -1,7 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
+
+export type SupabaseClientSignal = Signal<SupabaseClient | undefined>;
 
 export type SupabaseCredentials = {
     projectUrl: string;
@@ -15,24 +18,22 @@ export type SupabaseControllerStatusObjectNotReady =
           status: 'wrong-credentials';
           authenticate: SupabaseControllerAuthenticateFunction;
           message: string;
+          clientSignal: SupabaseClientSignal;
       }
     | {
           status: 'require-credentials';
           authenticate: SupabaseControllerAuthenticateFunction;
+          clientSignal: SupabaseClientSignal;
       };
 
 export type SupabaseControllerStatusObjectInitialization = {
     status: 'initialization';
+    clientSignal: SupabaseClientSignal;
 };
-
-export const SUPABASE_CONTROLLER_STATUS_INITIALIZATION: SupabaseControllerStatusObjectInitialization =
-    {
-        status: 'initialization',
-    };
 
 export type SupabaseControllerStatusObjectReady = {
     status: 'ready';
-    client: SupabaseClient;
+    clientSignal: SupabaseClientSignal;
     credentials: SupabaseCredentials;
     logout: VoidFunction;
 };
@@ -68,18 +69,16 @@ function parseLocalStorageCredentials(value: string | null): SupabaseCredentials
 }
 
 export class SupabaseController {
-    public status: SupabaseControllerStatus = SUPABASE_CONTROLLER_STATUS_INITIALIZATION;
-    private client?: SupabaseClient;
+    public readonly clientSignal: SupabaseClientSignal = new Signal<SupabaseClient | undefined>(
+        undefined
+    );
 
-    public constructor(
-        private readonly params: {
-            onChange: VoidFunction;
-        }
-    ) {
-        this.initialize();
-    }
+    public readonly statusSignal = new Signal<SupabaseControllerStatus>({
+        status: 'initialization',
+        clientSignal: this.clientSignal,
+    });
 
-    private initialize() {
+    public constructor() {
         const localStorageCredentials = localStorage.getItem(LOCAL_STORAGE_KEY);
 
         let credentials: SupabaseCredentials | null = null;
@@ -87,7 +86,7 @@ export class SupabaseController {
         try {
             credentials = parseLocalStorageCredentials(localStorageCredentials);
         } catch (error) {
-            // eslint-disable-next-line no-console -- surface unexpected parsing failures in devtools
+            // eslint-disable-next-line no-console
             console.error('Failed to parse Supabase credentials from localStorage:', error);
             localStorage.removeItem(LOCAL_STORAGE_KEY);
         }
@@ -120,11 +119,11 @@ export class SupabaseController {
         }
 
         if (!credentials) {
-            this.status = {
+            this.statusSignal.dispatch({
                 status: 'require-credentials',
                 authenticate: this.authenticate,
-            };
-            this.params.onChange();
+                clientSignal: this.clientSignal,
+            });
 
             return;
         }
@@ -132,41 +131,53 @@ export class SupabaseController {
         this.authenticate(credentials);
     }
 
-    private authenticate: SupabaseControllerAuthenticateFunction = async (credentials) => {
-        this.client = createClient(credentials.projectUrl, credentials.publishableKey);
+    private destroyOldClient(): void {
+        const oldClient = this.clientSignal.getValue();
 
-        const { error } = await this.client.from(ITEMS_TABLE_NAME).select('id').limit(1);
+        if (oldClient) {
+            oldClient.removeAllChannels();
+            this.clientSignal.dispatch(undefined);
+        }
+    }
+
+    private authenticate: SupabaseControllerAuthenticateFunction = async (credentials) => {
+        this.destroyOldClient();
+
+        const nextClient = createClient(credentials.projectUrl, credentials.publishableKey);
+
+        const { error } = await nextClient.from(ITEMS_TABLE_NAME).select('id').limit(1);
 
         if (error) {
-            // eslint-disable-next-line no-console -- surface auth failures in devtools
+            // eslint-disable-next-line no-console
             console.error('Failed to authenticate with Supabase:', error);
-            this.status = {
+            this.statusSignal.dispatch({
                 status: 'wrong-credentials',
                 authenticate: this.authenticate,
                 message: error.message,
-            };
-            this.params.onChange();
+                clientSignal: this.clientSignal,
+            });
 
             return;
         }
 
-        this.status = {
+        this.statusSignal.dispatch({
             status: 'ready',
-            client: this.client,
+            clientSignal: this.clientSignal,
             credentials,
             logout: this.logout,
-        };
-        this.params.onChange();
+        });
+        this.clientSignal.dispatch(nextClient);
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(credentials));
     };
 
     private readonly logout: VoidFunction = () => {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
-        this.status = {
+        this.destroyOldClient();
+        this.statusSignal.dispatch({
             status: 'require-credentials',
             authenticate: this.authenticate,
-        };
-        this.params.onChange();
+            clientSignal: this.clientSignal,
+        });
     };
 }

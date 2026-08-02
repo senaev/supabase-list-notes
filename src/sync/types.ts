@@ -9,6 +9,7 @@ export type Item = {
     modified_at: string;
 };
 
+export type RequiredFields = Pick<Item, 'id' | 'title' | 'type'>;
 export type EditableFields = Pick<Item, 'title' | 'checked_at' | 'type'>;
 
 /**

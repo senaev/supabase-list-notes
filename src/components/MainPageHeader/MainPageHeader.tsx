@@ -6,7 +6,6 @@ import { APP_BASE_URL } from '../../const/APP_BASE_URL';
 import { NBSP } from '../../const/NBSP';
 import { HEADER_BADGE_STATUS_META, HeaderBadgeStatus } from '../../const/HEADER_BADGE_STATUS_META';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
-import { useSupabaseClientContext } from '../../contexts/SupabaseClientContext';
 import { useToastsContext } from '../../contexts/ToastsContext';
 import { ActiveEditorEmojisByItemId } from '../../presence/ActiveItemsPresenceStore';
 import { Item, NetworkSyncStatus } from '../../sync/types';
@@ -14,6 +13,7 @@ import { ContextMenu, ContextMenuItem } from '../ContextMenu/ContextMenu';
 import { ItemTypesNav } from '../ItemTypesNav/ItemTypesNav';
 import { PageHeader } from '../PageHeader/PageHeader';
 import appLogoUrl from '/logo.svg';
+import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerStatusContext';
 
 // All three are optional because the header is also rendered on its own
 // while the Supabase client is still initializing (see App), when there are
@@ -28,7 +28,7 @@ export function MainPageHeader({
     networkSyncStatus?: NetworkSyncStatus;
 }) {
     const { showError, showInfoMessage } = useToastsContext();
-    const statusObject = useSupabaseClientContext();
+    const statusObject = useSupabaseControllerStatus();
 
     const menu: ContextMenuItem[] =
         statusObject.status === 'ready'

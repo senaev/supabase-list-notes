@@ -2,11 +2,8 @@ import './App.css';
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Route, Routes } from 'react-router-dom';
+import { PropsWithChildren } from 'react';
 
-import {
-    SupabaseClientContextProvider,
-    useSupabaseClientContext,
-} from '../../contexts/SupabaseClientContext';
 import { useActiveItemsPresence } from '../../presence/useActiveItemsPresence';
 import { useItemsSync } from '../../sync/useItemsSync';
 import { AuthPage } from '../AuthPage/AuthPage';
@@ -16,6 +13,11 @@ import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
 import { useItemSyncStoreContext } from '../../contexts/ItemSyncStoreContext';
 import { ItemsSyncStore } from '../../sync/ItemsSyncStore';
+import { LocalDbFacadeContextProvider } from '../../contexts/LocalDbFacadeContext';
+import {
+    SupabaseControllerStatusContextProvider,
+    useSupabaseControllerStatus,
+} from '../../contexts/SupabaseControllerStatusContext';
 
 export function ItemsApp({
     itemSyncStore,
@@ -54,10 +56,16 @@ export function NotesApp({ supabaseClient }: { supabaseClient: SupabaseClient })
 }
 
 export function NotesWithAuthApp() {
-    const supabaseStatusObject = useSupabaseClientContext();
+    const supabaseStatusObject = useSupabaseControllerStatus();
 
     if (supabaseStatusObject.status === 'ready') {
-        return <NotesApp supabaseClient={supabaseStatusObject.client} />;
+        const supabaseClient = supabaseStatusObject.clientSignal.getValue();
+
+        if (!supabaseClient) {
+            return 'Waiting Spabase Client from Signal';
+        }
+
+        return <NotesApp supabaseClient={supabaseClient} />;
     }
 
     if (supabaseStatusObject.status === 'initialization') {
@@ -72,13 +80,21 @@ export function NotesWithAuthApp() {
     return <AuthPage statusObject={supabaseStatusObject} />;
 }
 
+export function NotesAppDatabaseProviders({ children }: PropsWithChildren) {
+    return (
+        <SupabaseControllerStatusContextProvider>
+            <LocalDbFacadeContextProvider>{children}</LocalDbFacadeContextProvider>
+        </SupabaseControllerStatusContextProvider>
+    );
+}
+
 export function App() {
     return (
         <div className={'App__page'}>
             <main className={'App__main'}>
-                <SupabaseClientContextProvider>
+                <NotesAppDatabaseProviders>
                     <NotesWithAuthApp />
-                </SupabaseClientContextProvider>
+                </NotesAppDatabaseProviders>
             </main>
         </div>
     );
