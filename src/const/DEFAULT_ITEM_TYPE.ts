@@ -1,1 +1,1 @@
-export const DEFAULT_ITEM_TYPE = 'grocery';
+export const DEFAULT_ITEM_TYPE = 'Продуктовый';

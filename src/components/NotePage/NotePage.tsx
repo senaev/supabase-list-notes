@@ -9,6 +9,7 @@ import { UseActiveItemsPresenceResult } from '../../presence/useActiveItemsPrese
 import { Item } from '../../sync/types';
 import { UseItemsSyncResult } from '../../sync/useItemsSync';
 import { NoteItemElement } from '../NoteItemElement/NoteItemElement';
+import { DEFAULT_ITEM_TYPE } from '../../const/DEFAULT_ITEM_TYPE';
 
 type PendingFocus = {
     id: string;
@@ -283,10 +284,7 @@ export function NotePage({
     }
 
     function createNewItemAtTheEnd() {
-        // Default the new item to the active type filter (if any), so it
-        // doesn't immediately vanish from the filtered view it was just
-        // created in.
-        const newId = sync.addItem('', typeFilter ?? undefined);
+        const newId = sync.addItem('', typeFilter ?? DEFAULT_ITEM_TYPE);
 
         setPendingFocus({
             id: newId,
