@@ -6,7 +6,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { APP_BASE_URL } from "../../const/APP_BASE_URL";
 import { NBSP } from "../../const/NBSP";
-import { NETWORK_SYNC_STATUS_META } from "../../const/NETWORK_SYNC_STATUS_META";
+import {
+  HEADER_BADGE_STATUS_META,
+  HeaderBadgeStatus,
+} from "../../const/HEADER_BADGE_STATUS_META";
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from "../../const/SUPABASE_CREDENTIALS_QUERY_PARAMS";
 import { useSupabaseClientContext } from "../../contexts/SupabaseClientContext";
 import { useToastsContext } from "../../contexts/ToastsContext";
@@ -74,12 +77,24 @@ export function MainPageHeader({
         ]
       : [];
 
-  // "synced" has no badge - a quiet, unbadged logo is the "everything is
-  // fine" state, rather than a fourth emoji competing for attention.
-  const statusMeta =
-    networkSyncStatus && networkSyncStatus !== "synced"
-      ? NETWORK_SYNC_STATUS_META[networkSyncStatus]
-      : undefined;
+  // Being logged out wins over any sync state: there's no sync engine
+  // running at all before login (see App), and it's the thing the user has
+  // to act on first anyway. "initialization" deliberately gets no badge -
+  // it's a brief transient state, and flashing a "not logged in" key at
+  // someone who *is* logged in would be worse than showing nothing.
+  const badgeStatus: HeaderBadgeStatus | undefined =
+    statusObject.status === "require-credentials" ||
+    statusObject.status === "wrong-credentials"
+      ? "unauthenticated"
+      : // "synced" has no badge - a quiet, unbadged logo is the
+        // "everything is fine" state.
+        networkSyncStatus && networkSyncStatus !== "synced"
+        ? networkSyncStatus
+        : undefined;
+
+  const statusMeta = badgeStatus
+    ? HEADER_BADGE_STATUS_META[badgeStatus]
+    : undefined;
 
   return (
     <PageHeader

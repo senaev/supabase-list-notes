@@ -8,15 +8,15 @@
   height: 32px;
 }
 
-/* Applied whenever networkSyncStatus isn't "synced" (offline or syncing) -
-   see MainPageHeader.tsx. */
+/* Applied whenever the logo carries a badge (not logged in, offline or
+   syncing) - see MainPageHeader.tsx. */
 .MainPageHeader__logo--muted {
   filter: grayscale(1);
   opacity: 0.6;
 }
 
-/* Bottom-right of the logo - see NETWORK_SYNC_STATUS_META for the
-   offline/syncing emoji it displays (never shown for "synced"). */
+/* Bottom-right of the logo - see HEADER_BADGE_STATUS_META for the emoji it
+   displays (never shown when logged in and fully synced). */
 .MainPageHeader__syncBadge {
   position: absolute;
   right: -4px;
