@@ -5,6 +5,7 @@ import pluginImportX from 'eslint-plugin-import-x';
 import pluginNoOnlyTests from 'eslint-plugin-no-only-tests';
 import pluginReact from 'eslint-plugin-react';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
+import pluginUnusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -45,6 +46,7 @@ export default [
             '@stylistic': stylistic,
             'import-x': pluginImportX,
             'no-only-tests': pluginNoOnlyTests,
+            'unused-imports': pluginUnusedImports,
         },
         rules: {
             'one-var': ['error', 'never'],
@@ -104,7 +106,12 @@ export default [
                 },
             ],
             'react/react-in-jsx-scope': 'off',
-            '@typescript-eslint/no-unused-vars': [
+            // Superseded by unused-imports/no-unused-vars below, which uses the
+            // same options but is actually autofixable (removes the unused
+            // declaration/import instead of only reporting it).
+            '@typescript-eslint/no-unused-vars': 'off',
+            'unused-imports/no-unused-imports': 'error',
+            'unused-imports/no-unused-vars': [
                 'warn',
                 {
                     args: 'all',

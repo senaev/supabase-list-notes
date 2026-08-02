@@ -6,10 +6,7 @@ export type Item = {
     type: string;
     checked_at: string | null;
     created_at: string;
-    // Server-authoritative last-write timestamp. Named `_modified` (rather
-    // than e.g. `updated_at`) to match the RxDB Supabase replication plugin's
-    // default `modifiedField`, so no config override is needed for it.
-    _modified: string;
+    modified_at: string;
 };
 
 export type EditableFields = Pick<Item, 'title' | 'checked_at' | 'type'>;

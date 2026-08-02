@@ -1,29 +1,48 @@
 {
+    "tab_size": 4,
     "format_on_save": "on",
     "languages": {
         "TypeScript": {
             "language_servers": ["vtsls", "!tsgo", "eslint"],
             "formatter": "prettier",
-            "code_actions_on_format": {}
+            "code_actions_on_format": {},
         },
         "TSX": {
             "language_servers": ["vtsls", "!tsgo", "eslint"],
             "formatter": "prettier",
-            "code_actions_on_format": {}
+            "code_actions_on_format": {},
         },
         "JavaScript": {
             "language_servers": ["vtsls", "!tsgo", "eslint"],
             "formatter": "prettier",
-            "code_actions_on_format": {}
+            "code_actions_on_format": {},
         },
         "CSS": {
-            "formatter": "prettier"
+            "formatter": "prettier",
         },
         "JSON": {
-            "formatter": "prettier"
+            "formatter": "prettier",
         },
         "JSONC": {
-            "formatter": "prettier"
-        }
-    }
+            "formatter": "prettier",
+        },
+    },
+    "lsp": {
+        "eslint": {
+            "settings": {
+                // Overrides the global (~/.config/zed/settings.json) eslint
+                // LSP settings for this project specifically: the global
+                // config excludes unused-imports/no-unused-imports from
+                // "fix on save" and points nodePath/packageManager at
+                // web-ui's Yarn PnP setup - neither applies here, since
+                // this project uses plain npm and wants every fixable rule
+                // (including unused-imports) auto-fixed on save.
+                "codeActionOnSave": {
+                    "rules": ["*"],
+                },
+                "nodePath": null,
+                "packageManager": "npm",
+            },
+        },
+    },
 }

@@ -24,7 +24,7 @@ function toItem(row: LocalItemRow): Item {
         type: row.type ?? DEFAULT_ITEM_TYPE,
         checked_at: row.checked_at,
         created_at: row.created_at,
-        _modified: row._modified,
+        modified_at: row.modified_at,
     };
 }
 
@@ -111,12 +111,8 @@ export class ItemsSyncStore {
     // Chains lifecycles (create -> ... -> remove -> create -> ...) strictly
     // sequentially across setClient()/dispose() calls; see teardown() below.
     private lifecycle: Promise<void> = Promise.resolve();
-    // Invalidates any in-flight init() started by a since-superseded
-    // setClient() call (e.g. rapid project switches, or React StrictMode's
-    // mount/unmount/mount double-invoke in development).
-    private generation = 0;
 
-    public constructor() {
+    public constructor(supabaseClient: SupabaseClient) {
         this.networkSyncStatusSignal = combineSignalsIntoNewOne(
             [this.isOnlineSignal, this.hasReplicationErrorSignal, this.isSyncingSignal],
             (isOnline, hasReplicationError, isSyncing): NetworkSyncStatus => {
@@ -132,6 +128,8 @@ export class ItemsSyncStore {
             window.addEventListener('online', this.boundHandleOnline);
             window.addEventListener('offline', this.boundHandleOffline);
         }
+
+        this.init(supabaseClient);
     }
     /**
      * Creates an item (title may be empty, e.g. to start editing immediately)
@@ -155,7 +153,7 @@ export class ItemsSyncStore {
             type,
             checked_at: null,
             created_at: now,
-            _modified: now,
+            modified_at: now,
             _deleted: false,
         };
 
@@ -202,7 +200,7 @@ export class ItemsSyncStore {
             cachedDoc
                 .incrementalPatch({
                     ...patch,
-                    _modified: new Date().toISOString(),
+                    modified_at: new Date().toISOString(),
                 })
                 .catch((updateError: Error) => this.errorSignal.next(updateError.message));
 
@@ -230,7 +228,7 @@ export class ItemsSyncStore {
 
                 return doc.incrementalPatch({
                     ...patch,
-                    _modified: new Date().toISOString(),
+                    modified_at: new Date().toISOString(),
                 });
             })
             .catch((updateError: Error) => this.errorSignal.next(updateError.message));
@@ -256,92 +254,9 @@ export class ItemsSyncStore {
 
         this.removeFromStorage(id)();
     };
-    /**
-     * (Re)points replication + the local database at the given Supabase
-     * client. Safe to call repeatedly (e.g. when the signed-in project
-     * changes): the previous database is always fully torn down before a new
-     * one is created, so one project's items can never leak into another
-     * project's local storage or get pushed to the wrong backend.
-     */
-    public setClient(client: SupabaseClient): void {
-        const generation = ++this.generation;
 
-        this.lifecycle = this.teardown().then(() => this.init(client, generation));
-    }
-
-    /** Final teardown - call when the owning component unmounts. */
-    public dispose(): void {
-        this.generation++;
-        this.lifecycle = this.teardown();
-
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('online', this.boundHandleOnline);
-            window.removeEventListener('offline', this.boundHandleOffline);
-        }
-    }
-
-    private async teardown(): Promise<void> {
-        await this.lifecycle.catch(() => undefined);
-
-        this.collection = null;
-        this.docs.clear();
-        this.pendingOptimisticCreatesById.clear();
-        this.pendingOptimisticDeleteIds.clear();
-
-        this.querySubscription?.unsubscribe();
-        this.errorSubscription?.unsubscribe();
-        this.activeSubscription?.unsubscribe();
-        this.querySubscription = undefined;
-        this.errorSubscription = undefined;
-        this.activeSubscription = undefined;
-
-        // Reset rather than leave stale: the previous client's replication no
-        // longer applies (isOnlineSignal is untouched - it's browser-level, not
-        // per-client).
-        this.hasReplicationErrorSignal.next(false);
-        this.isSyncingSignal.next(false);
-
-        if (this.replicationState) {
-            await this.replicationState.remove().catch(() => undefined);
-            this.replicationState = undefined;
-        }
-
-        if (this.db) {
-            await this.db.remove().catch(() => undefined);
-            this.db = undefined;
-        }
-    }
-
-    private async init(client: SupabaseClient, generation: number): Promise<void> {
-        if (generation !== this.generation) {
-            return;
-        }
-
-        let db: RxDatabase<LocalCollections>;
-
-        try {
-            db = await createLocalDatabase();
-        } catch (initError) {
-            // Without this catch, a failure here (e.g. a local IndexedDB schema
-            // mismatch from a previous version of itemsSchema) would leave
-            // `collection` permanently null with zero feedback: every
-            // addItem/updateItem/removeItem call would then silently no-op.
-            // eslint-disable-next-line no-console -- surface database open failures in devtools
-            console.error('Failed to open local database:', initError);
-            if (generation === this.generation) {
-                this.errorSignal.next(
-                    initError instanceof Error ? initError.message : 'Failed to open local database'
-                );
-            }
-
-            return;
-        }
-
-        if (generation !== this.generation) {
-            await db.remove().catch(() => undefined);
-
-            return;
-        }
+    private async init(client: SupabaseClient): Promise<void> {
+        const db: RxDatabase<LocalCollections> = await createLocalDatabase();
 
         this.db = db;
         this.collection = db.items;
@@ -379,7 +294,7 @@ export class ItemsSyncStore {
                 // local write for the same item).
                 if (
                     currentItem &&
-                    Date.parse(currentItem._modified) > Date.parse(incomingItem._modified)
+                    Date.parse(currentItem.modified_at) > Date.parse(incomingItem.modified_at)
                 ) {
                     return currentItem;
                 }

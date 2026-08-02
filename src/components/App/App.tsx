@@ -14,15 +14,17 @@ import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
+import { useItemSyncStoreContext } from '../../contexts/ItemSyncStoreContext';
+import { ItemsSyncStore } from '../../sync/ItemsSyncStore';
 
-export function ItemsApp({ supabaseClient }: { supabaseClient: SupabaseClient }) {
-    // Lifted above NotePage so MainPageHeader can render the type filter nav
-    // (see ItemTypesNav) off the same live items list, without opening a
-    // second RxDB/Supabase replication instance.
-    const sync = useItemsSync(supabaseClient);
-    // Realtime Presence for "who is editing what" - a separate channel from
-    // the one RxDB replication uses, and intentionally independent of the
-    // item data itself: presence is ephemeral and never persisted.
+export function ItemsApp({
+    itemSyncStore,
+    supabaseClient,
+}: {
+    itemSyncStore: ItemsSyncStore;
+    supabaseClient: SupabaseClient;
+}) {
+    const sync = useItemsSync({ itemSyncStore });
     const presence = useActiveItemsPresence(supabaseClient);
 
     return (
@@ -38,9 +40,14 @@ export function ItemsApp({ supabaseClient }: { supabaseClient: SupabaseClient })
 }
 
 export function NotesApp({ supabaseClient }: { supabaseClient: SupabaseClient }) {
+    const itemSyncStore = useItemSyncStoreContext({ supabaseClient });
+
     return (
         <Routes>
-            <Route path={'/'} element={<ItemsApp supabaseClient={supabaseClient} />} />
+            <Route
+                path={'/'}
+                element={<ItemsApp itemSyncStore={itemSyncStore} supabaseClient={supabaseClient} />}
+            />
             <Route path={'*'} element={<Page404 />} />
         </Routes>
     );

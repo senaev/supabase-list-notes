@@ -1,5 +1,23 @@
-import { createRxDatabase, RxCollection, RxConflictHandler, RxDatabase } from 'rxdb';
+import {
+    addRxPlugin,
+    createRxDatabase,
+    RxCollection,
+    RxConflictHandler,
+    RxDatabase,
+    RxStorage,
+} from 'rxdb';
+import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+
+const dexieStorage = getRxStorageDexie();
+const storage: RxStorage<unknown, unknown> = import.meta.env.DEV
+    ? wrappedValidateAjvStorage({ storage: dexieStorage })
+    : dexieStorage;
+
+if (import.meta.env.DEV) {
+    addRxPlugin(RxDBDevModePlugin);
+}
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 
@@ -26,7 +44,7 @@ export type LocalCollections = {
 // one, and this local database is a pure Supabase mirror, so it's always
 // safe to just abandon the old one and start fresh under a new name rather
 // than write a migration for what is effectively disposable cache data.
-const DATABASE_NAME = 'supabase-list-notes-local-db-v3';
+const DATABASE_NAME = 'supabase-list-notes-local-db-v4';
 
 const itemsSchema = {
     title: `${ITEMS_TABLE_NAME} schema`,
@@ -55,16 +73,16 @@ const itemsSchema = {
             type: 'string',
             maxLength: 64,
         },
-        _modified: {
+        modified_at: {
             type: 'string',
             maxLength: 64,
         },
     },
-    required: ['id', 'title', 'type', 'checked_at', 'created_at', '_modified'],
+    required: ['id', 'title', 'type', 'checked_at', 'created_at', 'modified_at'],
 } as const;
 
-function isNewer(a: { _modified: string }, b: { _modified: string }): boolean {
-    return Date.parse(a._modified) > Date.parse(b._modified);
+function isNewer(a: { modified_at: string }, b: { modified_at: string }): boolean {
+    return Date.parse(a.modified_at) > Date.parse(b.modified_at);
 }
 
 function isSameIgnoringModified(a: LocalItemRow, b: LocalItemRow): boolean {
@@ -97,7 +115,7 @@ const conflictHandler: RxConflictHandler<LocalItemRow> = {
     isEqual: (a, b, context) => {
         if (
             context === DOWNSTREAM_EQUALITY_CHECK_CONTEXT &&
-            Date.parse(a._modified) < Date.parse(b._modified)
+            Date.parse(a.modified_at) < Date.parse(b.modified_at)
         ) {
             return true;
         }
@@ -120,7 +138,7 @@ const conflictHandler: RxConflictHandler<LocalItemRow> = {
 export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     const database = await createRxDatabase<LocalCollections>({
         name: DATABASE_NAME,
-        storage: getRxStorageDexie(),
+        storage,
         multiInstance: true,
     });
 
