@@ -1,38 +1,38 @@
 /* TODO: refactor classnames and modules */
 
 .NotePage__addItemButton {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font: inherit;
-  padding: 12px 36px;
-  color: rgb(154 160 166);
-  text-align: left;
-  cursor: pointer;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    padding: 12px 36px;
+    color: rgb(154 160 166);
+    text-align: left;
+    cursor: pointer;
 }
 
 .NotePage__addItemButton:hover {
-  color: var(--text-color);
+    color: var(--text-color);
 }
 
 .NotePage_addItemButton__icon {
-  position: relative;
-  top: 3px;
-  width: 18px;
-  height: 18px;
+    position: relative;
+    top: 3px;
+    width: 18px;
+    height: 18px;
 }
 
 .NotePage__items {
-  position: relative;
+    position: relative;
 }
 
 .items-separator {
-  width: calc(100% - 30px);
-  border-bottom: none;
-  border-left: none;
-  border-right: none;
-  border-bottom: none;
-  border-top: 1px solid var(--border-color);
+    width: calc(100% - 30px);
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-top: 1px solid var(--border-color);
 }

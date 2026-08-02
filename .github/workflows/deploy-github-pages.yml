@@ -1,95 +1,98 @@
 name: Deploy GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+    contents: read
+    pages: write
+    id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+    group: pages
+    cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    env:
-      NODE_VERSION: "20"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Set Vite base path
-        run: echo "VITE_BASE_PATH=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Build app
-        run: npm run build
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: ./dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-  notify:
-    if: always()
-    needs:
-      - build
-      - deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify Telegram
+    build:
+        runs-on: ubuntu-latest
         env:
-          BUILD_RESULT: ${{ needs.build.result }}
-          DEPLOY_RESULT: ${{ needs.deploy.result }}
-          TG_NOTIFICATION_BOT_TOKEN: ${{ secrets.TG_NOTIFICATION_BOT_TOKEN }}
-          TG_NOTIFICATION_CHAT_ID: ${{ secrets.TG_NOTIFICATION_CHAT_ID }}
-        run: |
-          if [ "$BUILD_RESULT" = "success" ] && { [ "$DEPLOY_RESULT" = "success" ] || [ "$DEPLOY_RESULT" = "skipped" ]; }; then
-            STATUS_ICON="✅"
-            STATUS_TEXT="succeeded"
-          else
-            STATUS_ICON="❌"
-            STATUS_TEXT="failed"
-          fi
+            NODE_VERSION: '20'
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
 
-          TEXT="${STATUS_ICON} GitHub Pages deploy ${STATUS_TEXT} for <a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">${GITHUB_REPOSITORY}</a>"
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
 
-          curl -sS -X POST "https://api.telegram.org/bot${TG_NOTIFICATION_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TG_NOTIFICATION_CHAT_ID}" \
-            --data-urlencode "parse_mode=HTML" \
-            --data-urlencode "disable_web_page_preview=true" \
-            --data-urlencode "text=${TEXT}"
+            - name: Setup Pages
+              uses: actions/configure-pages@v5
+
+            - name: Set Vite base path
+              run: echo "VITE_BASE_PATH=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Check formatting
+              run: npm run format:check
+
+            - name: Run tests
+              run: npm test
+
+            - name: Build app
+              run: npm run build
+
+            - name: Upload Pages artifact
+              uses: actions/upload-pages-artifact@v4
+              with:
+                  path: ./dist
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
+
+    notify:
+        if: always()
+        needs:
+            - build
+            - deploy
+        runs-on: ubuntu-latest
+        steps:
+            - name: Notify Telegram
+              env:
+                  BUILD_RESULT: ${{ needs.build.result }}
+                  DEPLOY_RESULT: ${{ needs.deploy.result }}
+                  TG_NOTIFICATION_BOT_TOKEN: ${{ secrets.TG_NOTIFICATION_BOT_TOKEN }}
+                  TG_NOTIFICATION_CHAT_ID: ${{ secrets.TG_NOTIFICATION_CHAT_ID }}
+              run: |
+                  if [ "$BUILD_RESULT" = "success" ] && { [ "$DEPLOY_RESULT" = "success" ] || [ "$DEPLOY_RESULT" = "skipped" ]; }; then
+                    STATUS_ICON="✅"
+                    STATUS_TEXT="succeeded"
+                  else
+                    STATUS_ICON="❌"
+                    STATUS_TEXT="failed"
+                  fi
+
+                  TEXT="${STATUS_ICON} GitHub Pages deploy ${STATUS_TEXT} for <a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">${GITHUB_REPOSITORY}</a>"
+
+                  curl -sS -X POST "https://api.telegram.org/bot${TG_NOTIFICATION_BOT_TOKEN}/sendMessage" \
+                    --data-urlencode "chat_id=${TG_NOTIFICATION_CHAT_ID}" \
+                    --data-urlencode "parse_mode=HTML" \
+                    --data-urlencode "disable_web_page_preview=true" \
+                    --data-urlencode "text=${TEXT}"

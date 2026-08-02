@@ -1,6 +1,6 @@
-import { PRESENCE_ANIMAL_EMOJIS } from "../const/PRESENCE_ANIMAL_EMOJIS";
+import { PRESENCE_ANIMAL_EMOJIS } from '../const/PRESENCE_ANIMAL_EMOJIS';
 
-const LOCAL_STORAGE_KEY = "presence-user-emoji";
+const LOCAL_STORAGE_KEY = 'presence-user-emoji';
 
 /**
  * The current browser's animal avatar, assigned once at random and then
@@ -14,24 +14,21 @@ const LOCAL_STORAGE_KEY = "presence-user-emoji";
  * avatars can appear.
  */
 export function getUserEmoji(): string {
-  const storedEmoji = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (storedEmoji && PRESENCE_ANIMAL_EMOJIS.includes(storedEmoji)) {
-    return storedEmoji;
-  }
+    const storedEmoji = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (storedEmoji && PRESENCE_ANIMAL_EMOJIS.includes(storedEmoji)) {
+        return storedEmoji;
+    }
 
-  const emoji =
-    PRESENCE_ANIMAL_EMOJIS[
-      Math.floor(Math.random() * PRESENCE_ANIMAL_EMOJIS.length)
-    ];
+    const emoji = PRESENCE_ANIMAL_EMOJIS[Math.floor(Math.random() * PRESENCE_ANIMAL_EMOJIS.length)];
 
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, emoji);
-  } catch (error) {
-    // Storage can be unavailable (Safari private mode, quota). Presence
-    // still works this session; the avatar just won't be stable across
-    // reloads, which is strictly better than failing to render the list.
-    console.error("Failed to persist the presence emoji:", error);
-  }
+    try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, emoji);
+    } catch (error) {
+        // Storage can be unavailable (Safari private mode, quota). Presence
+        // still works this session; the avatar just won't be stable across
+        // reloads, which is strictly better than failing to render the list.
+        console.error('Failed to persist the presence emoji:', error);
+    }
 
-  return emoji;
+    return emoji;
 }

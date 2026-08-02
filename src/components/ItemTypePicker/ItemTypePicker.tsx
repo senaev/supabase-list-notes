@@ -1,12 +1,12 @@
-import "./ItemTypePicker.css";
+import './ItemTypePicker.css';
 
-import classNames from "classnames";
-import { useState } from "react";
-import { useToastsContext } from "../../contexts/ToastsContext";
-import { getItemTypeColor } from "../../utils/getItemTypeColor";
-import { validateItemType } from "../../utils/validateItemType";
-import { ItemTypePill } from "../ItemTypePill/ItemTypePill";
-import { Modal } from "../Modal/Modal";
+import classNames from 'classnames';
+import { useState } from 'react';
+import { useToastsContext } from '../../contexts/ToastsContext';
+import { getItemTypeColor } from '../../utils/getItemTypeColor';
+import { validateItemType } from '../../utils/validateItemType';
+import { ItemTypePill } from '../ItemTypePill/ItemTypePill';
+import { Modal } from '../Modal/Modal';
 
 /**
  * Popup listing every distinct type currently in use (plus the item's own
@@ -20,99 +20,99 @@ import { Modal } from "../Modal/Modal";
  * the bottom of a scrollable page.
  */
 export function ItemTypePicker({
-  currentType,
-  existingTypes,
-  onSelect,
-  truncateTrigger,
+    currentType,
+    existingTypes,
+    onSelect,
+    truncateTrigger,
 }: {
-  currentType: string;
-  existingTypes: string[];
-  onSelect: (type: string) => void;
-  // Shorten the pill shown on the item (not the picker list) to a few
-  // characters + "…". Passed down while a type filter is active.
-  truncateTrigger?: boolean;
+    currentType: string;
+    existingTypes: string[];
+    onSelect: (type: string) => void;
+    // Shorten the pill shown on the item (not the picker list) to a few
+    // characters + "…". Passed down while a type filter is active.
+    truncateTrigger?: boolean;
 }) {
-  const { showError } = useToastsContext();
-  const [isOpen, setIsOpen] = useState(false);
+    const { showError } = useToastsContext();
+    const [isOpen, setIsOpen] = useState(false);
 
-  // De-duped, alphabetical, and guaranteed to include the item's own
-  // current type even if it's otherwise unused by any other item.
-  const allTypes = Array.from(new Set([currentType, ...existingTypes])).sort(
-    (a, b) => a.localeCompare(b),
-  );
+    // De-duped, alphabetical, and guaranteed to include the item's own
+    // current type even if it's otherwise unused by any other item.
+    const allTypes = Array.from(new Set([currentType, ...existingTypes])).sort((a, b) =>
+        a.localeCompare(b),
+    );
 
-  function selectType(type: string) {
-    onSelect(type);
-    setIsOpen(false);
-  }
-
-  function createNewType() {
-    // Hide the popup first, then prompt for the new type name.
-    setIsOpen(false);
-
-    const rawInput = window.prompt("New type name:");
-    if (rawInput === null) {
-      // User cancelled the prompt.
-      return;
+    function selectType(type: string) {
+        onSelect(type);
+        setIsOpen(false);
     }
 
-    const validationError = validateItemType(rawInput);
-    if (validationError) {
-      showError(validationError);
-      return;
+    function createNewType() {
+        // Hide the popup first, then prompt for the new type name.
+        setIsOpen(false);
+
+        const rawInput = window.prompt('New type name:');
+        if (rawInput === null) {
+            // User cancelled the prompt.
+            return;
+        }
+
+        const validationError = validateItemType(rawInput);
+        if (validationError) {
+            showError(validationError);
+            return;
+        }
+
+        onSelect(rawInput.trim());
     }
 
-    onSelect(rawInput.trim());
-  }
-
-  return (
-    <div className="ItemTypePicker">
-      <ItemTypePill
-        ariaLabel={`Change type, currently ${currentType}`}
-        onClick={() => {
-          setIsOpen(true);
-        }}
-        truncate={truncateTrigger}
-        type={currentType}
-      />
-      {isOpen && (
-        <Modal
-          ariaLabel="Choose item type"
-          onClose={() => {
-            setIsOpen(false);
-          }}
-        >
-          <div className="ItemTypePicker__menu" role="menu">
-            {allTypes.map((type) => (
-              <button
-                key={type}
-                className={classNames("ItemTypePicker__item", {
-                  ItemTypePicker__item_isSelected: type === currentType,
-                })}
+    return (
+        <div className="ItemTypePicker">
+            <ItemTypePill
+                ariaLabel={`Change type, currently ${currentType}`}
                 onClick={() => {
-                  selectType(type);
+                    setIsOpen(true);
                 }}
-                role="menuitem"
-                type="button"
-              >
-                <span
-                  className="ItemTypePicker__itemSwatch"
-                  style={{ backgroundColor: getItemTypeColor(type) }}
-                />
-                {type}
-              </button>
-            ))}
-            <button
-              className="ItemTypePicker__item ItemTypePicker__createItem"
-              onClick={createNewType}
-              role="menuitem"
-              type="button"
-            >
-              + Create new
-            </button>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
+                truncate={truncateTrigger}
+                type={currentType}
+            />
+            {isOpen && (
+                <Modal
+                    ariaLabel="Choose item type"
+                    onClose={() => {
+                        setIsOpen(false);
+                    }}
+                >
+                    <div className="ItemTypePicker__menu" role="menu">
+                        {allTypes.map((type) => (
+                            <button
+                                key={type}
+                                className={classNames('ItemTypePicker__item', {
+                                    ItemTypePicker__item_isSelected: type === currentType,
+                                })}
+                                onClick={() => {
+                                    selectType(type);
+                                }}
+                                role="menuitem"
+                                type="button"
+                            >
+                                <span
+                                    className="ItemTypePicker__itemSwatch"
+                                    style={{ backgroundColor: getItemTypeColor(type) }}
+                                />
+                                {type}
+                            </button>
+                        ))}
+                        <button
+                            className="ItemTypePicker__item ItemTypePicker__createItem"
+                            onClick={createNewType}
+                            role="menuitem"
+                            type="button"
+                        >
+                            + Create new
+                        </button>
+                    </div>
+                </Modal>
+            )}
+        </div>
+    );
 }

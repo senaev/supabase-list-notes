@@ -1,4 +1,4 @@
-import { ITEM_TYPE_MAX_LENGTH } from "../const/ITEM_TYPE_MAX_LENGTH";
+import { ITEM_TYPE_MAX_LENGTH } from '../const/ITEM_TYPE_MAX_LENGTH';
 
 /**
  * Validates a user-entered item type before it's persisted. Mirrors the
@@ -10,15 +10,15 @@ import { ITEM_TYPE_MAX_LENGTH } from "../const/ITEM_TYPE_MAX_LENGTH";
  * trimming) is valid.
  */
 export function validateItemType(rawType: string): string | null {
-  const type = rawType.trim();
+    const type = rawType.trim();
 
-  if (type.length === 0) {
-    return "Type cannot be empty.";
-  }
+    if (type.length === 0) {
+        return 'Type cannot be empty.';
+    }
 
-  if (type.length > ITEM_TYPE_MAX_LENGTH) {
-    return `Type must be ${ITEM_TYPE_MAX_LENGTH} characters or fewer.`;
-  }
+    if (type.length > ITEM_TYPE_MAX_LENGTH) {
+        return `Type must be ${ITEM_TYPE_MAX_LENGTH} characters or fewer.`;
+    }
 
-  return null;
+    return null;
 }

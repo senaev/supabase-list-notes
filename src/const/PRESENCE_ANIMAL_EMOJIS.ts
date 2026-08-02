@@ -14,14 +14,14 @@
  * called with an arbitrary string read back from localStorage.
  */
 export const PRESENCE_ANIMAL_EMOJIS: string[] = [
-  "🐻",
-  "🦊",
-  "🦉",
-  "🐙",
-  "🐢",
-  "🦁",
-  "🐼",
-  "🦈",
-  "🐺",
-  "🦅",
+    '🐻',
+    '🦊',
+    '🦉',
+    '🐙',
+    '🐢',
+    '🦁',
+    '🐼',
+    '🦈',
+    '🐺',
+    '🦅',
 ];

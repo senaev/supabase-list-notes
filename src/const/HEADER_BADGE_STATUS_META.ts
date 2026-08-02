@@ -1,4 +1,4 @@
-import { NetworkSyncStatus } from "../sync/types";
+import { NetworkSyncStatus } from '../sync/types';
 
 /**
  * The states that get a badge on MainPageHeader's logo.
@@ -10,15 +10,11 @@ import { NetworkSyncStatus } from "../sync/types";
  * status and takes precedence over everything else, since being logged
  * out is the thing the user has to act on first.
  */
-export type HeaderBadgeStatus =
-  | Exclude<NetworkSyncStatus, "synced">
-  | "unauthenticated";
+export type HeaderBadgeStatus = Exclude<NetworkSyncStatus, 'synced'> | 'unauthenticated';
 
-export const HEADER_BADGE_STATUS_META: Record<
-  HeaderBadgeStatus,
-  { emoji: string; label: string }
-> = {
-  unauthenticated: { emoji: "🔑", label: "Not logged in" },
-  offline: { emoji: "🤷", label: "No connection" },
-  syncing: { emoji: "🔄", label: "Syncing…" },
-};
+export const HEADER_BADGE_STATUS_META: Record<HeaderBadgeStatus, { emoji: string; label: string }> =
+    {
+        unauthenticated: { emoji: '🔑', label: 'Not logged in' },
+        offline: { emoji: '🤷', label: 'No connection' },
+        syncing: { emoji: '🔄', label: 'Syncing…' },
+    };

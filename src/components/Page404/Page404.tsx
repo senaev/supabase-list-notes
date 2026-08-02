@@ -1,7 +1,7 @@
-import "./Page404.css";
+import './Page404.css';
 
-import { FullPageContent } from "../FullPageContent/FullPageContent";
-import { MainPageHeader } from "../MainPageHeader/MainPageHeader";
+import { FullPageContent } from '../FullPageContent/FullPageContent';
+import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 
 export function Page404() {
     return (

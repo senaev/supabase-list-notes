@@ -1,30 +1,30 @@
 .ItemTypesNav {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  /* Padding gives the pills room so the active pill's color ring (see
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    /* Padding gives the pills room so the active pill's color ring (see
      ItemTypePill.css) isn't clipped by the scroll container - both
      vertically and at the scrollable left/right edges. */
-  padding: 6px 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  /* Keep the horizontal pan from bubbling out into a page bounce / back-swipe
+    padding: 6px 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Keep the horizontal pan from bubbling out into a page bounce / back-swipe
      gesture, which is what made the strip feel jittery on touch. */
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
 
 .ItemTypesNav::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 /* Nav pills are bigger than the per-item ones (which are size-matched to
    the remove button) for easier tapping in the header. */
 .ItemTypesNav__pill {
-  height: 32px;
-  padding: 0 16px;
-  font-size: 0.85rem;
+    height: 32px;
+    padding: 0 16px;
+    font-size: 0.85rem;
 }

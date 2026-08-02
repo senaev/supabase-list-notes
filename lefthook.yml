@@ -1,0 +1,15 @@
+#   Refer for explanation to following link:
+#   https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+#
+pre-commit:
+    skip: true
+
+pre-push:
+    parallel: true
+    commands:
+        format:
+            run: npm run format:check
+        test:
+            run: npm run test
+        typecheck:
+            run: npm run typecheck

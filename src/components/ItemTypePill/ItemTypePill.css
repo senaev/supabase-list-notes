@@ -1,55 +1,55 @@
 .ItemTypePill {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  /* Matches .NoteItemElement__remove__visual's 26px so the tag sits at the
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    /* Matches .NoteItemElement__remove__visual's 26px so the tag sits at the
      same height as the remove button next to it. */
-  height: 24px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 999px;
-  color: #202124;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-  /* The global `button { touch-action: none }` rule blocks touch panning
+    height: 24px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 999px;
+    color: #202124;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    /* The global `button { touch-action: none }` rule blocks touch panning
      that starts on a pill - and pills cover almost the whole nav strip, so
      that's what made horizontal scrolling glitchy. `manipulation` restores
      panning/scrolling while still suppressing the double-tap-zoom delay. */
-  touch-action: manipulation;
+    touch-action: manipulation;
 }
 
 /* Deliberately inherits the pill's own 0.75rem rather than being enlarged
    the way the per-item avatars are: the pill is a fixed 24px tall, so a
    bigger glyph would either blow out its height or sit off-centre. */
 .ItemTypePill__emojis {
-  margin-left: 4px;
-  /* Emojis have no meaningful ascender/descender to align to, so the
+    margin-left: 4px;
+    /* Emojis have no meaningful ascender/descender to align to, so the
      default line box would push the label off-centre. */
-  line-height: 1;
-  white-space: nowrap;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .ItemTypePill:hover,
 .ItemTypePill:focus-visible {
-  outline: none;
-  /* Background color is set inline per-type (see getItemTypeColor), which
+    outline: none;
+    /* Background color is set inline per-type (see getItemTypeColor), which
      wins specificity over any background-color set here, so hover
      feedback uses filter instead. */
-  filter: brightness(0.92);
+    filter: brightness(0.92);
 }
 
 .ItemTypePill_isActive {
-  /* Highlight the active pill with a ring in its own type color rather than
+    /* Highlight the active pill with a ring in its own type color rather than
      a neutral one. A 2px gap (background-colored ring) separates the pill
      from the colored ring so the same-color halo stays visible against the
      pill itself. */
-  box-shadow:
-    0 0 0 2px var(--background-color),
-    0 0 0 4px var(--pill-color);
-  font-weight: 700;
+    box-shadow:
+        0 0 0 2px var(--background-color),
+        0 0 0 4px var(--pill-color);
+    font-weight: 700;
 }

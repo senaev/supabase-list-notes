@@ -1,20 +1,20 @@
 .NoteItemElement {
-  display: flex;
-  align-items: stretch;
-  background: var(--background-color);
+    display: flex;
+    align-items: stretch;
+    background: var(--background-color);
 }
 
 .NoteItemElement:focus-within {
-  box-shadow:
-    inset 0 1px 0 var(--border-color),
-    inset 0 -1px 0 var(--border-color);
+    box-shadow:
+        inset 0 1px 0 var(--border-color),
+        inset 0 -1px 0 var(--border-color);
 }
 
 /* Keyboard-focus reveal always applies, regardless of hover support, so
    tabbing into the row keeps working the same everywhere. */
 .NoteItemElement:focus-within .NoteItemElement__remove {
-  opacity: 1;
-  pointer-events: auto;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* Hiding the remove button until hover is a declutter feature that only
@@ -25,144 +25,144 @@
    actually click it. Scoping this to `(hover: hover)` keeps the desktop
    behavior and leaves it always-visible/always-tappable on touch. */
 @media (hover: hover) {
-  .NoteItemElement__remove {
-    opacity: 0;
-    pointer-events: none;
-  }
+    .NoteItemElement__remove {
+        opacity: 0;
+        pointer-events: none;
+    }
 
-  .NoteItemElement:hover .NoteItemElement__remove {
-    opacity: 1;
-    pointer-events: auto;
-  }
+    .NoteItemElement:hover .NoteItemElement__remove {
+        opacity: 1;
+        pointer-events: auto;
+    }
 
-  .NoteItemElement:hover .NoteItemElement__remove__visual {
-    background-color: rgb(154 160 166 / 0.16);
-  }
+    .NoteItemElement:hover .NoteItemElement__remove__visual {
+        background-color: rgb(154 160 166 / 0.16);
+    }
 }
 
 .NoteItemElement.NoteItemElement_isChecked {
-  color: rgb(154 160 166);
+    color: rgb(154 160 166);
 }
 
 .NoteItemElement.NoteItemElement_isChecked .NoteItemElement__input {
-  text-decoration: line-through;
+    text-decoration: line-through;
 }
 
 .NoteItemElement__input::placeholder {
-  color: var(--text-color-placeholder);
+    color: var(--text-color-placeholder);
 }
 
 .NoteItemElement__input {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  display: block;
-  min-width: 0;
-  min-height: 1.5em;
-  padding: 0;
-  font-size: 1rem;
-  line-height: 1.5;
-  resize: none;
-  overflow: hidden;
-  margin-top: var(--textarea-margin-vertical);
-  margin-bottom: var(--textarea-margin-vertical);
-  white-space: pre-wrap;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    display: block;
+    min-width: 0;
+    min-height: 1.5em;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: none;
+    overflow: hidden;
+    margin-top: var(--textarea-margin-vertical);
+    margin-bottom: var(--textarea-margin-vertical);
+    white-space: pre-wrap;
 }
 
 .NoteItemElement__checkboxLabel {
-  display: flex;
-  justify-content: center;
-  padding: 10px 10px 10px 20px;
-  align-items: center;
-  /* Most real taps land on this label's padding, not the 16px input
+    display: flex;
+    justify-content: center;
+    padding: 10px 10px 10px 20px;
+    align-items: center;
+    /* Most real taps land on this label's padding, not the 16px input
      itself. Without `cursor: pointer` directly on the tapped element,
      iOS Safari treats the first tap as "resolve :hover" (since this row
      has :hover/:focus-within styles) and only the second tap fires the
      actual click/change. */
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .NoteItemElement__checkbox {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  border: 2px solid rgb(95 99 104 / 0.9);
-  border-radius: 4px;
-  appearance: none;
-  background: rgb(32 33 36);
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    box-shadow 140ms ease;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border: 2px solid rgb(95 99 104 / 0.9);
+    border-radius: 4px;
+    appearance: none;
+    background: rgb(32 33 36);
+    cursor: pointer;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease;
 }
 
 .NoteItemElement__checkbox:hover {
-  border-color: rgb(154 160 166);
+    border-color: rgb(154 160 166);
 }
 
 .NoteItemElement__checkbox:focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 2px rgb(138 180 248 / 0.3);
+    outline: 0;
+    box-shadow: 0 0 0 2px rgb(138 180 248 / 0.3);
 }
 
 .NoteItemElement__checkbox:checked {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3 7.2 5.6 10 11 4.5' stroke='rgb(95 99 104 / 0.9)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 13px 13px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3 7.2 5.6 10 11 4.5' stroke='rgb(95 99 104 / 0.9)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 13px 13px;
 }
 
 .NoteItemElement__remove {
-  place-items: center;
-  padding: 4px;
-  border: 1px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  justify-self: end;
-  color: transparent;
-  font-size: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    place-items: center;
+    padding: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    justify-self: end;
+    color: transparent;
+    font-size: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .NoteItemElement__remove__visual {
-  border-radius: 999px;
-  width: 26px;
-  height: 26px;
-  background-color: transparent;
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmZmZmZmIj4KICA8cGF0aCBkPSJNMTkgNi40MUwxNy41OSA1IDEyIDEwLjU5IDYuNDEgNSA1IDYuNDEgMTAuNTkgMTIgNSAxNy41OSA2LjQxIDE5IDEyIDEzLjQxIDE3LjU5IDE5IDE5IDE3LjU5IDEzLjQxIDEyIDE5IDYuNDF6Ii8+Cjwvc3ZnPgo=");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 18px 18px;
+    border-radius: 999px;
+    width: 26px;
+    height: 26px;
+    background-color: transparent;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmZmZmZmIj4KICA8cGF0aCBkPSJNMTkgNi40MUwxNy41OSA1IDEyIDEwLjU5IDYuNDEgNSA1IDYuNDEgMTAuNTkgMTIgNSAxNy41OSA2LjQxIDE5IDEyIDEzLjQxIDE3LjU5IDE5IDE5IDE3LjU5IDEzLjQxIDEyIDE5IDYuNDF6Ii8+Cjwvc3ZnPgo=');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 18px 18px;
 }
 
 .NoteItemElement__textareaLabel {
-  width: 100%;
-  display: flex;
+    width: 100%;
+    display: flex;
 }
 
 /* Sits immediately left of the type pill, matching .ItemTypePicker's
    `align-self: center` + `flex-shrink: 0` so it stays vertically centered
    on a multi-line item and never gets squeezed by a long title. */
 .NoteItemElement__activeEditors {
-  display: flex;
-  align-self: center;
-  flex-shrink: 0;
-  align-items: center;
-  margin-left: 8px;
-  font-size: 1.35rem;
-  /* Emojis have no meaningful ascender/descender to align to, and the
+    display: flex;
+    align-self: center;
+    flex-shrink: 0;
+    align-items: center;
+    margin-left: 8px;
+    font-size: 1.35rem;
+    /* Emojis have no meaningful ascender/descender to align to, and the
      default line box at this size would make the row taller than the 24px
      type pill next to it. */
-  line-height: 1;
-  /* Emojis are decoration here, and the row is one big click target for
+    line-height: 1;
+    /* Emojis are decoration here, and the row is one big click target for
      focusing the textarea - don't let them be selected by a drag. */
-  user-select: none;
-  white-space: nowrap;
+    user-select: none;
+    white-space: nowrap;
 }

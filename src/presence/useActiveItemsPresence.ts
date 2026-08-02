@@ -1,20 +1,17 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { useEffect, useRef } from "react";
-import { useSignal } from "senaev-utils/src/utils/Signal/useSignal";
-import {
-  ActiveEditorEmojisByItemId,
-  ActiveItemsPresenceStore,
-} from "./ActiveItemsPresenceStore";
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { useEffect, useRef } from 'react';
+import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
+import { ActiveEditorEmojisByItemId, ActiveItemsPresenceStore } from './ActiveItemsPresenceStore';
 
 export interface UseActiveItemsPresenceResult {
-  /** Item id -> animal avatars of everyone *else* on that item right now. */
-  emojisByItemId: ActiveEditorEmojisByItemId;
-  /**
-   * Reports that this tab is editing or has focused the given item, and
-   * keeps it claimed for another idle interval. Cheap to call on every
-   * keystroke - only an actual change of item hits the network.
-   */
-  setActiveItem: (itemId: string) => void;
+    /** Item id -> animal avatars of everyone *else* on that item right now. */
+    emojisByItemId: ActiveEditorEmojisByItemId;
+    /**
+     * Reports that this tab is editing or has focused the given item, and
+     * keeps it claimed for another idle interval. Cheap to call on every
+     * keystroke - only an actual change of item hits the network.
+     */
+    setActiveItem: (itemId: string) => void;
 }
 
 /**
@@ -26,29 +23,27 @@ export interface UseActiveItemsPresenceResult {
  * current, with its `emojisByItemIdSignal` wired into React through
  * `useSignal` (a thin `useSyncExternalStore` wrapper).
  */
-export function useActiveItemsPresence(
-  client: SupabaseClient,
-): UseActiveItemsPresenceResult {
-  const storeRef = useRef<ActiveItemsPresenceStore | undefined>(undefined);
-  if (!storeRef.current) {
-    storeRef.current = new ActiveItemsPresenceStore();
-  }
-  const store = storeRef.current;
+export function useActiveItemsPresence(client: SupabaseClient): UseActiveItemsPresenceResult {
+    const storeRef = useRef<ActiveItemsPresenceStore | undefined>(undefined);
+    if (!storeRef.current) {
+        storeRef.current = new ActiveItemsPresenceStore();
+    }
+    const store = storeRef.current;
 
-  useEffect(() => {
-    store.setClient(client);
-  }, [store, client]);
+    useEffect(() => {
+        store.setClient(client);
+    }, [store, client]);
 
-  useEffect(() => {
-    return () => {
-      store.dispose();
+    useEffect(() => {
+        return () => {
+            store.dispose();
+        };
+    }, [store]);
+
+    const emojisByItemId = useSignal(store.emojisByItemIdSignal);
+
+    return {
+        emojisByItemId,
+        setActiveItem: store.setActiveItem,
     };
-  }, [store]);
-
-  const emojisByItemId = useSignal(store.emojisByItemIdSignal);
-
-  return {
-    emojisByItemId,
-    setActiveItem: store.setActiveItem,
-  };
 }

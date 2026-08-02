@@ -1,55 +1,55 @@
 .ItemTypePicker {
-  display: flex;
-  align-self: center;
-  flex-shrink: 0;
-  margin-left: 8px;
+    display: flex;
+    align-self: center;
+    flex-shrink: 0;
+    margin-left: 8px;
 }
 
 .ItemTypePicker__menu {
-  display: grid;
-  gap: 2px;
-  min-width: 200px;
-  padding: 6px;
+    display: grid;
+    gap: 2px;
+    min-width: 200px;
+    padding: 6px;
 }
 
 .ItemTypePicker__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-color);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.85rem;
-  text-align: left;
-  white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    text-align: left;
+    white-space: nowrap;
 }
 
 .ItemTypePicker__itemSwatch {
-  flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
 }
 
 .ItemTypePicker__item:hover,
 .ItemTypePicker__item:focus-visible {
-  outline: none;
-  background-color: rgb(255 255 255 / 0.09);
+    outline: none;
+    background-color: rgb(255 255 255 / 0.09);
 }
 
 .ItemTypePicker__item_isSelected {
-  color: var(--supabase-green);
-  font-weight: 600;
+    color: var(--supabase-green);
+    font-weight: 600;
 }
 
 .ItemTypePicker__createItem {
-  margin-top: 2px;
-  padding-top: 8px;
-  border-top: 1px solid rgb(255 255 255 / 0.08);
-  color: var(--text-color-placeholder);
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    color: var(--text-color-placeholder);
 }

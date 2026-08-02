@@ -1,39 +1,39 @@
-import "./Toasts.css";
+import './Toasts.css';
 
-import { Fragment } from "react";
-import { Modal } from "../Modal/Modal";
+import { Fragment } from 'react';
+import { Modal } from '../Modal/Modal';
 
 type ToastsProps = {
-  errors: string[];
-  infoMessages: string[];
-  onClearErrors: VoidFunction;
-  onCloseInfoMessage: (index: number) => void;
+    errors: string[];
+    infoMessages: string[];
+    onClearErrors: VoidFunction;
+    onCloseInfoMessage: (index: number) => void;
 };
 
 function InfoToast({
-  index,
-  message,
-  onClose,
+    index,
+    message,
+    onClose,
 }: {
-  index: number;
-  message: string;
-  onClose: (index: number) => void;
+    index: number;
+    message: string;
+    onClose: (index: number) => void;
 }) {
-  return (
-    <div className="Toasts__toast Toasts__toastInfo" role="status">
-      <div className="Toasts__message">{message}</div>
-      <button
-        aria-label={`Dismiss info ${index + 1}`}
-        className="Toasts__close"
-        onClick={() => {
-          onClose(index);
-        }}
-        type="button"
-      >
-        Close
-      </button>
-    </div>
-  );
+    return (
+        <div className="Toasts__toast Toasts__toastInfo" role="status">
+            <div className="Toasts__message">{message}</div>
+            <button
+                aria-label={`Dismiss info ${index + 1}`}
+                className="Toasts__close"
+                onClick={() => {
+                    onClose(index);
+                }}
+                type="button"
+            >
+                Close
+            </button>
+        </div>
+    );
 }
 
 /**
@@ -52,58 +52,45 @@ function InfoToast({
  * modal on top of the last one the user hasn't even read yet. One "Close"
  * dismisses all of them at once.
  */
-function ErrorsModal({
-  errors,
-  onClose,
-}: {
-  errors: string[];
-  onClose: VoidFunction;
-}) {
-  return (
-    <Modal ariaLabel="Error" onClose={onClose}>
-      <div className="Toasts__errorModal" role="alert">
-        <button
-          aria-label="Dismiss errors"
-          className="Toasts__close"
-          onClick={onClose}
-          type="button"
-        >
-          Close
-        </button>
-        {errors.map((error, index) => (
-          <Fragment key={`${index}_${error}`}>
-            {index > 0 && <hr className="Toasts__errorDivider" />}
-            <div className="Toasts__message">{error}</div>
-          </Fragment>
-        ))}
-      </div>
-    </Modal>
-  );
+function ErrorsModal({ errors, onClose }: { errors: string[]; onClose: VoidFunction }) {
+    return (
+        <Modal ariaLabel="Error" onClose={onClose}>
+            <div className="Toasts__errorModal" role="alert">
+                <button
+                    aria-label="Dismiss errors"
+                    className="Toasts__close"
+                    onClick={onClose}
+                    type="button"
+                >
+                    Close
+                </button>
+                {errors.map((error, index) => (
+                    <Fragment key={`${index}_${error}`}>
+                        {index > 0 && <hr className="Toasts__errorDivider" />}
+                        <div className="Toasts__message">{error}</div>
+                    </Fragment>
+                ))}
+            </div>
+        </Modal>
+    );
 }
 
-export function Toasts({
-  errors,
-  infoMessages,
-  onClearErrors,
-  onCloseInfoMessage,
-}: ToastsProps) {
-  return (
-    <>
-      {errors.length > 0 && (
-        <ErrorsModal errors={errors} onClose={onClearErrors} />
-      )}
-      {infoMessages.length > 0 && (
-        <div className="Toasts" aria-live="polite" aria-label="Notifications">
-          {infoMessages.map((message, index) => (
-            <InfoToast
-              key={`info_${message}_${index}`}
-              index={index}
-              message={message}
-              onClose={onCloseInfoMessage}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
+export function Toasts({ errors, infoMessages, onClearErrors, onCloseInfoMessage }: ToastsProps) {
+    return (
+        <>
+            {errors.length > 0 && <ErrorsModal errors={errors} onClose={onClearErrors} />}
+            {infoMessages.length > 0 && (
+                <div className="Toasts" aria-live="polite" aria-label="Notifications">
+                    {infoMessages.map((message, index) => (
+                        <InfoToast
+                            key={`info_${message}_${index}`}
+                            index={index}
+                            message={message}
+                            onClose={onCloseInfoMessage}
+                        />
+                    ))}
+                </div>
+            )}
+        </>
+    );
 }
