@@ -15,7 +15,7 @@
         "typescript": "^5.8.3"
     },
     "scripts": {
-        "prepare": "git config core.hooksPath .git/hooks && lefthook install",
+        "prepare": "git config core.hooksPath .git/hooks && lefthook install --force",
         "start": "vite",
         "dev": "vite",
         "build": "vite build",
