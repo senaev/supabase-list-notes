@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { ROUTES } from '../../const/ROUTES';
+import { clearLastSelectedItemType } from '../../utils/lastSelectedItemType';
 import './PageHeader.css';
 
 export function PageHeader({
@@ -17,6 +18,7 @@ export function PageHeader({
             <button
                 type={'button'}
                 onClick={() => {
+                    clearLastSelectedItemType();
                     navigate(ROUTES.home);
                 }}
             >

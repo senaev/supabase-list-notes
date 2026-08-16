@@ -5,14 +5,18 @@ import { useSearchParams } from 'react-router-dom';
 
 import { ActiveEditorEmojisByItemId } from '../../presence/ActiveItemsPresenceStore';
 import { Item } from '../../sync/types';
+import { setLastSelectedItemType } from '../../utils/lastSelectedItemType';
 import { ItemTypePill } from '../ItemTypePill/ItemTypePill';
 
 /**
  * Horizontally-scrollable row of colored type chips, replacing the static
  * app title in MainPageHeader. Clicking a chip filters NotePage down to
- * that type via the `type` search param (read there with useSearchParams);
- * clicking the home button (see PageHeader) navigates back to `ROUTES.home`
- * with no search params, resetting the filter.
+ * that type via the `type` search param (read there with useSearchParams)
+ * and remembers it in localStorage (see lastSelectedItemType) so the next
+ * page load restores the same filter; clicking the home button (see
+ * PageHeader) navigates back to `ROUTES.home` with no search params and
+ * also clears the saved type, so the next load defaults to "show all
+ * types" instead of restoring this filter.
  */
 export function ItemTypesNav({
     items,
@@ -81,6 +85,7 @@ export function ItemTypesNav({
                     isActive={type === currentType}
                     onClick={() => {
                         setSearchParams({ type });
+                        setLastSelectedItemType(type);
                     }}
                     type={type}
                 />

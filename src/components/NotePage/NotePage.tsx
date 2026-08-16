@@ -10,6 +10,7 @@ import { Item } from '../../sync/types';
 import { UseItemsSyncResult } from '../../sync/useItemsSync';
 import { NoteItemElement } from '../NoteItemElement/NoteItemElement';
 import { DEFAULT_ITEM_TYPE } from '../../const/DEFAULT_ITEM_TYPE';
+import { getLastSelectedItemType } from '../../utils/lastSelectedItemType';
 
 type PendingFocus = {
     id: string;
@@ -37,15 +38,33 @@ export function NotePage({
     presence: UseActiveItemsPresenceResult;
 }) {
     const { showError } = useToastsContext();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null);
     const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
     const desiredCaretPositionRef = useRef(0);
     const ignoreNextSelectionRef = useRef(false);
 
     // Set by clicking a chip in ItemTypesNav (in MainPageHeader); cleared by
-    // the home button navigating back to ROUTES.home with no search params.
+    // the home button navigating back to ROUTES.home with no search params
+    // (which also clears the saved type below, see PageHeader).
     const typeFilter = searchParams.get('type');
+
+    // On a fresh page load with no `?type=` param, restore whatever type the
+    // user had filtered to last time (see lastSelectedItemType) instead of
+    // always defaulting to "show all types". Runs once on mount only, so
+    // clicking the home button to clear the filter isn't immediately undone.
+    useEffect(() => {
+        if (searchParams.get('type')) {
+            return;
+        }
+
+        const lastSelectedItemType = getLastSelectedItemType();
+
+        if (lastSelectedItemType) {
+            setSearchParams({ type: lastSelectedItemType });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only, see comment above
+    }, []);
 
     const visibleItems = typeFilter
         ? sync.items.filter((item) => item.type === typeFilter)
