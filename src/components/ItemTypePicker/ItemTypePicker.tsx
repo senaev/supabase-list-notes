@@ -36,11 +36,13 @@ export function ItemTypePicker({
     const { showError } = useToastsContext();
     const [isOpen, setIsOpen] = useState(false);
 
-    // De-duped, alphabetical, and guaranteed to include the item's own
-    // current type even if it's otherwise unused by any other item.
-    const allTypes = Array.from(new Set([currentType, ...existingTypes])).sort((a, b) =>
-        a.localeCompare(b)
-    );
+    // existingTypes is already sorted by popularity (see
+    // getTypesByPopularity, computed once in NotePage) - just append the
+    // item's own current type if it's otherwise unused by any other item,
+    // without re-sorting the rest of the list.
+    const allTypes = existingTypes.includes(currentType)
+        ? existingTypes
+        : [...existingTypes, currentType];
 
     function selectType(type: string) {
         onSelect(type);

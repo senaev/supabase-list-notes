@@ -1,7 +1,7 @@
 import './NotePage.css';
 
 import { PlusIcon } from '@heroicons/react/24/solid';
-import { KeyboardEvent, SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { KeyboardEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useToastsContext } from '../../contexts/ToastsContext';
@@ -74,16 +74,11 @@ export function NotePage({
     const checked = sortChecked(visibleItems);
 
     // Distinct types across *all* items (not just the currently filtered
-    // ones), alphabetical, for the per-item type picker's "choose an
-    // existing one" list - it should offer every type in the list, not just
-    // the ones visible under the current filter.
-    const existingTypes = useMemo(
-        () =>
-            Array.from(new Set(sync.items.map((item) => item.type))).sort((a, b) =>
-                a.localeCompare(b)
-            ),
-        [sync.items]
-    );
+    // ones), sorted by popularity - computed once in ItemsSyncStore (see
+    // getTypesByPopularity) and kept in sync automatically as records
+    // change, so it's already in the same order as the ItemTypesNav pills
+    // without this component needing its own useMemo.
+    const existingTypes = sync.typesByPopularity;
 
     useEffect(() => {
         if (pendingFocus == null) {

@@ -1,11 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
+import { combineSignalsIntoNewOne } from 'senaev-utils/src/utils/Signal/combineSignalsIntoNewOne/combineSignalsIntoNewOne';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
 import { SupabaseClientSignal } from '../controllers/SupabaseController';
+import { getTypesByPopularity } from '../utils/getTypesByPopularity';
 
 import { LocalDbFacade, LocalItemRow } from './localDb';
 import { EditableFields, Item } from './types';
@@ -37,6 +39,18 @@ function toItem(row: LocalItemRow): Item {
 
 export class ItemsSyncStore {
     public readonly recordsSignal = new Signal<Item[]>([], deepEqual);
+
+    // Derived from recordsSignal (see getTypesByPopularity) so every
+    // consumer - the top nav pills, the per-item type picker - reads the
+    // same already-sorted list and recomputes it exactly once whenever the
+    // records change, instead of each component re-sorting on its own with
+    // useMemo. Never torn down: this store lives for the whole app session,
+    // same as recordsSignal itself.
+    public readonly typesByPopularitySignal = combineSignalsIntoNewOne(
+        [this.recordsSignal],
+        getTypesByPopularity,
+        deepEqual
+    ).signal;
 
     private replicationState: RxSupabaseReplicationState<LocalItemRow> | undefined;
 

@@ -6,6 +6,7 @@ import type { EditableFields, Item, NetworkSyncStatus, RequiredFields } from './
 
 export interface UseItemsSyncResult {
     items: Item[];
+    typesByPopularity: string[];
     networkSyncStatus: NetworkSyncStatus;
     addItem: (newItem: RequiredFields) => void;
     updateItem: (id: string, fields: Partial<EditableFields>) => void;
@@ -18,6 +19,7 @@ export function useItemsSync({
     itemSyncStore: ItemsSyncStore;
 }): UseItemsSyncResult {
     const items = useSignal(itemSyncStore.recordsSignal);
+    const typesByPopularity = useSignal(itemSyncStore.typesByPopularitySignal);
 
     // TODO: implement
     const networkSyncStatusSignal = new Signal<NetworkSyncStatus>('synced');
@@ -25,6 +27,7 @@ export function useItemsSync({
 
     return {
         items,
+        typesByPopularity,
         networkSyncStatus,
         addItem: itemSyncStore.addItem,
         updateItem: itemSyncStore.updateItem,

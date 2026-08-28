@@ -35,6 +35,7 @@ export function ItemsApp({
                 activeEditorEmojisByItemId={presence.emojisByItemId}
                 items={sync.items}
                 networkSyncStatus={sync.networkSyncStatus}
+                typesByPopularity={sync.typesByPopularity}
             />
             <NotePage presence={presence} sync={sync} />
         </>

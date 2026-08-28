@@ -20,27 +20,20 @@ import { ItemTypePill } from '../ItemTypePill/ItemTypePill';
  */
 export function ItemTypesNav({
     items,
+    typesByPopularity,
     activeEditorEmojisByItemId,
 }: {
     items: Item[];
+    // Sorted by popularity - how many items (checked or unchecked) currently
+    // have each type - most popular first. Computed once in ItemsSyncStore
+    // (see getTypesByPopularity), not here, so it stays in sync with the
+    // per-item type picker's list without either one needing its own
+    // useMemo.
+    typesByPopularity: string[];
     activeEditorEmojisByItemId: ActiveEditorEmojisByItemId;
 }) {
     const [searchParams, setSearchParams] = useSearchParams();
     const currentType = searchParams.get('type');
-
-    // Sorted by popularity - how many items (checked or unchecked) currently
-    // have each type - most popular first.
-    const typesByPopularity = useMemo(() => {
-        const countByType = new Map<string, number>();
-
-        for (const item of items) {
-            countByType.set(item.type, (countByType.get(item.type) ?? 0) + 1);
-        }
-
-        return Array.from(countByType.entries())
-            .sort((a, b) => b[1] - a[1])
-            .map(([type]) => type);
-    }, [items]);
 
     // Rolls the per-item avatars up to the type level, so a chip shows who is
     // editing something inside it even while that item is scrolled out of

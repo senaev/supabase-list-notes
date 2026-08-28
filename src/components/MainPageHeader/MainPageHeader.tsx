@@ -20,10 +20,12 @@ import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerSt
 // neither items, a presence channel, nor a sync engine yet.
 export function MainPageHeader({
     items = [],
+    typesByPopularity = [],
     activeEditorEmojisByItemId = {},
     networkSyncStatus,
 }: {
     items?: Item[];
+    typesByPopularity?: string[];
     activeEditorEmojisByItemId?: ActiveEditorEmojisByItemId;
     networkSyncStatus?: NetworkSyncStatus;
 }) {
@@ -117,7 +119,11 @@ export function MainPageHeader({
                 </span>
             }
         >
-            <ItemTypesNav activeEditorEmojisByItemId={activeEditorEmojisByItemId} items={items} />
+            <ItemTypesNav
+                activeEditorEmojisByItemId={activeEditorEmojisByItemId}
+                items={items}
+                typesByPopularity={typesByPopularity}
+            />
             <ContextMenu items={menu} />
         </PageHeader>
     );
