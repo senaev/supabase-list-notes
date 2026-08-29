@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+import { isNonEmptyString } from 'senaev-utils/src/utils/String/NonEmptyString/NonEmptyString';
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 import { SUPABASE_CREDENTIALS_QUERY_PARAMS } from '../const/SUPABASE_CREDENTIALS_QUERY_PARAMS';
@@ -68,6 +69,21 @@ function parseLocalStorageCredentials(value: string | null): SupabaseCredentials
     return null;
 }
 
+function getDevEnvCredentials(): SupabaseCredentials | null {
+    if (!import.meta.env.DEV) {
+        return null;
+    }
+
+    const { VITE_SUPABASE_PROJECT_URL: projectUrl, VITE_SUPABASE_PUBLISHABLE_KEY: publishableKey } =
+        import.meta.env;
+
+    if (isNonEmptyString(projectUrl) && isNonEmptyString(publishableKey)) {
+        return { projectUrl, publishableKey };
+    }
+
+    return null;
+}
+
 export class SupabaseController {
     public readonly clientSignal: SupabaseClientSignal = new Signal<SupabaseClient | undefined>(
         undefined
@@ -116,6 +132,10 @@ export class SupabaseController {
             window.history.replaceState({}, document.title, url);
 
             credentials = credentialsFromUrl as SupabaseCredentials;
+        }
+
+        if (!credentials) {
+            credentials = getDevEnvCredentials();
         }
 
         if (!credentials) {
