@@ -26,6 +26,11 @@ const _TABLE_COLUMNS = 'id, title, type, checked_at, created_at, modified_at';
 
 type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
 
+type PendingOptimisticCreate = {
+    item: Item;
+    writePromise: Promise<void>;
+};
+
 function toItem(row: LocalItemRow): Item {
     return {
         id: row.id,
@@ -37,15 +42,13 @@ function toItem(row: LocalItemRow): Item {
     };
 }
 
+function getModifiedAtTime(item: { modified_at: string }): number {
+    return Date.parse(item.modified_at);
+}
+
 export class ItemsSyncStore {
     public readonly recordsSignal = new Signal<Item[]>([], deepEqual);
 
-    // Derived from recordsSignal (see getTypesByPopularity) so every
-    // consumer - the top nav pills, the per-item type picker - reads the
-    // same already-sorted list and recomputes it exactly once whenever the
-    // records change, instead of each component re-sorting on its own with
-    // useMemo. Never torn down: this store lives for the whole app session,
-    // same as recordsSignal itself.
     public readonly typesByPopularitySignal = combineSignalsIntoNewOne(
         [this.recordsSignal],
         getTypesByPopularity,
@@ -53,6 +56,17 @@ export class ItemsSyncStore {
     ).signal;
 
     private replicationState: RxSupabaseReplicationState<LocalItemRow> | undefined;
+
+    // Creates that have been applied to recordsSignal but whose write to
+    // the local DB may not have committed/echoed back through observeAll
+    // yet. Kept alive across observeAll runs so the optimistic item isn't
+    // dropped from the signal before the DB confirms it.
+    private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
+
+    // Ids removed from recordsSignal optimistically but not yet confirmed
+    // gone from the DB - used to keep a slow/late observeAll echo for the
+    // old (pre-delete) row from resurrecting it in the signal.
+    private pendingOptimisticDeleteIds = new Set<string>();
 
     public constructor(
         private readonly params: {
@@ -62,10 +76,41 @@ export class ItemsSyncStore {
         }
     ) {
         this.params.localDbFacade.notes_temp
-            .observeAll((records) => {
-                const items = records.map(toItem);
+            .observeAll((incomingRecords) => {
+                const allIncomingItems = incomingRecords.map(toItem);
+                const incomingIds = new Set(allIncomingItems.map((item) => item.id));
+                const incomingItems = allIncomingItems.filter(
+                    (item) => !this.pendingOptimisticDeleteIds.has(item.id)
+                );
 
-                this.recordsSignal.dispatch(items);
+                this.pendingOptimisticDeleteIds = new Set(
+                    [...this.pendingOptimisticDeleteIds].filter((id) => incomingIds.has(id))
+                );
+
+                const currentById = new Map(
+                    this.recordsSignal.getValue().map((item) => [item.id, item] as const)
+                );
+
+                const nextState = incomingItems.map((incomingItem) => {
+                    this.pendingOptimisticCreatesById.delete(incomingItem.id);
+
+                    const currentItem = currentById.get(incomingItem.id);
+
+                    if (
+                        currentItem &&
+                        getModifiedAtTime(currentItem) > getModifiedAtTime(incomingItem)
+                    ) {
+                        return currentItem;
+                    }
+
+                    return incomingItem;
+                });
+
+                for (const pendingOptimisticCreate of this.pendingOptimisticCreatesById.values()) {
+                    nextState.push(pendingOptimisticCreate.item);
+                }
+
+                this.recordsSignal.dispatch(nextState);
             })
             .catch((error) => {
                 this.params.showError(error.message);
@@ -87,17 +132,6 @@ export class ItemsSyncStore {
         return newNote;
     }
 
-    public readonly updateItem = async (
-        id: string,
-        updates: Partial<EditableFields>
-    ): Promise<void> => {
-        await this.updateNote(id, updates);
-    };
-
-    public readonly delete = async (id: string): Promise<void> => {
-        await this.params.localDbFacade.notes_temp.remove(id);
-    };
-
     public readonly addItem = async ({
         id,
         title,
@@ -114,23 +148,78 @@ export class ItemsSyncStore {
             _deleted: false,
         };
 
-        await this.params.localDbFacade.notes_temp.put(localRow);
+        const optimisticItem = toItem(localRow);
+        const writePromise = this.params.localDbFacade.notes_temp.put(localRow);
 
-        return toItem(localRow);
+        this.pendingOptimisticCreatesById.set(id, {
+            item: optimisticItem,
+            writePromise,
+        });
+
+        this.recordsSignal.dispatch([...this.recordsSignal.getValue(), optimisticItem]);
+
+        await writePromise;
+
+        return optimisticItem;
     };
 
-    private async updateNote(id: string, updates: Partial<EditableFields>): Promise<void> {
-        const localRow = await this.params.localDbFacade.notes_temp.get(id);
+    public readonly updateItem = (id: string, updates: Partial<EditableFields>): Promise<void> =>
+        this.persistItem(id, updates);
 
-        if (!localRow) {
-            throw new Error(`NotesListTable.update(${id}) error: note not found`);
+    public readonly delete = async (id: string): Promise<void> => {
+        const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
+
+        this.removeOptimisticItem(id);
+
+        if (pendingOptimisticCreate) {
+            await pendingOptimisticCreate.writePromise.catch(() => undefined);
         }
 
-        const now = new Date().toISOString();
+        await this.params.localDbFacade.notes_temp.remove(id);
+    };
+
+    private removeOptimisticItem(id: string): void {
+        this.pendingOptimisticCreatesById.delete(id);
+        this.pendingOptimisticDeleteIds.add(id);
+
+        this.recordsSignal.dispatch(this.recordsSignal.getValue().filter((item) => item.id !== id));
+    }
+
+    private changeItemLocally(
+        id: string,
+        updates: Partial<EditableFields> & { modified_at: string }
+    ): Item | undefined {
+        let nextItem: Item | undefined;
+
+        this.recordsSignal.dispatch(
+            this.recordsSignal.getValue().map((item) => {
+                if (item.id !== id) {
+                    return item;
+                }
+
+                nextItem = {
+                    ...item,
+                    ...updates,
+                };
+
+                return nextItem;
+            })
+        );
+
+        return nextItem;
+    }
+
+    private async persistItem(id: string, updates: Partial<EditableFields>): Promise<void> {
+        const modified_at = new Date().toISOString();
+        const nextItem = this.changeItemLocally(id, { ...updates, modified_at });
+
+        if (!nextItem) {
+            throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
+        }
+
         const updatedLocalRow: LocalItemRow = {
-            ...localRow,
-            ...updates,
-            modified_at: now,
+            ...nextItem,
+            _deleted: false,
         };
 
         await this.params.localDbFacade.notes_temp.put(updatedLocalRow);

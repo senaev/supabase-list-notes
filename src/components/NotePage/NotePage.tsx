@@ -283,10 +283,6 @@ export function NotePage({
     }
 
     function handleItemChange(id: string, title: string) {
-        // Also reported on focus (see the onFocus props below); repeating it
-        // here is what keeps the claim from going idle while the user is
-        // actively typing without ever re-focusing. Only an actual change of
-        // item reaches the network, so this is safe per keystroke.
         presence.setActiveItem(id);
         sync.updateItem(id, { title });
     }
