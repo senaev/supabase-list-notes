@@ -1,17 +1,12 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import { RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { combineSignalsIntoNewOne } from 'senaev-utils/src/utils/Signal/combineSignalsIntoNewOne/combineSignalsIntoNewOne';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
-import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
-import { SupabaseClientSignal } from '../controllers/SupabaseController';
 import { getTypesByPopularity } from '../utils/getTypesByPopularity';
 
 import { LocalDbFacade, LocalItemRow } from './localDb';
 import { EditableFields, Item } from './types';
-import { startReplication } from './replication';
 
 export type NoteRecord = {
     id: string;
@@ -55,23 +50,13 @@ export class ItemsSyncStore {
         deepEqual
     ).signal;
 
-    private replicationState: RxSupabaseReplicationState<LocalItemRow> | undefined;
-
-    // Creates that have been applied to recordsSignal but whose write to
-    // the local DB may not have committed/echoed back through observeAll
-    // yet. Kept alive across observeAll runs so the optimistic item isn't
-    // dropped from the signal before the DB confirms it.
     private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
 
-    // Ids removed from recordsSignal optimistically but not yet confirmed
-    // gone from the DB - used to keep a slow/late observeAll echo for the
-    // old (pre-delete) row from resurrecting it in the signal.
     private pendingOptimisticDeleteIds = new Set<string>();
 
     public constructor(
         private readonly params: {
             localDbFacade: LocalDbFacade;
-            supabaseControllerClientSignal: SupabaseClientSignal;
             showError: (message: string) => void;
         }
     ) {
@@ -115,11 +100,6 @@ export class ItemsSyncStore {
             .catch((error) => {
                 this.params.showError(error.message);
             });
-
-        subscribeSignalAndCallWithCurrentValue(
-            this.params.supabaseControllerClientSignal,
-            this.startReplicationWithClient
-        );
     }
 
     public async createNewNote({ type }: { type: string }): Promise<NoteRecord> {
@@ -224,26 +204,4 @@ export class ItemsSyncStore {
 
         await this.params.localDbFacade.notes_temp.put(updatedLocalRow);
     }
-
-    private readonly startReplicationWithClient = (client: SupabaseClient | undefined): void => {
-        if (this.replicationState) {
-            this.replicationState.remove();
-        }
-
-        if (client === undefined) {
-            this.replicationState = undefined;
-
-            return;
-        }
-
-        this.replicationState = startReplication({
-            collectionName: 'items',
-            supabase: client,
-            localDbFacade: this.params.localDbFacade,
-            onError: (_error) => {},
-            onActiveChange: (_isActive) => {},
-            onReceived: (_record) => {},
-            onSent: (_record) => {},
-        });
-    };
 }

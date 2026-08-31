@@ -1,8 +1,8 @@
 import { createContext, useRef } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { ItemsSyncStore } from '../sync/ItemsSyncStore';
+import { startReplication } from '../sync/replication';
 
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 
@@ -21,12 +21,17 @@ export const useItemSyncStoreContext = ({
 
     // eslint-disable-next-line react-hooks/refs -- intentional lazy useRef init (survives re-renders without useMemo's non-guaranteed memoization)
     if (!ref.current) {
-        const supabaseControllerClientSignal = new Signal<SupabaseClient | undefined>(
-            supabaseClient
-        );
+        startReplication({
+            collectionName: 'items',
+            supabase: supabaseClient,
+            localDbFacade,
+            onError: (_error) => {},
+            onActiveChange: (_isActive) => {},
+            onReceived: (_record) => {},
+            onSent: (_record) => {},
+        });
 
         ref.current = new ItemsSyncStore({
-            supabaseControllerClientSignal,
             localDbFacade,
             showError: (error) => {
                 // eslint-disable-next-line no-console
