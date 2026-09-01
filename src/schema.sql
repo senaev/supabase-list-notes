@@ -6,6 +6,14 @@ create table public.items (
     checked_at timestamptz default null,
     created_at timestamptz not null,
     modified_at timestamptz not null,
+    -- Revision counter, incremented by the client on every edit (see
+    -- ItemsSyncStore.ts) - unlike modified_at it isn't touched by the
+    -- server, so it can't be thrown off by a client's clock being wrong.
+    -- Used instead of modified_at to tell a stale echo apart from a fresh
+    -- local edit (see pickNewerRow.ts). Default 0 only matters for a row
+    -- inserted without the column set (shouldn't happen in practice, since
+    -- the client always sends it).
+    update_index bigint not null default 0,
     -- Soft-delete tombstone flag for the same plugin (its default `_deleted`).
     _deleted boolean not null default false
 );

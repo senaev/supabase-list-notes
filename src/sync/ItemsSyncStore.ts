@@ -4,6 +4,7 @@ import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
 
 import { LocalItemRow } from './localDb';
+import { pickNewerRow } from './pickNewerRow';
 import { EditableFields, Item } from './types';
 
 type ItemSyncRemoteStorage<T extends { id: string }> = {
@@ -11,7 +12,6 @@ type ItemSyncRemoteStorage<T extends { id: string }> = {
     readonly subscribeError: (callback: (error: Error) => void) => void;
     readonly addItem: (item: T) => Promise<void>;
     readonly updateItem: (item: T) => Promise<void>;
-    readonly removeItem: (itemId: T['id']) => Promise<void>;
 };
 
 export type NoteRecord = {
@@ -21,9 +21,10 @@ export type NoteRecord = {
     checked_at: string | null;
     created_at: string;
     modified_at: string;
+    update_index: number;
 };
 
-const _TABLE_COLUMNS = 'id, title, type, checked_at, created_at, modified_at';
+const _TABLE_COLUMNS = 'id, title, type, checked_at, created_at, modified_at, update_index';
 
 type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
 
@@ -40,11 +41,8 @@ function toItem(row: LocalItemRow): Item {
         checked_at: row.checked_at,
         created_at: row.created_at,
         modified_at: row.modified_at,
+        update_index: row.update_index,
     };
-}
-
-function getModifiedAtTime(item: { modified_at: string }): number {
-    return Date.parse(item.modified_at);
 }
 
 export class ItemsSyncStore {
@@ -80,14 +78,11 @@ export class ItemsSyncStore {
 
                 const currentItem = currentById.get(incomingItem.id);
 
-                if (
-                    currentItem &&
-                    getModifiedAtTime(currentItem) > getModifiedAtTime(incomingItem)
-                ) {
-                    return currentItem;
+                if (!currentItem) {
+                    return incomingItem;
                 }
 
-                return incomingItem;
+                return pickNewerRow(incomingItem, currentItem);
             });
 
             for (const pendingOptimisticCreate of this.pendingOptimisticCreatesById.values()) {
@@ -125,6 +120,7 @@ export class ItemsSyncStore {
             created_at: now,
             checked_at: null,
             modified_at: now,
+            update_index: 0,
             _deleted: false,
         };
 
@@ -148,6 +144,7 @@ export class ItemsSyncStore {
 
     public readonly delete = async (id: string): Promise<void> => {
         const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
+        const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
 
         this.removeOptimisticItem(id);
 
@@ -155,7 +152,18 @@ export class ItemsSyncStore {
             await pendingOptimisticCreate.writePromise.catch(() => undefined);
         }
 
-        await this.params.remoteStorage.removeItem(id);
+        if (!currentItem) {
+            return;
+        }
+
+        const deletedRow: LocalItemRow = {
+            ...currentItem,
+            modified_at: new Date().toISOString(),
+            update_index: currentItem.update_index + 1,
+            _deleted: true,
+        };
+
+        await this.params.remoteStorage.updateItem(deletedRow);
     };
 
     private removeOptimisticItem(id: string): void {
@@ -167,7 +175,7 @@ export class ItemsSyncStore {
 
     private changeItemLocally(
         id: string,
-        updates: Partial<EditableFields> & { modified_at: string }
+        updates: Partial<EditableFields> & { modified_at: string; update_index: number }
     ): Item | undefined {
         let nextItem: Item | undefined;
 
@@ -190,8 +198,15 @@ export class ItemsSyncStore {
     }
 
     private async persistItem(id: string, updates: Partial<EditableFields>): Promise<void> {
+        const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
+
+        if (!currentItem) {
+            throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
+        }
+
         const modified_at = new Date().toISOString();
-        const nextItem = this.changeItemLocally(id, { ...updates, modified_at });
+        const update_index = currentItem.update_index + 1;
+        const nextItem = this.changeItemLocally(id, { ...updates, modified_at, update_index });
 
         if (!nextItem) {
             throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);

@@ -7,6 +7,11 @@ export type Item = {
     checked_at: string | null;
     created_at: string;
     modified_at: string;
+    // Postgres-enforced revision counter, incremented by 1 per confirmed
+    // write regardless of what the client sends (see schema.sql) - used
+    // instead of modified_at to detect stale echoes, since it can't be
+    // thrown off by client clock skew. See pickNewerRow.ts.
+    update_index: number;
 };
 
 export type RequiredFields = Pick<Item, 'id' | 'title' | 'type'>;

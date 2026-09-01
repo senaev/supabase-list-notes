@@ -50,7 +50,6 @@ export const useItemSyncStoreContext = ({
                 },
                 addItem: (item) => localDbFacade.notes_temp.put(item),
                 updateItem: (item) => localDbFacade.notes_temp.put(item),
-                removeItem: (itemId) => localDbFacade.notes_temp.remove(itemId),
             },
             showError: (error) => {
                 // eslint-disable-next-line no-console

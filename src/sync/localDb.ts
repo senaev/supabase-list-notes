@@ -15,6 +15,7 @@ import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 import { noop } from '../utils/noop';
 
+import { pickNewerRow } from './pickNewerRow';
 import type { Item } from './types';
 
 const dexieStorage = getRxStorageDexie();
@@ -80,13 +81,15 @@ const itemsSchema = {
             type: 'string',
             maxLength: 64,
         },
+        update_index: {
+            type: 'number',
+            minimum: 0,
+            maximum: Number.MAX_SAFE_INTEGER,
+            multipleOf: 1,
+        },
     },
-    required: ['id', 'title', 'type', 'checked_at', 'created_at', 'modified_at'],
+    required: ['id', 'title', 'type', 'checked_at', 'created_at', 'modified_at', 'update_index'],
 } as const;
-
-function isNewer(a: { modified_at: string }, b: { modified_at: string }): boolean {
-    return Date.parse(a.modified_at) > Date.parse(b.modified_at);
-}
 
 function isSameIgnoringModified(a: LocalItemRow, b: LocalItemRow): boolean {
     return (
@@ -116,19 +119,14 @@ const DOWNSTREAM_EQUALITY_CHECK_CONTEXT = 'downstream-check-if-equal-1';
  */
 const conflictHandler: RxConflictHandler<LocalItemRow> = {
     isEqual: (a, b, context) => {
-        if (
-            context === DOWNSTREAM_EQUALITY_CHECK_CONTEXT &&
-            Date.parse(a.modified_at) < Date.parse(b.modified_at)
-        ) {
+        if (context === DOWNSTREAM_EQUALITY_CHECK_CONTEXT && pickNewerRow(a, b) === b) {
             return true;
         }
 
         return isSameIgnoringModified(a, b);
     },
     resolve: ({ realMasterState, newDocumentState }) =>
-        Promise.resolve(
-            isNewer(realMasterState, newDocumentState) ? realMasterState : newDocumentState
-        ),
+        Promise.resolve(pickNewerRow(newDocumentState, realMasterState)),
 };
 
 /**
@@ -160,7 +158,6 @@ type LocalTable<T> = {
     get: (id: string) => Promise<T | undefined>;
     observeAll: (onChange: (rows: T[]) => void) => Promise<Subscription>;
     put: (row: T) => Promise<void>;
-    remove: (id: string) => Promise<void>;
     toArray: () => Promise<T[]>;
 };
 
@@ -212,26 +209,6 @@ export class LocalDbFacade {
 
             put: (row): Promise<void> =>
                 getCollection(this.database).incrementalUpsert(row).then(noop),
-
-            remove: async (id): Promise<void> => {
-                const document = await getCollection(this.database).findOne(id).exec();
-
-                if (!document) {
-                    return;
-                }
-
-                const now = new Date().toISOString();
-
-                await document.incrementalModify((docData) => {
-                    const nextDocData = {
-                        ...docData,
-                        modified_at: now,
-                        _deleted: true,
-                    };
-
-                    return nextDocData;
-                });
-            },
 
             toArray: async (): Promise<T[]> => {
                 const documents = await getCollection(this.database).find().exec();
