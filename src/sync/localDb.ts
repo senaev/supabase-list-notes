@@ -1,6 +1,7 @@
 import {
     addRxPlugin,
     createRxDatabase,
+    removeRxDatabase,
     RxCollection,
     RxConflictHandler,
     RxDatabase,
@@ -135,8 +136,28 @@ const conflictHandler: RxConflictHandler<LocalItemRow> = {
  * before creating a new one for a different Supabase project, so that one
  * project's items can never leak into another project's local storage or
  * get pushed to the wrong backend.
+ *
+ * If opening/setting up the IndexedDB-backed database fails (e.g. it was
+ * left in a corrupted or schema-incompatible state, say by a browser crash
+ * mid-write), the failure would otherwise repeat on every page load. This
+ * local database is a disposable Supabase mirror - the replication plugin
+ * re-pulls everything from scratch once its checkpoint is gone - so it's
+ * always safe to wipe it and try once more.
  */
 export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
+    try {
+        return await openLocalDatabase();
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('createLocalDatabase failed, clearing local database and retrying', error);
+
+        await removeRxDatabase(DATABASE_NAME, storage);
+
+        return await openLocalDatabase();
+    }
+}
+
+async function openLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     const database = await createRxDatabase<LocalCollections>({
         name: DATABASE_NAME,
         storage,
