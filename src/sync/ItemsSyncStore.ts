@@ -1,12 +1,18 @@
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
-import { combineSignalsIntoNewOne } from 'senaev-utils/src/utils/Signal/combineSignalsIntoNewOne/combineSignalsIntoNewOne';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
-import { getTypesByPopularity } from '../utils/getTypesByPopularity';
 
-import { LocalDbFacade, LocalItemRow } from './localDb';
+import { LocalItemRow } from './localDb';
 import { EditableFields, Item } from './types';
+
+type ItemSyncRemoteStorage<T extends { id: string }> = {
+    readonly subscribe: (callback: (incomingItems: T[]) => void) => void;
+    readonly subscribeError: (callback: (error: Error) => void) => void;
+    readonly addItem: (item: T) => Promise<void>;
+    readonly updateItem: (item: T) => Promise<void>;
+    readonly removeItem: (itemId: T['id']) => Promise<void>;
+};
 
 export type NoteRecord = {
     id: string;
@@ -44,62 +50,56 @@ function getModifiedAtTime(item: { modified_at: string }): number {
 export class ItemsSyncStore {
     public readonly recordsSignal = new Signal<Item[]>([], deepEqual);
 
-    public readonly typesByPopularitySignal = combineSignalsIntoNewOne(
-        [this.recordsSignal],
-        getTypesByPopularity,
-        deepEqual
-    ).signal;
-
     private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
 
     private pendingOptimisticDeleteIds = new Set<string>();
 
     public constructor(
         private readonly params: {
-            localDbFacade: LocalDbFacade;
+            remoteStorage: ItemSyncRemoteStorage<LocalItemRow>;
             showError: (message: string) => void;
         }
     ) {
-        this.params.localDbFacade.notes_temp
-            .observeAll((incomingRecords) => {
-                const allIncomingItems = incomingRecords.map(toItem);
-                const incomingIds = new Set(allIncomingItems.map((item) => item.id));
-                const incomingItems = allIncomingItems.filter(
-                    (item) => !this.pendingOptimisticDeleteIds.has(item.id)
-                );
+        this.params.remoteStorage.subscribe((incomingRecords) => {
+            const allIncomingItems = incomingRecords.map(toItem);
+            const incomingIds = new Set(allIncomingItems.map((item) => item.id));
+            const incomingItems = allIncomingItems.filter(
+                (item) => !this.pendingOptimisticDeleteIds.has(item.id)
+            );
 
-                this.pendingOptimisticDeleteIds = new Set(
-                    [...this.pendingOptimisticDeleteIds].filter((id) => incomingIds.has(id))
-                );
+            this.pendingOptimisticDeleteIds = new Set(
+                [...this.pendingOptimisticDeleteIds].filter((id) => incomingIds.has(id))
+            );
 
-                const currentById = new Map(
-                    this.recordsSignal.getValue().map((item) => [item.id, item] as const)
-                );
+            const currentById = new Map(
+                this.recordsSignal.getValue().map((item) => [item.id, item] as const)
+            );
 
-                const nextState = incomingItems.map((incomingItem) => {
-                    this.pendingOptimisticCreatesById.delete(incomingItem.id);
+            const nextState = incomingItems.map((incomingItem) => {
+                this.pendingOptimisticCreatesById.delete(incomingItem.id);
 
-                    const currentItem = currentById.get(incomingItem.id);
+                const currentItem = currentById.get(incomingItem.id);
 
-                    if (
-                        currentItem &&
-                        getModifiedAtTime(currentItem) > getModifiedAtTime(incomingItem)
-                    ) {
-                        return currentItem;
-                    }
-
-                    return incomingItem;
-                });
-
-                for (const pendingOptimisticCreate of this.pendingOptimisticCreatesById.values()) {
-                    nextState.push(pendingOptimisticCreate.item);
+                if (
+                    currentItem &&
+                    getModifiedAtTime(currentItem) > getModifiedAtTime(incomingItem)
+                ) {
+                    return currentItem;
                 }
 
-                this.recordsSignal.dispatch(nextState);
-            })
-            .catch((error) => {
-                this.params.showError(error.message);
+                return incomingItem;
             });
+
+            for (const pendingOptimisticCreate of this.pendingOptimisticCreatesById.values()) {
+                nextState.push(pendingOptimisticCreate.item);
+            }
+
+            this.recordsSignal.dispatch(nextState);
+        });
+
+        this.params.remoteStorage.subscribeError((error: Error) => {
+            this.params.showError(error.message);
+        });
     }
 
     public async createNewNote({ type }: { type: string }): Promise<NoteRecord> {
@@ -129,7 +129,7 @@ export class ItemsSyncStore {
         };
 
         const optimisticItem = toItem(localRow);
-        const writePromise = this.params.localDbFacade.notes_temp.put(localRow);
+        const writePromise = this.params.remoteStorage.addItem(localRow);
 
         this.pendingOptimisticCreatesById.set(id, {
             item: optimisticItem,
@@ -155,7 +155,7 @@ export class ItemsSyncStore {
             await pendingOptimisticCreate.writePromise.catch(() => undefined);
         }
 
-        await this.params.localDbFacade.notes_temp.remove(id);
+        await this.params.remoteStorage.removeItem(id);
     };
 
     private removeOptimisticItem(id: string): void {
@@ -202,6 +202,6 @@ export class ItemsSyncStore {
             _deleted: false,
         };
 
-        await this.params.localDbFacade.notes_temp.put(updatedLocalRow);
+        await this.params.remoteStorage.updateItem(updatedLocalRow);
     }
 }

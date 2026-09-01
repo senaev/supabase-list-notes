@@ -1,6 +1,8 @@
 import { useSignal } from 'senaev-utils/src/utils/Signal/useSignal';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
+import { getTypesByPopularity } from '../utils/getTypesByPopularity';
+
 import { ItemsSyncStore } from './ItemsSyncStore';
 import type { EditableFields, Item, NetworkSyncStatus, RequiredFields } from './types';
 
@@ -19,11 +21,12 @@ export function useItemsSync({
     itemSyncStore: ItemsSyncStore;
 }): UseItemsSyncResult {
     const items = useSignal(itemSyncStore.recordsSignal);
-    const typesByPopularity = useSignal(itemSyncStore.typesByPopularitySignal);
 
     // TODO: implement
     const networkSyncStatusSignal = new Signal<NetworkSyncStatus>('synced');
     const networkSyncStatus = useSignal(networkSyncStatusSignal);
+
+    const typesByPopularity = getTypesByPopularity(items);
 
     return {
         items,

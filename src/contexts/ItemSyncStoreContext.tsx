@@ -1,5 +1,6 @@
 import { createContext, useRef } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Subject } from 'rxjs';
 
 import { ItemsSyncStore } from '../sync/ItemsSyncStore';
 import { startReplication } from '../sync/replication';
@@ -31,8 +32,26 @@ export const useItemSyncStoreContext = ({
             onSent: (_record) => {},
         });
 
+        const onErrorSubject = new Subject<Error>();
+
         ref.current = new ItemsSyncStore({
-            localDbFacade,
+            remoteStorage: {
+                subscribe: (callback) => {
+                    localDbFacade.notes_temp
+                        .observeAll((incomingItems) => {
+                            callback(incomingItems);
+                        })
+                        .catch((error) => {
+                            onErrorSubject.next(error);
+                        });
+                },
+                subscribeError: (callback) => {
+                    onErrorSubject.subscribe(callback);
+                },
+                addItem: (item) => localDbFacade.notes_temp.put(item),
+                updateItem: (item) => localDbFacade.notes_temp.put(item),
+                removeItem: (itemId) => localDbFacade.notes_temp.remove(itemId),
+            },
             showError: (error) => {
                 // eslint-disable-next-line no-console
                 console.error(error);
