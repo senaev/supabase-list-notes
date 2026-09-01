@@ -5,6 +5,7 @@ import { getTypesByPopularity } from '../utils/getTypesByPopularity';
 
 import { ItemsSyncStore } from './ItemsSyncStore';
 import type { EditableFields, Item, NetworkSyncStatus, RequiredFields } from './types';
+import { LocalItemRow } from './localDb';
 
 export interface UseItemsSyncResult {
     items: Item[];
@@ -15,12 +16,26 @@ export interface UseItemsSyncResult {
     delete: (id: string) => void;
 }
 
+function toItem(row: LocalItemRow): Item {
+    return {
+        id: row.id,
+        title: row.title,
+        type: row.type,
+        checked_at: row.checked_at,
+        created_at: row.created_at,
+        modified_at: row.modified_at,
+        update_index: row.update_index,
+    };
+}
+
 export function useItemsSync({
     itemSyncStore,
 }: {
     itemSyncStore: ItemsSyncStore;
 }): UseItemsSyncResult {
-    const items = useSignal(itemSyncStore.recordsSignal);
+    const itemRows = useSignal(itemSyncStore.recordsSignal);
+
+    const items = itemRows.map(toItem);
 
     // TODO: implement
     const networkSyncStatusSignal = new Signal<NetworkSyncStatus>('synced');

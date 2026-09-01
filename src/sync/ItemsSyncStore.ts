@@ -1,7 +1,7 @@
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
-import { SplitCommaAndTrim } from '../utils/SplitCommaAndTrim';
+import { noop } from '../utils/noop';
 
 import { LocalItemRow } from './localDb';
 import { pickNewerRow } from './pickNewerRow';
@@ -14,39 +14,13 @@ type ItemSyncRemoteStorage<T extends { id: string }> = {
     readonly updateItem: (item: T) => Promise<void>;
 };
 
-export type NoteRecord = {
-    id: string;
-    title: string;
-    type: string;
-    checked_at: string | null;
-    created_at: string;
-    modified_at: string;
-    update_index: number;
-};
-
-const _TABLE_COLUMNS = 'id, title, type, checked_at, created_at, modified_at, update_index';
-
-type TableColumns = SplitCommaAndTrim<typeof _TABLE_COLUMNS>;
-
 type PendingOptimisticCreate = {
-    item: Item;
+    item: LocalItemRow;
     writePromise: Promise<void>;
 };
 
-function toItem(row: LocalItemRow): Item {
-    return {
-        id: row.id,
-        title: row.title,
-        type: row.type,
-        checked_at: row.checked_at,
-        created_at: row.created_at,
-        modified_at: row.modified_at,
-        update_index: row.update_index,
-    };
-}
-
 export class ItemsSyncStore {
-    public readonly recordsSignal = new Signal<Item[]>([], deepEqual);
+    public readonly recordsSignal = new Signal<LocalItemRow[]>([], deepEqual);
 
     private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
 
@@ -58,8 +32,7 @@ export class ItemsSyncStore {
             showError: (message: string) => void;
         }
     ) {
-        this.params.remoteStorage.subscribe((incomingRecords) => {
-            const allIncomingItems = incomingRecords.map(toItem);
+        this.params.remoteStorage.subscribe((allIncomingItems) => {
             const incomingIds = new Set(allIncomingItems.map((item) => item.id));
             const incomingItems = allIncomingItems.filter(
                 (item) => !this.pendingOptimisticDeleteIds.has(item.id)
@@ -97,7 +70,7 @@ export class ItemsSyncStore {
         });
     }
 
-    public async createNewNote({ type }: { type: string }): Promise<NoteRecord> {
+    public async createNewNote({ type }: { type: string }): Promise<LocalItemRow> {
         const newNote = await this.addItem({
             id: crypto.randomUUID(),
             title: '',
@@ -111,7 +84,7 @@ export class ItemsSyncStore {
         id,
         title,
         type,
-    }: Pick<Item, 'id' | 'title' | 'type'>): Promise<Pick<NoteRecord, TableColumns>> => {
+    }: Pick<Item, 'id' | 'title' | 'type'>): Promise<LocalItemRow> => {
         const now = new Date().toISOString();
         const localRow: LocalItemRow = {
             id,
@@ -124,19 +97,18 @@ export class ItemsSyncStore {
             _deleted: false,
         };
 
-        const optimisticItem = toItem(localRow);
         const writePromise = this.params.remoteStorage.addItem(localRow);
 
         this.pendingOptimisticCreatesById.set(id, {
-            item: optimisticItem,
+            item: localRow,
             writePromise,
         });
 
-        this.recordsSignal.dispatch([...this.recordsSignal.getValue(), optimisticItem]);
+        this.recordsSignal.dispatch([...this.recordsSignal.getValue(), localRow]);
 
         await writePromise;
 
-        return optimisticItem;
+        return localRow;
     };
 
     public readonly updateItem = (id: string, updates: Partial<EditableFields>): Promise<void> =>
@@ -149,7 +121,7 @@ export class ItemsSyncStore {
         this.removeOptimisticItem(id);
 
         if (pendingOptimisticCreate) {
-            await pendingOptimisticCreate.writePromise.catch(() => undefined);
+            await pendingOptimisticCreate.writePromise.catch(noop);
         }
 
         if (!currentItem) {
@@ -177,7 +149,7 @@ export class ItemsSyncStore {
         id: string,
         updates: Partial<EditableFields> & { modified_at: string; update_index: number }
     ): Item | undefined {
-        let nextItem: Item | undefined;
+        let nextItem: LocalItemRow | undefined;
 
         this.recordsSignal.dispatch(
             this.recordsSignal.getValue().map((item) => {
