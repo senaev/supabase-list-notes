@@ -19,10 +19,10 @@ import { noop } from '../utils/noop';
 import { pickNewerRow } from './pickNewerRow';
 import type { Item } from './types';
 
-const dexieStorage = getRxStorageDexie();
+const rxDbDexieStorage = getRxStorageDexie();
 const rxDbStorage: RxStorage<unknown, unknown> = import.meta.env.DEV
-    ? wrappedValidateAjvStorage({ storage: dexieStorage })
-    : dexieStorage;
+    ? wrappedValidateAjvStorage({ storage: rxDbDexieStorage })
+    : rxDbDexieStorage;
 
 if (import.meta.env.DEV) {
     addRxPlugin(RxDBDevModePlugin);
