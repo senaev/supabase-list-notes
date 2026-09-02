@@ -7,7 +7,11 @@ test('typing fast into a note item keeps the caret in place and loses no keystro
 
     await page.locator('.NotePage__addItemButton').click();
 
-    const item = page.locator('.NoteItemElement').last();
+    // Scoped to .NotePage__items (the unchecked-items container) so this
+    // can't match a checked item instead - checked items render after the
+    // add button as read-only rows with no <textarea>, which would hang
+    // this test forever waiting for one that will never appear.
+    const item = page.locator('.NotePage__items .NoteItemElement').last();
     const textarea = item.locator('textarea.NoteItemElement__input');
 
     await textarea.click();
