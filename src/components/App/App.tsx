@@ -12,7 +12,7 @@ import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
 import { useItemSyncStoreContext } from '../../contexts/ItemSyncStoreContext';
-import { ItemsSyncStore } from '../../sync/ItemsSyncStore';
+import { OptimisticAsyncStore } from '../../sync/ItemsSyncStore';
 import { LocalDbFacadeContextProvider } from '../../contexts/LocalDbFacadeContext';
 import {
     SupabaseControllerStatusContextProvider,
@@ -24,7 +24,7 @@ export function ItemsApp({
     itemSyncStore,
     supabaseClient,
 }: {
-    itemSyncStore: ItemsSyncStore<LocalItemRow>;
+    itemSyncStore: OptimisticAsyncStore<LocalItemRow>;
     supabaseClient: SupabaseClient;
 }) {
     const sync = useItemsSync({ itemSyncStore });

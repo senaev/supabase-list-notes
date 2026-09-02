@@ -2,13 +2,13 @@ import { createContext, useRef } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Subject } from 'rxjs';
 
-import { ItemsSyncStore } from '../sync/ItemsSyncStore';
+import { OptimisticAsyncStore } from '../sync/ItemsSyncStore';
 import { startReplication } from '../sync/replication';
 import { LocalItemRow } from '../sync/localDb';
 
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 
-const ItemSyncStoreContext = createContext<ItemsSyncStore<LocalItemRow> | null>(null);
+const ItemSyncStoreContext = createContext<OptimisticAsyncStore<LocalItemRow> | null>(null);
 
 ItemSyncStoreContext.displayName = 'ItemSyncStoreContext';
 
@@ -16,8 +16,8 @@ export const useItemSyncStoreContext = ({
     supabaseClient,
 }: {
     supabaseClient: SupabaseClient;
-}): ItemsSyncStore<LocalItemRow> => {
-    const ref = useRef<ItemsSyncStore<LocalItemRow> | null>(null);
+}): OptimisticAsyncStore<LocalItemRow> => {
+    const ref = useRef<OptimisticAsyncStore<LocalItemRow> | null>(null);
 
     const localDbFacade = useExistingLocalDbFacade();
 
@@ -35,7 +35,7 @@ export const useItemSyncStoreContext = ({
 
         const onErrorSubject = new Subject<Error>();
 
-        ref.current = new ItemsSyncStore<LocalItemRow>({
+        ref.current = new OptimisticAsyncStore<LocalItemRow>({
             remoteStorage: {
                 subscribe: (callback) => {
                     localDbFacade.notes_temp
@@ -49,10 +49,10 @@ export const useItemSyncStoreContext = ({
                 subscribeError: (callback) => {
                     onErrorSubject.subscribe(callback);
                 },
-                addItem: (item) => localDbFacade.notes_temp.put(item),
+                createItem: (item) => localDbFacade.notes_temp.put(item),
                 updateItem: (item) => localDbFacade.notes_temp.put(item),
             },
-            showError: (error) => {
+            onAsyncStoreError: (error) => {
                 // eslint-disable-next-line no-console
                 console.error(error);
             },

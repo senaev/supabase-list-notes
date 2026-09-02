@@ -6,7 +6,7 @@ import { noop } from '../utils/noop';
 import { pickNewerRow } from './pickNewerRow';
 import { EditableFields } from './types';
 
-export type SynchedItem = {
+export type OptimisticAsyncItemInternalParams = {
     id: string;
     created_at: string;
     modified_at: string;
@@ -14,31 +14,37 @@ export type SynchedItem = {
     _deleted: boolean;
 };
 
-export type ItemOwnParams<T extends SynchedItem> = Omit<T, keyof SynchedItem>;
+export type OptimisticAsyncItemOwnParams<T extends OptimisticAsyncItemInternalParams> = Omit<
+    T,
+    keyof OptimisticAsyncItemInternalParams
+>;
 
-type ItemSyncRemoteStorage<T extends SynchedItem> = {
+type AsyncStore<T extends OptimisticAsyncItemInternalParams> = {
     readonly subscribe: (callback: (incomingItems: T[]) => void) => void;
     readonly subscribeError: (callback: (error: Error) => void) => void;
-    readonly addItem: (item: T) => Promise<void>;
+    readonly createItem: (item: T) => Promise<void>;
     readonly updateItem: (item: T) => Promise<void>;
 };
 
-type PendingOptimisticCreate<T extends SynchedItem> = {
+type PendingOptimisticAsyncCreate<T extends OptimisticAsyncItemInternalParams> = {
     item: T;
     writePromise: Promise<void>;
 };
 
-export class ItemsSyncStore<T extends SynchedItem> {
+export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
     public readonly recordsSignal = new Signal<T[]>([], deepEqual);
 
-    private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate<T>>();
+    private readonly pendingOptimisticCreatesById = new Map<
+        string,
+        PendingOptimisticAsyncCreate<T>
+    >();
 
     private pendingOptimisticDeleteIds = new Set<string>();
 
     public constructor(
         private readonly params: {
-            remoteStorage: ItemSyncRemoteStorage<T>;
-            showError: (message: string) => void;
+            remoteStorage: AsyncStore<T>;
+            onAsyncStoreError: (message: string) => void;
         }
     ) {
         this.params.remoteStorage.subscribe((allIncomingItems) => {
@@ -75,18 +81,18 @@ export class ItemsSyncStore<T extends SynchedItem> {
         });
 
         this.params.remoteStorage.subscribeError((error: Error) => {
-            this.params.showError(error.message);
+            this.params.onAsyncStoreError(error.message);
         });
     }
 
-    public readonly addItem = (
-        newItemParams: ItemOwnParams<T>
+    public readonly createItem = (
+        newItemParams: OptimisticAsyncItemOwnParams<T>
     ): {
-        id: SynchedItem['id'];
+        id: OptimisticAsyncItemInternalParams['id'];
     } => {
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
-        const internalParams: SynchedItem = {
+        const internalParams: OptimisticAsyncItemInternalParams = {
             id,
             created_at: now,
             modified_at: now,
@@ -98,7 +104,7 @@ export class ItemsSyncStore<T extends SynchedItem> {
             ...newItemParams,
         } as T;
 
-        const writePromise = this.params.remoteStorage.addItem(localRow);
+        const writePromise = this.params.remoteStorage.createItem(localRow);
 
         this.pendingOptimisticCreatesById.set(id, {
             item: localRow,
@@ -154,7 +160,7 @@ export class ItemsSyncStore<T extends SynchedItem> {
         await this.params.remoteStorage.updateItem(updatedLocalRow);
     };
 
-    public readonly delete = async (id: string): Promise<void> => {
+    public readonly deleteItem = async (id: string): Promise<void> => {
         const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
         const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
 
