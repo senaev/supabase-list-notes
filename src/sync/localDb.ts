@@ -20,7 +20,7 @@ import { pickNewerRow } from './pickNewerRow';
 import type { Item } from './types';
 
 const dexieStorage = getRxStorageDexie();
-const storage: RxStorage<unknown, unknown> = import.meta.env.DEV
+const rxDbStorage: RxStorage<unknown, unknown> = import.meta.env.DEV
     ? wrappedValidateAjvStorage({ storage: dexieStorage })
     : dexieStorage;
 
@@ -130,20 +130,6 @@ const conflictHandler: RxConflictHandler<LocalItemRow> = {
         Promise.resolve(pickNewerRow(newDocumentState, realMasterState)),
 };
 
-/**
- * Creates a fresh local database + `items` collection. Callers are
- * responsible for calling `.remove()` on the previous database (if any)
- * before creating a new one for a different Supabase project, so that one
- * project's items can never leak into another project's local storage or
- * get pushed to the wrong backend.
- *
- * If opening/setting up the IndexedDB-backed database fails (e.g. it was
- * left in a corrupted or schema-incompatible state, say by a browser crash
- * mid-write), the failure would otherwise repeat on every page load. This
- * local database is a disposable Supabase mirror - the replication plugin
- * re-pulls everything from scratch once its checkpoint is gone - so it's
- * always safe to wipe it and try once more.
- */
 export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     try {
         return await openLocalDatabase();
@@ -151,7 +137,7 @@ export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections
         // eslint-disable-next-line no-console
         console.error('createLocalDatabase failed, clearing local database and retrying', error);
 
-        await removeRxDatabase(DATABASE_NAME, storage);
+        await removeRxDatabase(DATABASE_NAME, rxDbStorage);
 
         return await openLocalDatabase();
     }
@@ -160,7 +146,7 @@ export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections
 async function openLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     const database = await createRxDatabase<LocalCollections>({
         name: DATABASE_NAME,
-        storage,
+        storage: rxDbStorage,
         multiInstance: true,
     });
 
