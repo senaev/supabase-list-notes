@@ -179,7 +179,6 @@ type LocalTable<T> = {
     get: (id: string) => Promise<T | undefined>;
     observeAll: (onChange: (rows: T[]) => void) => Promise<Subscription>;
     put: (row: T) => Promise<void>;
-    toArray: () => Promise<T[]>;
 };
 
 function mapDocument<T>(document: RxDocument<T>): T {
@@ -230,12 +229,6 @@ export class LocalDbFacade {
 
             put: (row): Promise<void> =>
                 getCollection(this.database).incrementalUpsert(row).then(noop),
-
-            toArray: async (): Promise<T[]> => {
-                const documents = await getCollection(this.database).find().exec();
-
-                return documents.map((document) => mapDocument(document));
-            },
         };
     }
 }
