@@ -4,13 +4,6 @@ import { replicateSupabase, RxSupabaseReplicationState } from 'rxdb/plugins/repl
 
 import { LocalCollections, LocalDbFacade, LocalItemRow } from './localDb';
 
-function normalizeNoteItemPosition<T extends { position: number | string }>(item: T): T {
-    return {
-        ...item,
-        position: Number(item.position),
-    } as T;
-}
-
 type ReplicatedRowByTable = {
     items: LocalItemRow;
 };

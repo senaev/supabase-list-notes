@@ -107,7 +107,7 @@ export class ItemsSyncStore<T extends SynchedItem> {
 
         this.recordsSignal.dispatch([...this.recordsSignal.getValue(), localRow]);
 
-        return id;
+        return { id };
     };
 
     public readonly updateItem = async (
