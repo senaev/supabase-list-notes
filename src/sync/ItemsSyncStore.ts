@@ -158,7 +158,9 @@ export class ItemsSyncStore<T extends SynchedItem> {
         const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
         const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
 
-        this.removeOptimisticItem(id);
+        this.pendingOptimisticCreatesById.delete(id);
+        this.pendingOptimisticDeleteIds.add(id);
+        this.recordsSignal.dispatch(this.recordsSignal.getValue().filter((item) => item.id !== id));
 
         if (pendingOptimisticCreate) {
             await pendingOptimisticCreate.writePromise.catch(noop);
@@ -177,16 +179,4 @@ export class ItemsSyncStore<T extends SynchedItem> {
 
         await this.params.remoteStorage.updateItem(deletedRow);
     };
-
-    private removeOptimisticItem(id: string): void {
-        this.pendingOptimisticCreatesById.delete(id);
-        this.pendingOptimisticDeleteIds.add(id);
-
-        this.recordsSignal.dispatch(this.recordsSignal.getValue().filter((item) => item.id !== id));
-    }
-
-    private changeItemLocally(
-        id: string,
-        updates: Partial<EditableFields> & { modified_at: string; update_index: number }
-    ): T | undefined {}
 }
