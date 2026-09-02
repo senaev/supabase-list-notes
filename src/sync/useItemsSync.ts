@@ -11,7 +11,9 @@ export interface UseItemsSyncResult {
     items: Item[];
     typesByPopularity: string[];
     networkSyncStatus: NetworkSyncStatus;
-    addItem: (newItem: ItemOwnParams<LocalItemRow>) => SynchedItem['id'];
+    addItem: (newItem: ItemOwnParams<LocalItemRow>) => {
+        id: SynchedItem['id'];
+    };
     updateItem: (id: string, fields: Partial<EditableFields>) => void;
     delete: (id: string) => void;
 }

@@ -79,7 +79,11 @@ export class ItemsSyncStore<T extends SynchedItem> {
         });
     }
 
-    public readonly addItem = (newItemParams: ItemOwnParams<T>): SynchedItem['id'] => {
+    public readonly addItem = (
+        newItemParams: ItemOwnParams<T>
+    ): {
+        id: SynchedItem['id'];
+    } => {
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
         const internalParams: SynchedItem = {
@@ -106,7 +110,10 @@ export class ItemsSyncStore<T extends SynchedItem> {
         return id;
     };
 
-    public readonly updateItem = (id: string, updates: Partial<EditableFields>): void => {
+    public readonly updateItem = async (
+        id: string,
+        updates: Partial<EditableFields>
+    ): Promise<void> => {
         const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
 
         if (!currentItem) {
@@ -115,7 +122,25 @@ export class ItemsSyncStore<T extends SynchedItem> {
 
         const modified_at = new Date().toISOString();
         const update_index = currentItem.update_index + 1;
-        const nextItem = this.changeItemLocally(id, { ...updates, modified_at, update_index });
+
+        let nextItem: T | undefined;
+
+        this.recordsSignal.dispatch(
+            this.recordsSignal.getValue().map((item) => {
+                if (item.id !== id) {
+                    return item;
+                }
+
+                nextItem = {
+                    ...item,
+                    ...updates,
+                    modified_at,
+                    update_index,
+                };
+
+                return nextItem;
+            })
+        );
 
         if (!nextItem) {
             throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
@@ -126,11 +151,7 @@ export class ItemsSyncStore<T extends SynchedItem> {
             _deleted: false,
         };
 
-        this.params.remoteStorage.updateItem(updatedLocalRow).catch((error) => {
-            // TODO: do something with this error
-            // eslint-disable-next-line no-console
-            console.error(error);
-        });
+        await this.params.remoteStorage.updateItem(updatedLocalRow);
     };
 
     public readonly delete = async (id: string): Promise<void> => {
@@ -154,11 +175,7 @@ export class ItemsSyncStore<T extends SynchedItem> {
             _deleted: true,
         };
 
-        this.params.remoteStorage.updateItem(deletedRow).catch((error) => {
-            // TODO: do something with this error
-            // eslint-disable-next-line no-console
-            console.error(error);
-        });
+        await this.params.remoteStorage.updateItem(deletedRow);
     };
 
     private removeOptimisticItem(id: string): void {
@@ -171,24 +188,5 @@ export class ItemsSyncStore<T extends SynchedItem> {
     private changeItemLocally(
         id: string,
         updates: Partial<EditableFields> & { modified_at: string; update_index: number }
-    ): T | undefined {
-        let nextItem: T | undefined;
-
-        this.recordsSignal.dispatch(
-            this.recordsSignal.getValue().map((item) => {
-                if (item.id !== id) {
-                    return item;
-                }
-
-                nextItem = {
-                    ...item,
-                    ...updates,
-                };
-
-                return nextItem;
-            })
-        );
-
-        return nextItem;
-    }
+    ): T | undefined {}
 }

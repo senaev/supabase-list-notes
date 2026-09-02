@@ -196,7 +196,7 @@ export function NotePage({
             title: titlePrevious,
         });
 
-        const newId = sync.addItem({
+        const { id: newId } = sync.addItem({
             title: titleNew,
             type: currentItem.type,
             checked_at: null,
@@ -292,14 +292,14 @@ export function NotePage({
     }
 
     function createNewItemAtTheEnd() {
-        const newId = sync.addItem({
+        const { id } = sync.addItem({
             title: '',
             type: typeFilter ?? DEFAULT_ITEM_TYPE,
             checked_at: null,
         });
 
         setPendingFocus({
-            id: newId,
+            id,
             selectionStart: 0,
             selectionEnd: 0,
         });
