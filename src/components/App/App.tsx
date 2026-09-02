@@ -18,12 +18,13 @@ import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
 } from '../../contexts/SupabaseControllerStatusContext';
+import { LocalItemRow } from '../../sync/localDb';
 
 export function ItemsApp({
     itemSyncStore,
     supabaseClient,
 }: {
-    itemSyncStore: ItemsSyncStore;
+    itemSyncStore: ItemsSyncStore<LocalItemRow>;
     supabaseClient: SupabaseClient;
 }) {
     const sync = useItemsSync({ itemSyncStore });

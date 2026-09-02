@@ -3,32 +3,41 @@ import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { noop } from '../utils/noop';
 
-import { LocalItemRow } from './localDb';
 import { pickNewerRow } from './pickNewerRow';
-import { EditableFields, Item } from './types';
+import { EditableFields } from './types';
 
-type ItemSyncRemoteStorage<T extends { id: string }> = {
+export type SynchedItem = {
+    id: string;
+    created_at: string;
+    modified_at: string;
+    update_index: number;
+    _deleted: boolean;
+};
+
+export type ItemOwnParams<T extends SynchedItem> = Omit<T, keyof SynchedItem>;
+
+type ItemSyncRemoteStorage<T extends SynchedItem> = {
     readonly subscribe: (callback: (incomingItems: T[]) => void) => void;
     readonly subscribeError: (callback: (error: Error) => void) => void;
     readonly addItem: (item: T) => Promise<void>;
     readonly updateItem: (item: T) => Promise<void>;
 };
 
-type PendingOptimisticCreate = {
-    item: LocalItemRow;
+type PendingOptimisticCreate<T extends SynchedItem> = {
+    item: T;
     writePromise: Promise<void>;
 };
 
-export class ItemsSyncStore {
-    public readonly recordsSignal = new Signal<LocalItemRow[]>([], deepEqual);
+export class ItemsSyncStore<T extends SynchedItem> {
+    public readonly recordsSignal = new Signal<T[]>([], deepEqual);
 
-    private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate>();
+    private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate<T>>();
 
     private pendingOptimisticDeleteIds = new Set<string>();
 
     public constructor(
         private readonly params: {
-            remoteStorage: ItemSyncRemoteStorage<LocalItemRow>;
+            remoteStorage: ItemSyncRemoteStorage<T>;
             showError: (message: string) => void;
         }
     ) {
@@ -70,32 +79,20 @@ export class ItemsSyncStore {
         });
     }
 
-    public async createNewNote({ type }: { type: string }): Promise<LocalItemRow> {
-        const newNote = await this.addItem({
-            id: crypto.randomUUID(),
-            title: '',
-            type,
-        });
-
-        return newNote;
-    }
-
-    public readonly addItem = async ({
-        id,
-        title,
-        type,
-    }: Pick<Item, 'id' | 'title' | 'type'>): Promise<LocalItemRow> => {
+    public readonly addItem = (newItemParams: ItemOwnParams<T>): SynchedItem['id'] => {
         const now = new Date().toISOString();
-        const localRow: LocalItemRow = {
+        const id = crypto.randomUUID();
+        const internalParams: SynchedItem = {
             id,
-            title,
-            type,
             created_at: now,
-            checked_at: null,
             modified_at: now,
             update_index: 0,
             _deleted: false,
         };
+        const localRow: T = {
+            ...internalParams,
+            ...newItemParams,
+        } as T;
 
         const writePromise = this.params.remoteStorage.addItem(localRow);
 
@@ -106,13 +103,35 @@ export class ItemsSyncStore {
 
         this.recordsSignal.dispatch([...this.recordsSignal.getValue(), localRow]);
 
-        await writePromise;
-
-        return localRow;
+        return id;
     };
 
-    public readonly updateItem = (id: string, updates: Partial<EditableFields>): Promise<void> =>
-        this.persistItem(id, updates);
+    public readonly updateItem = (id: string, updates: Partial<EditableFields>): void => {
+        const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
+
+        if (!currentItem) {
+            throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
+        }
+
+        const modified_at = new Date().toISOString();
+        const update_index = currentItem.update_index + 1;
+        const nextItem = this.changeItemLocally(id, { ...updates, modified_at, update_index });
+
+        if (!nextItem) {
+            throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
+        }
+
+        const updatedLocalRow: T = {
+            ...nextItem,
+            _deleted: false,
+        };
+
+        this.params.remoteStorage.updateItem(updatedLocalRow).catch((error) => {
+            // TODO: do something with this error
+            // eslint-disable-next-line no-console
+            console.error(error);
+        });
+    };
 
     public readonly delete = async (id: string): Promise<void> => {
         const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
@@ -128,14 +147,18 @@ export class ItemsSyncStore {
             return;
         }
 
-        const deletedRow: LocalItemRow = {
+        const deletedRow: T = {
             ...currentItem,
             modified_at: new Date().toISOString(),
             update_index: currentItem.update_index + 1,
             _deleted: true,
         };
 
-        await this.params.remoteStorage.updateItem(deletedRow);
+        this.params.remoteStorage.updateItem(deletedRow).catch((error) => {
+            // TODO: do something with this error
+            // eslint-disable-next-line no-console
+            console.error(error);
+        });
     };
 
     private removeOptimisticItem(id: string): void {
@@ -148,8 +171,8 @@ export class ItemsSyncStore {
     private changeItemLocally(
         id: string,
         updates: Partial<EditableFields> & { modified_at: string; update_index: number }
-    ): Item | undefined {
-        let nextItem: LocalItemRow | undefined;
+    ): T | undefined {
+        let nextItem: T | undefined;
 
         this.recordsSignal.dispatch(
             this.recordsSignal.getValue().map((item) => {
@@ -167,28 +190,5 @@ export class ItemsSyncStore {
         );
 
         return nextItem;
-    }
-
-    private async persistItem(id: string, updates: Partial<EditableFields>): Promise<void> {
-        const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
-
-        if (!currentItem) {
-            throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
-        }
-
-        const modified_at = new Date().toISOString();
-        const update_index = currentItem.update_index + 1;
-        const nextItem = this.changeItemLocally(id, { ...updates, modified_at, update_index });
-
-        if (!nextItem) {
-            throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
-        }
-
-        const updatedLocalRow: LocalItemRow = {
-            ...nextItem,
-            _deleted: false,
-        };
-
-        await this.params.remoteStorage.updateItem(updatedLocalRow);
     }
 }

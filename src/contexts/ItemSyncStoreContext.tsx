@@ -4,10 +4,11 @@ import { Subject } from 'rxjs';
 
 import { ItemsSyncStore } from '../sync/ItemsSyncStore';
 import { startReplication } from '../sync/replication';
+import { LocalItemRow } from '../sync/localDb';
 
 import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
 
-const ItemSyncStoreContext = createContext<ItemsSyncStore | null>(null);
+const ItemSyncStoreContext = createContext<ItemsSyncStore<LocalItemRow> | null>(null);
 
 ItemSyncStoreContext.displayName = 'ItemSyncStoreContext';
 
@@ -15,8 +16,8 @@ export const useItemSyncStoreContext = ({
     supabaseClient,
 }: {
     supabaseClient: SupabaseClient;
-}): ItemsSyncStore => {
-    const ref = useRef<ItemsSyncStore | null>(null);
+}): ItemsSyncStore<LocalItemRow> => {
+    const ref = useRef<ItemsSyncStore<LocalItemRow> | null>(null);
 
     const localDbFacade = useExistingLocalDbFacade();
 
@@ -34,7 +35,7 @@ export const useItemSyncStoreContext = ({
 
         const onErrorSubject = new Subject<Error>();
 
-        ref.current = new ItemsSyncStore({
+        ref.current = new ItemsSyncStore<LocalItemRow>({
             remoteStorage: {
                 subscribe: (callback) => {
                     localDbFacade.notes_temp

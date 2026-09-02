@@ -192,11 +192,15 @@ export function NotePage({
         const titlePrevious = currentItem.title.slice(0, selectionStart);
         const titleNew = currentItem.title.slice(selectionEnd);
 
-        sync.updateItem(id, { title: titlePrevious });
+        sync.updateItem(id, {
+            title: titlePrevious,
+        });
 
-        const newId = crypto.randomUUID();
-
-        sync.addItem({ id: newId, title: titleNew, type: currentItem.type });
+        const newId = sync.addItem({
+            title: titleNew,
+            type: currentItem.type,
+            checked_at: null,
+        });
 
         setPendingFocus({
             id: newId,
@@ -288,12 +292,10 @@ export function NotePage({
     }
 
     function createNewItemAtTheEnd() {
-        const newId = crypto.randomUUID();
-
-        sync.addItem({
-            id: newId,
+        const newId = sync.addItem({
             title: '',
             type: typeFilter ?? DEFAULT_ITEM_TYPE,
+            checked_at: null,
         });
 
         setPendingFocus({
