@@ -180,6 +180,16 @@ export class LocalDbFacade {
         return this.database.collections;
     }
 
+    /**
+     * Wipes this local mirror's storage (e.g. on logout), so the next
+     * login - potentially to a different Supabase project - can't show a
+     * stale mix of the previous account's items. This RxDatabase instance
+     * is unusable afterwards.
+     */
+    public remove(): Promise<string[]> {
+        return this.database.remove();
+    }
+
     private createTable<T>(
         getCollection: (database: RxDatabase<LocalCollections>) => RxCollection<T>
     ): LocalTable<T> {

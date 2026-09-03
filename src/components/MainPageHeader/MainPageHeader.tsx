@@ -14,6 +14,7 @@ import { ItemTypesNav } from '../ItemTypesNav/ItemTypesNav';
 import { PageHeader } from '../PageHeader/PageHeader';
 import appLogoUrl from '/logo.svg';
 import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerStatusContext';
+import { useLocalDbFacade } from '../../contexts/LocalDbFacadeContext';
 
 // All three are optional because the header is also rendered on its own
 // while the Supabase client is still initializing (see App), when there are
@@ -31,6 +32,9 @@ export function MainPageHeader({
 }) {
     const { showError, showInfoMessage } = useToastsContext();
     const statusObject = useSupabaseControllerStatus();
+    const localDbFacadeResult = useLocalDbFacade();
+    const localDbFacade =
+        localDbFacadeResult && 'data' in localDbFacadeResult ? localDbFacadeResult.data : undefined;
 
     const menu: ContextMenuItem[] =
         statusObject.status === 'ready'
@@ -71,6 +75,9 @@ export function MainPageHeader({
                       Icon: ArrowLeftOnRectangleIcon,
                       onSelect: () => {
                           statusObject.logout();
+                          localDbFacade?.remove().catch((error: Error) => {
+                              showError(`Failed to clear local database: ${error.message}`);
+                          });
                       },
                   },
               ]
