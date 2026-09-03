@@ -1,7 +1,7 @@
 import './NotePage.css';
 
 import { PlusIcon } from '@heroicons/react/24/solid';
-import { KeyboardEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { KeyboardEvent, SyntheticEvent, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useToastsContext } from '../../contexts/ToastsContext';
@@ -39,8 +39,7 @@ export function NotePage({
 }) {
     const { showError } = useToastsContext();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null);
-    const inputRefs = useRef(new Map<string, HTMLTextAreaElement>());
+    const pendingFocusRef = useRef<PendingFocus | null>(null);
     const desiredCaretPositionRef = useRef(0);
     const ignoreNextSelectionRef = useRef(false);
 
@@ -80,35 +79,42 @@ export function NotePage({
     // without this component needing its own useMemo.
     const existingTypes = sync.typesByPopularity;
 
-    useEffect(() => {
-        if (pendingFocus == null) {
-            return;
-        }
+    function focusItemInput({ id, selectionStart, selectionEnd }: PendingFocus): boolean {
+        const input = document.getElementById(`input-${id}`);
 
-        const { selectionEnd, selectionStart, id } = pendingFocus;
-
-        const input = inputRefs.current.get(id);
-
-        if (!input) {
-            return;
+        if (!(input instanceof HTMLTextAreaElement)) {
+            return false;
         }
 
         ignoreNextSelectionRef.current = true;
         input.focus();
         input.setSelectionRange(selectionStart, selectionEnd);
-        setPendingFocus(null);
-    }, [pendingFocus, sync.items]);
+
+        return true;
+    }
+
+    /**
+     * Focuses right away when the textarea is already on the page, otherwise
+     * parks the request for the effect below, which retries once React has
+     * mounted a newly created item.
+     */
+    function requestFocus(pendingFocus: PendingFocus) {
+        if (!focusItemInput(pendingFocus)) {
+            pendingFocusRef.current = pendingFocus;
+        }
+    }
 
     useEffect(() => {
-        inputRefs.current.forEach((input) => {
-            resizeTextarea(input);
-        });
-    }, [sync.items]);
+        const pendingFocus = pendingFocusRef.current;
 
-    function resizeTextarea(input: HTMLTextAreaElement) {
-        input.style.height = 'auto';
-        input.style.height = `${input.scrollHeight}px`;
-    }
+        if (pendingFocus === null) {
+            return;
+        }
+
+        if (focusItemInput(pendingFocus)) {
+            pendingFocusRef.current = null;
+        }
+    });
 
     function moveCaretBetweenItems({ id, direction }: { id: string; direction: 'up' | 'down' }) {
         const sortedItems = unchecked.find((item) => item.id === id) ? unchecked : checked;
@@ -133,7 +139,7 @@ export function NotePage({
             firstLineLength === -1 ? targetItem.title.length : firstLineLength;
         const selectionPosition = Math.min(desiredCaretPositionRef.current, maxPositionInFirstLine);
 
-        setPendingFocus({
+        requestFocus({
             id: targetItem.id,
             selectionStart: selectionPosition,
             selectionEnd: selectionPosition,
@@ -202,7 +208,7 @@ export function NotePage({
             checked_at: null,
         });
 
-        setPendingFocus({
+        requestFocus({
             id: newId,
             selectionStart: 0,
             selectionEnd: 0,
@@ -225,7 +231,7 @@ export function NotePage({
             title: mergedTitle,
         });
         sync.delete(currentItem.id);
-        setPendingFocus({
+        requestFocus({
             id: previousItem.id,
             selectionStart: cursorPosition,
             selectionEnd: cursorPosition,
@@ -298,7 +304,7 @@ export function NotePage({
             checked_at: null,
         });
 
-        setPendingFocus({
+        requestFocus({
             id,
             selectionStart: 0,
             selectionEnd: 0,
@@ -333,8 +339,6 @@ export function NotePage({
                         onRemove={() => {
                             sync.delete(item.id);
                         }}
-                        resizeTextarea={resizeTextarea}
-                        inputRefs={inputRefs}
                         activeEditorEmojis={presence.emojisByItemId[item.id]}
                         readonlyText={false}
                         existingTypes={existingTypes}
@@ -373,8 +377,6 @@ export function NotePage({
                                 onRemove={() => {
                                     sync.delete(item.id);
                                 }}
-                                resizeTextarea={() => {}}
-                                inputRefs={inputRefs}
                                 // A checked item can't be focused (it renders as plain
                                 // text), but it can still be someone's active item from
                                 // just before they checked it, so avatars are shown here

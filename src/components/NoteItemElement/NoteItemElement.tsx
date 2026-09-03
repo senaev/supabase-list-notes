@@ -15,8 +15,6 @@ export function NoteItemElement({
     onFocus,
     onKeyDown,
     onRemove,
-    resizeTextarea,
-    inputRefs,
     onTextSelectionChange,
     readonlyText,
     existingTypes,
@@ -30,8 +28,6 @@ export function NoteItemElement({
     onFocus: VoidFunction;
     onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
     onRemove: VoidFunction;
-    resizeTextarea: (input: HTMLTextAreaElement) => void;
-    inputRefs: React.RefObject<Map<string, HTMLTextAreaElement>>;
     readonlyText: boolean;
     onTextSelectionChange: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
     existingTypes: string[];
@@ -67,16 +63,7 @@ export function NoteItemElement({
                     <textarea
                         id={`input-${item.id}`}
                         className={'NoteItemElement__input'}
-                        ref={(node) => {
-                            if (node) {
-                                inputRefs.current.set(item.id, node);
-                                resizeTextarea(node);
-                            } else {
-                                inputRefs.current.delete(item.id);
-                            }
-                        }}
                         onChange={(event) => {
-                            resizeTextarea(event.currentTarget);
                             onChange(event.currentTarget.value);
                         }}
                         onFocus={onFocus}
