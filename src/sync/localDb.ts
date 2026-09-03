@@ -1,6 +1,7 @@
 import {
     addRxPlugin,
     createRxDatabase,
+    defaultConflictHandler,
     removeRxDatabase,
     RxCollection,
     RxConflictHandler,
@@ -92,40 +93,8 @@ const itemsSchema = {
     required: ['id', 'title', 'type', 'checked_at', 'created_at', 'modified_at', 'update_index'],
 } as const;
 
-function isSameIgnoringModified(a: LocalItemRow, b: LocalItemRow): boolean {
-    return (
-        a.id === b.id &&
-        a.title === b.title &&
-        a.type === b.type &&
-        a.checked_at === b.checked_at &&
-        a.created_at === b.created_at &&
-        a._deleted === b._deleted
-    );
-}
-
-/**
- * RxDB passes this exact context string when checking whether a state
- * pulled/streamed from Supabase should be written down into the local
- * fork (see rxdb's replication-protocol/downstream.js). We use it to
- * suppress a stale echo - e.g. a slow round trip for an earlier keystroke -
- * that is older than an edit the user already made locally, so it can't
- * clobber that newer local edit before the fresher round trip lands.
- */
-const DOWNSTREAM_EQUALITY_CHECK_CONTEXT = 'downstream-check-if-equal-1';
-
-/**
- * `isEqual` is called with (incomingMasterState, currentForkState). Returning
- * true tells RxDB the two states are equivalent, so it skips overwriting the
- * local fork with the incoming state.
- */
 const conflictHandler: RxConflictHandler<LocalItemRow> = {
-    isEqual: (a, b, context) => {
-        if (context === DOWNSTREAM_EQUALITY_CHECK_CONTEXT && pickNewerRow(a, b) === b) {
-            return true;
-        }
-
-        return isSameIgnoringModified(a, b);
-    },
+    isEqual: defaultConflictHandler.isEqual,
     resolve: ({ realMasterState, newDocumentState }) =>
         Promise.resolve(pickNewerRow(newDocumentState, realMasterState)),
 };
