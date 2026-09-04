@@ -10,15 +10,23 @@ const LocalDbFacadeContext = createContext<LocalDbFacadeContextType>(undefined);
 
 LocalDbFacadeContext.displayName = 'LocalDbFacadeContext';
 
-// TODO: move somewhere else
-const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase().catch(
-    (error) => {
-        // eslint-disable-next-line no-console
-        console.error(error);
+// Bump this suffix whenever the schema below changes shape without a
+// version bump (see `version: 0` on itemsSchema) - RxDB refuses to open an
+// existing local database whose stored schema doesn't match the current
+// one, and this local database is a pure Supabase mirror, so it's always
+// safe to just abandon the old one and start fresh under a new name rather
+// than write a migration for what is effectively disposable cache data.
+const DATABASE_NAME = 'supabase-list-notes-local-db-v4';
 
-        throw error;
-    }
-);
+// TODO: move somewhere else
+const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase<LocalCollections>(
+    DATABASE_NAME
+).catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error(error);
+
+    throw error;
+});
 
 export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
     const localDbPromiseResult = usePromise(localDbPromise);

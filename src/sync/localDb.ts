@@ -1,5 +1,6 @@
 import {
     addRxPlugin,
+    CollectionsOfDatabase,
     createRxDatabase,
     defaultConflictHandler,
     removeRxDatabase,
@@ -44,14 +45,6 @@ export type LocalCollections = {
     items: RxCollection<LocalItemRow>;
 };
 
-// Bump this suffix whenever the schema below changes shape without a
-// version bump (see `version: 0` on itemsSchema) - RxDB refuses to open an
-// existing local database whose stored schema doesn't match the current
-// one, and this local database is a pure Supabase mirror, so it's always
-// safe to just abandon the old one and start fresh under a new name rather
-// than write a migration for what is effectively disposable cache data.
-const DATABASE_NAME = 'supabase-list-notes-local-db-v4';
-
 const itemsSchema = {
     title: `${ITEMS_TABLE_NAME} schema`,
     version: 0,
@@ -93,28 +86,32 @@ const itemsSchema = {
     required: ['id', 'title', 'type', 'checked_at', 'created_at', 'modified_at', 'update_index'],
 } as const;
 
-const conflictHandler: RxConflictHandler<LocalItemRow> = {
+const RX_DB_CONFLICT_HANDLER: RxConflictHandler<Item> = {
     isEqual: defaultConflictHandler.isEqual,
     resolve: ({ realMasterState, newDocumentState }) =>
         Promise.resolve(pickNewerRow(newDocumentState, realMasterState)),
 };
 
-export async function createLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
+export async function createLocalDatabase<T extends CollectionsOfDatabase>(
+    databaseName: string
+): Promise<RxDatabase<T>> {
     try {
-        return await openLocalDatabase();
+        return await openLocalDatabase(databaseName);
     } catch (error) {
         // eslint-disable-next-line no-console
         console.error('createLocalDatabase failed, clearing local database and retrying', error);
 
-        await removeRxDatabase(DATABASE_NAME, rxDbStorage);
+        await removeRxDatabase(databaseName, rxDbStorage);
 
-        return await openLocalDatabase();
+        return await openLocalDatabase(databaseName);
     }
 }
 
-async function openLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
-    const database = await createRxDatabase<LocalCollections>({
-        name: DATABASE_NAME,
+async function openLocalDatabase<T extends CollectionsOfDatabase>(
+    databaseName: string
+): Promise<RxDatabase<T>> {
+    const database = await createRxDatabase<T>({
+        name: databaseName,
         storage: rxDbStorage,
         multiInstance: true,
     });
@@ -122,7 +119,7 @@ async function openLocalDatabase(): Promise<RxDatabase<LocalCollections>> {
     await database.addCollections({
         items: {
             schema: itemsSchema,
-            conflictHandler,
+            conflictHandler: RX_DB_CONFLICT_HANDLER,
         },
     });
 
