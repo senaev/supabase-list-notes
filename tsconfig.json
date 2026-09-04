@@ -15,7 +15,10 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
-        "types": ["vitest/globals"]
+        "types": ["vitest/globals"],
+        "paths": {
+            "senaev-utils/*": ["./node_modules/senaev-utils/*"]
+        }
     },
     "include": ["src", "vite.config.ts", "e2e", "playwright.config.ts"]
 }

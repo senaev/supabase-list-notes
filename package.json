@@ -11,7 +11,7 @@
         "react-router-dom": "^7.13.2",
         "rxdb": "^17.4.0",
         "rxjs": "^7.8.2",
-        "senaev-utils": "1.0.0-ci.27819575255.1",
+        "senaev-utils": "1.0.0-ci.33918056091.1",
         "typescript": "^5.8.3"
     },
     "scripts": {
@@ -29,7 +29,8 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "lint": "eslint .",
-        "lint:fix": "eslint . --fix"
+        "lint:fix": "eslint . --fix",
+        "simple-checks": "concurrently --prefix-colors auto --timings npm:format:check npm:lint npm:typecheck npm:test"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.5",
@@ -44,6 +45,7 @@
         "@types/react-dom": "^19.2.3",
         "@vite-pwa/assets-generator": "^1.0.2",
         "@vitejs/plugin-react": "^5.0.4",
+        "concurrently": "^10.0.5",
         "eslint": "^9.39.5",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-import-x": "^4.17.1",

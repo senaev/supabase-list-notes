@@ -22,7 +22,7 @@ jobs:
     build:
         runs-on: ubuntu-latest
         env:
-            NODE_VERSION: '20'
+            NODE_VERSION: '22'
         steps:
             - name: Checkout
               uses: actions/checkout@v6
@@ -42,14 +42,11 @@ jobs:
               # fails in this environment's hooksPath setup.
               run: npm ci --ignore-scripts
 
-            - name: Check formatting
-              run: npm run format:check
-
-            - name: Lint
-              run: npm run lint
-
-            - name: Run tests
-              run: npm test
+            # One step, the same command the pre-push hook runs, so local and CI cannot
+            # drift. concurrently runs all four at once and lets each finish even when
+            # another fails, so a red build reports every problem instead of only the first.
+            - name: Check formatting, lint, typecheck and test
+              run: npm run simple-checks
 
             - name: Install Playwright browsers
               run: npx playwright install --with-deps chromium

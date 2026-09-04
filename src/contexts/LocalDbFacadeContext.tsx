@@ -2,7 +2,8 @@ import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
 import { RxDatabase } from 'rxdb';
 import { usePromise, UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
 
-import { createLocalDatabase, LocalCollections, LocalDbFacade } from '../sync/localDb';
+import { itemsSchema, LocalCollections, LocalDbFacade } from '../sync/localDb';
+import { createLocalDatabase } from '../sync/createLocalDatabase';
 
 export type LocalDbFacadeContextType = UsePromiseResult<LocalDbFacade>;
 
@@ -19,9 +20,9 @@ LocalDbFacadeContext.displayName = 'LocalDbFacadeContext';
 const DATABASE_NAME = 'supabase-list-notes-local-db-v4';
 
 // TODO: move somewhere else
-const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase<LocalCollections>(
-    DATABASE_NAME
-).catch((error) => {
+const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase(DATABASE_NAME, {
+    items: itemsSchema,
+}).catch((error) => {
     // eslint-disable-next-line no-console
     console.error(error);
 

@@ -1,34 +1,10 @@
-import {
-    addRxPlugin,
-    CollectionsOfDatabase,
-    createRxDatabase,
-    defaultConflictHandler,
-    removeRxDatabase,
-    RxCollection,
-    RxConflictHandler,
-    RxDatabase,
-    RxDocument,
-    RxStorage,
-} from 'rxdb';
+import { RxCollection, RxDatabase, RxDocument, RxJsonSchema } from 'rxdb';
 import { Subscription } from 'rxjs';
-import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
-import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 import { noop } from '../utils/noop';
 
-import { pickNewerRow } from './pickNewerRow';
 import type { Item } from './types';
-
-const rxDbDexieStorage = getRxStorageDexie();
-const rxDbStorage: RxStorage<unknown, unknown> = import.meta.env.DEV
-    ? wrappedValidateAjvStorage({ storage: rxDbDexieStorage })
-    : rxDbDexieStorage;
-
-if (import.meta.env.DEV) {
-    addRxPlugin(RxDBDevModePlugin);
-}
 
 /**
  * RxDB's own representation of a document always carries a `_deleted` flag
@@ -45,7 +21,7 @@ export type LocalCollections = {
     items: RxCollection<LocalItemRow>;
 };
 
-const itemsSchema = {
+export const itemsSchema: RxJsonSchema<LocalItemRow> = {
     title: `${ITEMS_TABLE_NAME} schema`,
     version: 0,
     type: 'object',
@@ -82,49 +58,12 @@ const itemsSchema = {
             maximum: Number.MAX_SAFE_INTEGER,
             multipleOf: 1,
         },
+        _deleted: {
+            type: 'boolean',
+        },
     },
     required: ['id', 'title', 'type', 'checked_at', 'created_at', 'modified_at', 'update_index'],
-} as const;
-
-const RX_DB_CONFLICT_HANDLER: RxConflictHandler<Item> = {
-    isEqual: defaultConflictHandler.isEqual,
-    resolve: ({ realMasterState, newDocumentState }) =>
-        Promise.resolve(pickNewerRow(newDocumentState, realMasterState)),
 };
-
-export async function createLocalDatabase<T extends CollectionsOfDatabase>(
-    databaseName: string
-): Promise<RxDatabase<T>> {
-    try {
-        return await openLocalDatabase(databaseName);
-    } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('createLocalDatabase failed, clearing local database and retrying', error);
-
-        await removeRxDatabase(databaseName, rxDbStorage);
-
-        return await openLocalDatabase(databaseName);
-    }
-}
-
-async function openLocalDatabase<T extends CollectionsOfDatabase>(
-    databaseName: string
-): Promise<RxDatabase<T>> {
-    const database = await createRxDatabase<T>({
-        name: databaseName,
-        storage: rxDbStorage,
-        multiInstance: true,
-    });
-
-    await database.addCollections({
-        items: {
-            schema: itemsSchema,
-            conflictHandler: RX_DB_CONFLICT_HANDLER,
-        },
-    });
-
-    return database;
-}
 
 type LocalTable<T> = {
     bulkPut: (rows: T[]) => Promise<void>;

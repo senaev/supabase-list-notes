@@ -1,4 +1,4 @@
-export type RowClock = {
+export type RxDbRowClock = {
     update_index: number;
     modified_at: string;
 };
@@ -16,7 +16,7 @@ export type RowClock = {
  * Returns `candidate` only if it is strictly newer than `current`;
  * otherwise returns `current`. Ties (both fields equal) keep `current`.
  */
-export function pickNewerRow<T extends RowClock>(current: T, candidate: T): T {
+export function pickNewerRow<T extends RxDbRowClock>(current: T, candidate: T): T {
     if (candidate.update_index !== current.update_index) {
         return candidate.update_index > current.update_index ? candidate : current;
     }
