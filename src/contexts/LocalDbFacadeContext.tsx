@@ -2,10 +2,15 @@ import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
 import { RxDatabase } from 'rxdb';
 import { usePromise, UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
 
-import { itemsSchema, LocalCollections, LocalDbFacade } from '../sync/localDb';
+import {
+    itemsSchema,
+    LocalCollections,
+    LocalCollectionsTypes,
+    LocalDbFacade,
+} from '../sync/localDb';
 import { createLocalDatabase } from '../sync/createLocalDatabase';
 
-export type LocalDbFacadeContextType = UsePromiseResult<LocalDbFacade>;
+export type LocalDbFacadeContextType = UsePromiseResult<LocalDbFacade<LocalCollectionsTypes>>;
 
 const LocalDbFacadeContext = createContext<LocalDbFacadeContextType>(undefined);
 
@@ -55,7 +60,7 @@ export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
 
 export const useLocalDbFacade = (): LocalDbFacadeContextType => useContext(LocalDbFacadeContext);
 
-export const useExistingLocalDbFacade = (): LocalDbFacade => {
+export const useExistingLocalDbFacade = (): LocalDbFacade<LocalCollectionsTypes> => {
     const contextValue = useContext(LocalDbFacadeContext);
 
     if (contextValue === undefined) {

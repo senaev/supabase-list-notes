@@ -4,6 +4,7 @@ import {
     defaultConflictHandler,
     removeRxDatabase,
     RxCollection,
+    RxCollectionCreator,
     RxConflictHandler,
     RxDatabase,
     RxJsonSchema,
@@ -35,14 +36,20 @@ export type CollectionsOf<Rows extends RowsDictionary> = {
     [Name in keyof Rows]: RxCollection<Rows[Name]>;
 };
 
-const RX_DB_CONFLICT_HANDLER: RxConflictHandler<RxDbRowClock> = {
-    isEqual: defaultConflictHandler.isEqual,
-    resolve: ({ realMasterState, newDocumentState }) => {
-        const newer = pickNewerRow(newDocumentState, realMasterState);
-
-        return Promise.resolve(newer);
-    },
+type CollectionCreatorsOf<Rows extends RowsDictionary> = {
+    [Name in keyof Rows]: RxCollectionCreator<Rows[Name]>;
 };
+
+function createConflictHandler<Row extends RxDbRowClock>(): RxConflictHandler<Row> {
+    return {
+        isEqual: defaultConflictHandler.isEqual,
+        resolve: ({ realMasterState, newDocumentState }) => {
+            const newer = pickNewerRow(newDocumentState, realMasterState);
+
+            return Promise.resolve(newer);
+        },
+    };
+}
 
 async function createLocalCollections<Rows extends RowsDictionary>(
     databaseName: string,
@@ -54,12 +61,15 @@ async function createLocalCollections<Rows extends RowsDictionary>(
         multiInstance: true,
     });
 
-    const collectionCreators = mapObjectValues(schemas, (schema) => {
-        return {
-            schema,
-            conflictHandler: RX_DB_CONFLICT_HANDLER,
-        };
-    });
+    const collectionCreators: CollectionCreatorsOf<Rows> = mapObjectValues(
+        schemas,
+        <Name extends keyof Rows>(schema: SchemasOf<Rows>[Name]) => {
+            return {
+                schema,
+                conflictHandler: createConflictHandler<Rows[Name]>(),
+            };
+        }
+    );
 
     await database.addCollections(collectionCreators);
 

@@ -1,5 +1,6 @@
 import { RxCollection, RxDatabase, RxDocument, RxJsonSchema } from 'rxdb';
 import { Subscription } from 'rxjs';
+import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 import { noop } from '../utils/noop';
@@ -17,9 +18,15 @@ export type LocalItemRow = Item & {
     _deleted: boolean;
 };
 
-export type LocalCollections = {
-    items: RxCollection<LocalItemRow>;
+export type LocalCollectionsTypes = {
+    items: LocalItemRow;
 };
+
+export type LocalCollectionsTypeWrapper<T extends Record<string, Record<string, unknown>>> = {
+    [key in keyof T]: RxCollection<T[key]>;
+};
+
+export type LocalCollections = LocalCollectionsTypeWrapper<LocalCollectionsTypes>;
 
 export const itemsSchema: RxJsonSchema<LocalItemRow> = {
     title: `${ITEMS_TABLE_NAME} schema`,
@@ -76,69 +83,61 @@ function mapDocument<T>(document: RxDocument<T>): T {
     return document.toMutableJSON();
 }
 
-type Tables = {
-    items: LocalItemRow;
-};
+function createTable<T extends Record<string, unknown>>(
+    collection: RxCollection<T>
+): LocalTable<T> {
+    return {
+        bulkPut: async (rows): Promise<void> => {
+            if (rows.length === 0) {
+                return;
+            }
 
-export class LocalDbFacade {
+            await collection.bulkUpsert(rows);
+        },
+
+        get: async (id): Promise<T | undefined> => {
+            const document = await collection.findOne(id).exec();
+
+            if (!document) {
+                return undefined;
+            }
+
+            return mapDocument(document);
+        },
+
+        observeAll: async (onChange): Promise<Subscription> => {
+            const query = collection.find();
+            const initialDocuments = await query.exec();
+
+            onChange(initialDocuments.map((document) => mapDocument(document)));
+
+            return query.$.subscribe((documents) => {
+                onChange(documents.map((document) => mapDocument(document)));
+            });
+        },
+
+        put: (row): Promise<void> => collection.incrementalUpsert(row).then(noop),
+    };
+}
+
+export class LocalDbFacade<Tables extends Record<string, Record<string, unknown>>> {
     public readonly tables: {
         [key in keyof Tables]: LocalTable<Tables[key]>;
     };
 
-    public constructor(private readonly database: RxDatabase<LocalCollections>) {
-        this.tables = {
-            items: this.createTable('items'),
-        };
+    public constructor(private readonly database: RxDatabase<LocalCollectionsTypeWrapper<Tables>>) {
+        this.tables = mapObjectValues(database.collections, (collection) => {
+            const localTable = createTable(collection);
+
+            return localTable;
+        });
     }
 
-    public getCollections(): LocalCollections {
+    public getCollections(): LocalCollectionsTypeWrapper<Tables> {
         return this.database.collections;
     }
 
-    /**
-     * Wipes this local mirror's storage (e.g. on logout), so the next
-     * login - potentially to a different Supabase project - can't show a
-     * stale mix of the previous account's items. This RxDatabase instance
-     * is unusable afterwards.
-     */
     public remove(): Promise<string[]> {
         return this.database.remove();
-    }
-
-    private createTable<T extends keyof Tables>(tableName: T): LocalTable<Tables[T]> {
-        const collection = this.database.collections[tableName];
-
-        return {
-            bulkPut: async (rows): Promise<void> => {
-                if (rows.length === 0) {
-                    return;
-                }
-
-                await collection.bulkUpsert(rows);
-            },
-
-            get: async (id): Promise<Tables[T] | undefined> => {
-                const document = await collection.findOne(id).exec();
-
-                if (!document) {
-                    return undefined;
-                }
-
-                return mapDocument(document);
-            },
-
-            observeAll: async (onChange): Promise<Subscription> => {
-                const query = collection.find();
-                const initialDocuments = await query.exec();
-
-                onChange(initialDocuments.map((document) => mapDocument(document)));
-
-                return query.$.subscribe((documents) => {
-                    onChange(documents.map((document) => mapDocument(document)));
-                });
-            },
-
-            put: (row): Promise<void> => collection.incrementalUpsert(row).then(noop),
-        };
     }
 }

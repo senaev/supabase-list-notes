@@ -2,13 +2,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { WithDeleted } from 'rxdb';
 import { replicateSupabase, RxSupabaseReplicationState } from 'rxdb/plugins/replication-supabase';
 
-import { LocalCollections, LocalDbFacade, LocalItemRow } from './localDb';
+import { LocalCollections, LocalCollectionsTypes, LocalDbFacade } from './localDb';
 
-type ReplicatedRowByTable = {
-    items: LocalItemRow;
-};
-
-type ReplicableTableName = keyof ReplicatedRowByTable;
+type ReplicableTableName = keyof LocalCollectionsTypes;
 
 type ReplicateSupabaseOptions<T> = Parameters<typeof replicateSupabase<T>>[0];
 
@@ -16,7 +12,7 @@ const BATCH_SIZE = 500;
 
 const COLLECTION_REPLICATION_OPTIONS: {
     [K in ReplicableTableName]: Omit<
-        ReplicateSupabaseOptions<ReplicatedRowByTable[K]>,
+        ReplicateSupabaseOptions<LocalCollectionsTypes[K]>,
         'collection' | 'client' | 'tableName'
     >;
 } = {
@@ -48,29 +44,29 @@ export function startReplication<T extends ReplicableTableName>({
 }: {
     collectionName: T;
     supabase: SupabaseClient;
-    localDbFacade: LocalDbFacade;
+    localDbFacade: LocalDbFacade<LocalCollectionsTypes>;
     onError: (error: unknown) => void;
     onActiveChange: (isActive: boolean) => void;
-    onReceived: (record: ReplicatedRowByTable[T]) => void;
-    onSent: (record: WithDeleted<ReplicatedRowByTable[T]>) => void;
-}): RxSupabaseReplicationState<ReplicatedRowByTable[T]> {
+    onReceived: (record: LocalCollectionsTypes[T]) => void;
+    onSent: (record: WithDeleted<LocalCollectionsTypes[T]>) => void;
+}): RxSupabaseReplicationState<LocalCollectionsTypes[T]> {
     const collections: LocalCollections = localDbFacade.getCollections();
     const collection: LocalCollections[T] = collections[collectionName];
 
-    const replicateConfig: ReplicateSupabaseOptions<ReplicatedRowByTable[T]> = {
+    const replicateConfig: ReplicateSupabaseOptions<LocalCollectionsTypes[T]> = {
         ...(COLLECTION_REPLICATION_OPTIONS[collectionName] as Omit<
-            ReplicateSupabaseOptions<ReplicatedRowByTable[T]>,
+            ReplicateSupabaseOptions<LocalCollectionsTypes[T]>,
             'collection' | 'client' | 'tableName'
         >),
         collection: collection as unknown as ReplicateSupabaseOptions<
-            ReplicatedRowByTable[T]
+            LocalCollectionsTypes[T]
         >['collection'],
         client: supabase,
         tableName: collectionName,
     };
 
-    const replicationState: RxSupabaseReplicationState<ReplicatedRowByTable[T]> =
-        replicateSupabase<ReplicatedRowByTable[T]>(replicateConfig);
+    const replicationState: RxSupabaseReplicationState<LocalCollectionsTypes[T]> =
+        replicateSupabase<LocalCollectionsTypes[T]>(replicateConfig);
 
     replicationState.error$.subscribe(onError);
     replicationState.active$.subscribe(onActiveChange);
