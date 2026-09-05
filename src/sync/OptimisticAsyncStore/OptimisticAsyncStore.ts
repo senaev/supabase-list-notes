@@ -1,8 +1,8 @@
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
+import { noop } from 'senaev-utils/src/utils/Function/noop';
 
-import { noop } from '../../utils/noop';
 import { pickNewerRow } from '../pickNewerRow';
 import { EditableFields } from '../types';
 

@@ -1,7 +1,7 @@
 import { PropsWithChildren, createContext, useContext, useState } from 'react';
+import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 import { Toasts } from '../components/Toasts/Toasts';
-import { noop } from '../utils/noop';
 
 type ToastsContextType = {
     showError: (error: string) => void;

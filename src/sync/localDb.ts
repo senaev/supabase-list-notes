@@ -2,9 +2,9 @@ import { RxCollection, RxDatabase, RxDocument, RxJsonSchema } from 'rxdb';
 import { Subject } from 'rxjs';
 import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+import { noop } from 'senaev-utils/src/utils/Function/noop';
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
-import { noop } from '../utils/noop';
 
 import type { Item } from './types';
 
