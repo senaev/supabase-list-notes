@@ -1,10 +1,9 @@
 import { createContext, useRef } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Subject } from 'rxjs';
 import { forOwn } from 'senaev-utils/src/utils/Object/forOwn/forOwn';
 import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
 
-import { OptimisticAsyncStore, OptimisticAsyncStoresDict } from '../sync/ItemsSyncStore';
+import { OptimisticAsyncStore, OptimisticAsyncStoresDict } from '../sync/OptimisticAsyncStore';
 import { LocalCollectionsTypes, LocalItemRow } from '../sync/localDb';
 import { COLLECTION_REPLICATION_OPTIONS, startReplication } from '../sync/replication';
 
@@ -27,29 +26,7 @@ export const useItemSyncStoresDictContext = ({
     if (!ref.current) {
         const dict: OptimisticAsyncStoresDict<LocalCollectionsTypes> = mapObjectValues(
             localDb.tables,
-            (table) => {
-                const onErrorSubject = new Subject<Error>();
-
-                return new OptimisticAsyncStore<LocalItemRow>({
-                    put: (item) => table.put(item),
-                    subscribeUpdates: (callback) => {
-                        table
-                            .observeAll((incomingItems) => {
-                                callback(incomingItems);
-                            })
-                            .catch((error) => {
-                                onErrorSubject.next(error);
-                            });
-                    },
-                    onSubscribeError: (callback) => {
-                        onErrorSubject.subscribe(callback);
-                    },
-                    onAsyncStoreError: (error) => {
-                        // eslint-disable-next-line no-console
-                        console.error(error);
-                    },
-                });
-            }
+            (table) => new OptimisticAsyncStore<LocalItemRow>(table)
         );
 
         ref.current = dict;

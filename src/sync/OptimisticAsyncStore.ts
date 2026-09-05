@@ -1,5 +1,6 @@
 import { deepEqual } from 'senaev-utils/src/utils/Object/deepEqual/deepEqual';
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
+import { subscribeSignalAndCallWithCurrentValue } from 'senaev-utils/src/utils/Signal/subscribeSignalAndCallWithCurrentValue/subscribeSignalAndCallWithCurrentValue';
 
 import { noop } from '../utils/noop';
 
@@ -20,10 +21,8 @@ export type OptimisticAsyncItemOwnParams<T extends OptimisticAsyncItemInternalPa
 >;
 
 type AsyncStore<T extends OptimisticAsyncItemInternalParams> = {
+    readonly items: Signal<T[]>;
     readonly put: (item: T) => Promise<void>;
-    readonly subscribeUpdates: (callback: (incomingItems: T[]) => void) => void;
-    readonly onSubscribeError: (callback: (error: Error) => void) => void;
-    readonly onAsyncStoreError: (message: string) => void;
 };
 
 type PendingOptimisticAsyncCreate<T extends OptimisticAsyncItemInternalParams> = {
@@ -47,7 +46,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
     private pendingOptimisticDeleteIds = new Set<string>();
 
     public constructor(private readonly remoteStorage: AsyncStore<T>) {
-        this.remoteStorage.subscribeUpdates((allIncomingItems) => {
+        subscribeSignalAndCallWithCurrentValue(this.remoteStorage.items, (allIncomingItems) => {
             const incomingIds = new Set(allIncomingItems.map((item) => item.id));
             const incomingItems = allIncomingItems.filter(
                 (item) => !this.pendingOptimisticDeleteIds.has(item.id)
@@ -78,10 +77,6 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
             }
 
             this.recordsSignal.dispatch(nextState);
-        });
-
-        this.remoteStorage.onSubscribeError((error: Error) => {
-            this.remoteStorage.onAsyncStoreError(error.message);
         });
     }
 

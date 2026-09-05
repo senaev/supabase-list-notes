@@ -7,7 +7,7 @@ import {
     OptimisticAsyncItemOwnParams,
     OptimisticAsyncStore,
     OptimisticAsyncItemInternalParams,
-} from './ItemsSyncStore';
+} from './OptimisticAsyncStore';
 import type { EditableFields, Item, NetworkSyncStatus } from './types';
 import { LocalItemRow } from './localDb';
 

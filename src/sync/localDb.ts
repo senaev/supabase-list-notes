@@ -1,6 +1,7 @@
 import { RxCollection, RxDatabase, RxDocument, RxJsonSchema } from 'rxdb';
-import { Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
 import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
+import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 
 import { ITEMS_TABLE_NAME } from '../const/ITEMS_TABLE_NAME';
 import { noop } from '../utils/noop';
@@ -73,50 +74,52 @@ export const itemsSchema: RxJsonSchema<LocalItemRow> = {
 };
 
 type LocalTable<T> = {
-    bulkPut: (rows: T[]) => Promise<void>;
-    get: (id: string) => Promise<T | undefined>;
-    observeAll: (onChange: (rows: T[]) => void) => Promise<Subscription>;
-    put: (row: T) => Promise<void>;
+    readonly items: Signal<T[]>;
+    readonly put: (row: T) => Promise<void>;
+    readonly onSubscribeError: Subject<Error>;
 };
 
-function mapDocument<T>(document: RxDocument<T>): T {
-    return document.toMutableJSON();
+function mapDocuments<T>(documents: RxDocument<T>[]): T[] {
+    return documents.map((document) => document.toMutableJSON());
 }
 
 function createTable<T extends Record<string, unknown>>(
     collection: RxCollection<T>
 ): LocalTable<T> {
-    return {
-        bulkPut: async (rows): Promise<void> => {
-            if (rows.length === 0) {
-                return;
-            }
+    const onSubscribeError = new Subject<Error>();
+    const items = new Signal<T[]>([]);
 
-            await collection.bulkUpsert(rows);
-        },
+    const query = collection.find();
 
-        get: async (id): Promise<T | undefined> => {
-            const document = await collection.findOne(id).exec();
+    query
+        .exec()
+        .then((initialDocuments) => {
+            const initialState = mapDocuments(initialDocuments);
 
-            if (!document) {
-                return undefined;
-            }
+            items.dispatch(initialState);
 
-            return mapDocument(document);
-        },
+            const subscription = query.$.subscribe((nextDocuments) => {
+                const nextState = mapDocuments(nextDocuments);
 
-        observeAll: async (onChange): Promise<Subscription> => {
-            const query = collection.find();
-            const initialDocuments = await query.exec();
-
-            onChange(initialDocuments.map((document) => mapDocument(document)));
-
-            return query.$.subscribe((documents) => {
-                onChange(documents.map((document) => mapDocument(document)));
+                items.dispatch(nextState);
             });
-        },
 
-        put: (row): Promise<void> => collection.incrementalUpsert(row).then(noop),
+            // TODO: implement subscription teardown
+            noop(subscription);
+        })
+        .catch((error) => {
+            onSubscribeError.next(error);
+        });
+
+    return {
+        items,
+        onSubscribeError,
+        put: (row): Promise<void> => {
+            const promise = collection.incrementalUpsert(row).then(noop);
+
+            // TODO: handle error
+            return promise;
+        },
     };
 }
 
