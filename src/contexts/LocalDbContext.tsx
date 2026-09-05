@@ -2,15 +2,10 @@ import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
 import { RxDatabase } from 'rxdb';
 import { usePromise, UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
 
-import {
-    itemsSchema,
-    LocalCollections,
-    LocalCollectionsTypes,
-    LocalDbFacade,
-} from '../sync/localDb';
+import { itemsSchema, LocalCollections, LocalCollectionsTypes, LocalDb } from '../sync/localDb';
 import { createLocalDatabase } from '../sync/createLocalDatabase';
 
-export type LocalDbContextType = UsePromiseResult<LocalDbFacade<LocalCollectionsTypes>>;
+export type LocalDbContextType = UsePromiseResult<LocalDb<LocalCollectionsTypes>>;
 
 const LocalDbContext = createContext<LocalDbContextType>(undefined);
 
@@ -37,7 +32,7 @@ const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabas
 export function LocalDbContextProvider({ children }: PropsWithChildren) {
     const localDbPromiseResult = usePromise(localDbPromise);
 
-    const localDbFacadeContextValue: LocalDbContextType = useMemo(() => {
+    const localDbContextValue: LocalDbContextType = useMemo(() => {
         if (localDbPromiseResult === undefined) {
             return undefined;
         }
@@ -47,30 +42,26 @@ export function LocalDbContextProvider({ children }: PropsWithChildren) {
         }
 
         return {
-            data: new LocalDbFacade(localDbPromiseResult.data),
+            data: new LocalDb(localDbPromiseResult.data),
         };
     }, [localDbPromiseResult]);
 
     return (
-        <LocalDbContext.Provider value={localDbFacadeContextValue}>
-            {children}
-        </LocalDbContext.Provider>
+        <LocalDbContext.Provider value={localDbContextValue}>{children}</LocalDbContext.Provider>
     );
 }
 
 export const useLocalDb = (): LocalDbContextType => useContext(LocalDbContext);
 
-export const useExistingLocalDb = (): LocalDbFacade<LocalCollectionsTypes> => {
+export const useExistingLocalDb = (): LocalDb<LocalCollectionsTypes> => {
     const contextValue = useContext(LocalDbContext);
 
     if (contextValue === undefined) {
-        throw new Error('LocalDbFacadeContext is not provided in useExistingLocalDbFacade');
+        throw new Error('LocalDbContext is not provided in useExistingLocalDbFacade');
     }
 
     if ('error' in contextValue) {
-        throw new Error(
-            `LocalDbFacadeContext error in useExistingLocalDbFacade: ${contextValue.error}`
-        );
+        throw new Error(`LocalDbContext error in useExistingLocalDbFacade: ${contextValue.error}`);
     }
 
     return contextValue.data;

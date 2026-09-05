@@ -32,9 +32,8 @@ export function MainPageHeader({
 }) {
     const { showError, showInfoMessage } = useToastsContext();
     const statusObject = useSupabaseControllerStatus();
-    const localDbFacadeResult = useLocalDb();
-    const localDbFacade =
-        localDbFacadeResult && 'data' in localDbFacadeResult ? localDbFacadeResult.data : undefined;
+    const localDbResult = useLocalDb();
+    const localDb = localDbResult && 'data' in localDbResult ? localDbResult.data : undefined;
 
     const menu: ContextMenuItem[] =
         statusObject.status === 'ready'
@@ -75,7 +74,7 @@ export function MainPageHeader({
                       Icon: ArrowLeftOnRectangleIcon,
                       onSelect: () => {
                           statusObject.logout();
-                          localDbFacade?.remove().catch((error: Error) => {
+                          localDb?.remove().catch((error: Error) => {
                               showError(`Failed to clear local database: ${error.message}`);
                           });
                       },

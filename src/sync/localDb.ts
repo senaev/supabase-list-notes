@@ -123,7 +123,7 @@ function createTable<T extends Record<string, unknown>>(
     };
 }
 
-export class LocalDbFacade<T extends Record<string, Record<string, unknown>>> {
+export class LocalDb<T extends Record<string, Record<string, unknown>>> {
     public readonly tables: {
         [key in keyof T]: LocalTable<T[key]>;
     };
