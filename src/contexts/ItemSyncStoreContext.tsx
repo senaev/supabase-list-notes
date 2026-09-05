@@ -36,21 +36,19 @@ export const useItemSyncStoreContext = ({
         const onErrorSubject = new Subject<Error>();
 
         ref.current = new OptimisticAsyncStore<LocalItemRow>({
-            remoteStorage: {
-                subscribe: (callback) => {
-                    localDbFacade.notes_temp
-                        .observeAll((incomingItems) => {
-                            callback(incomingItems);
-                        })
-                        .catch((error) => {
-                            onErrorSubject.next(error);
-                        });
-                },
-                subscribeError: (callback) => {
-                    onErrorSubject.subscribe(callback);
-                },
-                createItem: (item) => localDbFacade.notes_temp.put(item),
-                updateItem: (item) => localDbFacade.notes_temp.put(item),
+            subscribeUpdates: (callback) => {
+                localDbFacade.notes_temp
+                    .observeAll((incomingItems) => {
+                        callback(incomingItems);
+                    })
+                    .catch((error) => {
+                        onErrorSubject.next(error);
+                    });
+            },
+            create: (item) => localDbFacade.notes_temp.put(item),
+            update: (item) => localDbFacade.notes_temp.put(item),
+            onSubscribeError: (callback) => {
+                onErrorSubject.subscribe(callback);
             },
             onAsyncStoreError: (error) => {
                 // eslint-disable-next-line no-console
