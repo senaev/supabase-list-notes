@@ -14,7 +14,7 @@ import { ItemTypesNav } from '../ItemTypesNav/ItemTypesNav';
 import { PageHeader } from '../PageHeader/PageHeader';
 import appLogoUrl from '/logo.svg';
 import { useSupabaseControllerStatus } from '../../contexts/SupabaseControllerStatusContext';
-import { useLocalDbFacade } from '../../contexts/LocalDbFacadeContext';
+import { useLocalDb } from '../../contexts/LocalDbContext';
 
 // All three are optional because the header is also rendered on its own
 // while the Supabase client is still initializing (see App), when there are
@@ -32,7 +32,7 @@ export function MainPageHeader({
 }) {
     const { showError, showInfoMessage } = useToastsContext();
     const statusObject = useSupabaseControllerStatus();
-    const localDbFacadeResult = useLocalDbFacade();
+    const localDbFacadeResult = useLocalDb();
     const localDbFacade =
         localDbFacadeResult && 'data' in localDbFacadeResult ? localDbFacadeResult.data : undefined;
 

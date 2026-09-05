@@ -10,11 +10,11 @@ import {
 } from '../sync/localDb';
 import { createLocalDatabase } from '../sync/createLocalDatabase';
 
-export type LocalDbFacadeContextType = UsePromiseResult<LocalDbFacade<LocalCollectionsTypes>>;
+export type LocalDbContextType = UsePromiseResult<LocalDbFacade<LocalCollectionsTypes>>;
 
-const LocalDbFacadeContext = createContext<LocalDbFacadeContextType>(undefined);
+const LocalDbContext = createContext<LocalDbContextType>(undefined);
 
-LocalDbFacadeContext.displayName = 'LocalDbFacadeContext';
+LocalDbContext.displayName = 'LocalDbContext';
 
 // Bump this suffix whenever the schema below changes shape without a
 // version bump (see `version: 0` on itemsSchema) - RxDB refuses to open an
@@ -34,10 +34,10 @@ const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabas
     throw error;
 });
 
-export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
+export function LocalDbContextProvider({ children }: PropsWithChildren) {
     const localDbPromiseResult = usePromise(localDbPromise);
 
-    const localDbFacadeContextValue: LocalDbFacadeContextType = useMemo(() => {
+    const localDbFacadeContextValue: LocalDbContextType = useMemo(() => {
         if (localDbPromiseResult === undefined) {
             return undefined;
         }
@@ -52,16 +52,16 @@ export function LocalDbFacadeContextProvider({ children }: PropsWithChildren) {
     }, [localDbPromiseResult]);
 
     return (
-        <LocalDbFacadeContext.Provider value={localDbFacadeContextValue}>
+        <LocalDbContext.Provider value={localDbFacadeContextValue}>
             {children}
-        </LocalDbFacadeContext.Provider>
+        </LocalDbContext.Provider>
     );
 }
 
-export const useLocalDbFacade = (): LocalDbFacadeContextType => useContext(LocalDbFacadeContext);
+export const useLocalDb = (): LocalDbContextType => useContext(LocalDbContext);
 
 export const useExistingLocalDbFacade = (): LocalDbFacade<LocalCollectionsTypes> => {
-    const contextValue = useContext(LocalDbFacadeContext);
+    const contextValue = useContext(LocalDbContext);
 
     if (contextValue === undefined) {
         throw new Error('LocalDbFacadeContext is not provided in useExistingLocalDbFacade');

@@ -120,12 +120,12 @@ function createTable<T extends Record<string, unknown>>(
     };
 }
 
-export class LocalDbFacade<Tables extends Record<string, Record<string, unknown>>> {
+export class LocalDbFacade<T extends Record<string, Record<string, unknown>>> {
     public readonly tables: {
-        [key in keyof Tables]: LocalTable<Tables[key]>;
+        [key in keyof T]: LocalTable<T[key]>;
     };
 
-    public constructor(private readonly database: RxDatabase<LocalCollectionsTypeWrapper<Tables>>) {
+    public constructor(private readonly database: RxDatabase<LocalCollectionsTypeWrapper<T>>) {
         this.tables = mapObjectValues(database.collections, (collection) => {
             const localTable = createTable(collection);
 
@@ -133,7 +133,7 @@ export class LocalDbFacade<Tables extends Record<string, Record<string, unknown>
         });
     }
 
-    public getCollections(): LocalCollectionsTypeWrapper<Tables> {
+    public getCollections(): LocalCollectionsTypeWrapper<T> {
         return this.database.collections;
     }
 

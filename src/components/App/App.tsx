@@ -13,7 +13,7 @@ import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
 import { useItemSyncStoreContext } from '../../contexts/ItemSyncStoreContext';
 import { OptimisticAsyncStore } from '../../sync/ItemsSyncStore';
-import { LocalDbFacadeContextProvider } from '../../contexts/LocalDbFacadeContext';
+import { LocalDbContextProvider } from '../../contexts/LocalDbFacadeContext';
 import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
@@ -85,7 +85,7 @@ export function NotesWithAuthApp() {
 export function NotesAppDatabaseProviders({ children }: PropsWithChildren) {
     return (
         <SupabaseControllerStatusContextProvider>
-            <LocalDbFacadeContextProvider>{children}</LocalDbFacadeContextProvider>
+            <LocalDbContextProvider>{children}</LocalDbContextProvider>
         </SupabaseControllerStatusContextProvider>
     );
 }

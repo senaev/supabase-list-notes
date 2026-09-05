@@ -1,12 +1,13 @@
 import { createContext, useRef } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Subject } from 'rxjs';
+import { forOwn } from 'senaev-utils/src/utils/Object/forOwn/forOwn';
 
 import { OptimisticAsyncStore } from '../sync/ItemsSyncStore';
-import { startReplication } from '../sync/replication';
 import { LocalItemRow } from '../sync/localDb';
+import { COLLECTION_REPLICATION_OPTIONS, startReplication } from '../sync/replication';
 
-import { useExistingLocalDbFacade } from './LocalDbFacadeContext';
+import { useExistingLocalDbFacade } from './LocalDbContext';
 
 const ItemSyncStoreContext = createContext<OptimisticAsyncStore<LocalItemRow> | null>(null);
 
@@ -23,14 +24,17 @@ export const useItemSyncStoreContext = ({
 
     // eslint-disable-next-line react-hooks/refs -- intentional lazy useRef init (survives re-renders without useMemo's non-guaranteed memoization)
     if (!ref.current) {
-        startReplication({
-            collectionName: 'items',
-            supabase: supabaseClient,
-            localDbFacade,
-            onError: (_error) => {},
-            onActiveChange: (_isActive) => {},
-            onReceived: (_record) => {},
-            onSent: (_record) => {},
+        forOwn(localDbFacade.tables, (_table, name) => {
+            startReplication({
+                collectionName: String(name),
+                supabase: supabaseClient,
+                collection: localDbFacade.getCollections()[name],
+                replicationOptions: COLLECTION_REPLICATION_OPTIONS,
+                onError: (_error) => {},
+                onActiveChange: (_isActive) => {},
+                onReceived: (_record) => {},
+                onSent: (_record) => {},
+            });
         });
 
         const onErrorSubject = new Subject<Error>();
