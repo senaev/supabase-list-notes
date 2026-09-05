@@ -13,7 +13,7 @@ import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
 import { useItemSyncStoreContext } from '../../contexts/ItemSyncStoreContext';
 import { OptimisticAsyncStore } from '../../sync/ItemsSyncStore';
-import { LocalDbContextProvider } from '../../contexts/LocalDbFacadeContext';
+import { LocalDbContextProvider } from '../../contexts/LocalDbContext';
 import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
