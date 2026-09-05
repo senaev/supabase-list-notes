@@ -11,7 +11,7 @@ import { LoadingPageContent } from '../LoadingPageContent/LoadingPageContent';
 import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
-import { useItemSyncStoreContext } from '../../contexts/ItemSyncStoreContext';
+import { useItemSyncStoresDictContext } from '../../contexts/ItemSyncStoreContext';
 import { OptimisticAsyncStore } from '../../sync/ItemsSyncStore';
 import { LocalDbContextProvider } from '../../contexts/LocalDbContext';
 import {
@@ -44,7 +44,7 @@ export function ItemsApp({
 }
 
 export function NotesApp({ supabaseClient }: { supabaseClient: SupabaseClient }) {
-    const itemSyncStore = useItemSyncStoreContext({ supabaseClient });
+    const { items: itemSyncStore } = useItemSyncStoresDictContext({ supabaseClient });
 
     return (
         <Routes>

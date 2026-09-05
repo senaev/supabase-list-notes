@@ -32,6 +32,11 @@ type PendingOptimisticAsyncCreate<T extends OptimisticAsyncItemInternalParams> =
     writePromise: Promise<void>;
 };
 
+export type OptimisticAsyncStoresDict<T extends Record<string, OptimisticAsyncItemInternalParams>> =
+    {
+        [key in keyof T]: OptimisticAsyncStore<T[key]>;
+    };
+
 export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
     public readonly recordsSignal = new Signal<T[]>([], deepEqual);
 

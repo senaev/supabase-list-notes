@@ -60,7 +60,7 @@ export function LocalDbContextProvider({ children }: PropsWithChildren) {
 
 export const useLocalDb = (): LocalDbContextType => useContext(LocalDbContext);
 
-export const useExistingLocalDbFacade = (): LocalDbFacade<LocalCollectionsTypes> => {
+export const useExistingLocalDb = (): LocalDbFacade<LocalCollectionsTypes> => {
     const contextValue = useContext(LocalDbContext);
 
     if (contextValue === undefined) {
