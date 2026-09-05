@@ -35,9 +35,11 @@ export const useItemSyncStoreContext = ({
 
         const onErrorSubject = new Subject<Error>();
 
+        const { items } = localDbFacade.tables;
+
         ref.current = new OptimisticAsyncStore<LocalItemRow>({
             subscribeUpdates: (callback) => {
-                localDbFacade.items
+                items
                     .observeAll((incomingItems) => {
                         callback(incomingItems);
                     })
@@ -45,8 +47,8 @@ export const useItemSyncStoreContext = ({
                         onErrorSubject.next(error);
                     });
             },
-            create: (item) => localDbFacade.items.put(item),
-            update: (item) => localDbFacade.items.put(item),
+            create: (item) => items.put(item),
+            update: (item) => items.put(item),
             onSubscribeError: (callback) => {
                 onErrorSubject.subscribe(callback);
             },
