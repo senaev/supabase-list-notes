@@ -51,7 +51,7 @@ function createConflictHandler<Row extends RxDbRowClock>(): RxConflictHandler<Ro
     };
 }
 
-async function createLocalCollections<Rows extends RowsDictionary>(
+async function createLocalRxCollections<Rows extends RowsDictionary>(
     databaseName: string,
     schemas: SchemasOf<Rows>
 ): Promise<RxDatabase<CollectionsOf<Rows>>> {
@@ -76,18 +76,18 @@ async function createLocalCollections<Rows extends RowsDictionary>(
     return database;
 }
 
-export async function createLocalDatabase<Rows extends RowsDictionary>(
+export async function createLocalRxDatabase<Rows extends RowsDictionary>(
     databaseName: string,
     schemas: SchemasOf<Rows>
 ): Promise<RxDatabase<CollectionsOf<Rows>>> {
     try {
-        return await createLocalCollections(databaseName, schemas);
+        return await createLocalRxCollections(databaseName, schemas);
     } catch (error) {
         // eslint-disable-next-line no-console
         console.error('createLocalDatabase failed, clearing local database and retrying', error);
 
         await removeRxDatabase(databaseName, rxDbStorage);
 
-        return await createLocalCollections(databaseName, schemas);
+        return await createLocalRxCollections(databaseName, schemas);
     }
 }

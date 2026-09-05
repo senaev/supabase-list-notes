@@ -33,7 +33,8 @@ export function MainPageHeader({
     const { showError, showInfoMessage } = useToastsContext();
     const statusObject = useSupabaseControllerStatus();
     const localDbResult = useLocalDb();
-    const localDb = localDbResult && 'data' in localDbResult ? localDbResult.data : undefined;
+    const localDb =
+        localDbResult && 'data' in localDbResult ? localDbResult.data.localDb : undefined;
 
     const menu: ContextMenuItem[] =
         statusObject.status === 'ready'

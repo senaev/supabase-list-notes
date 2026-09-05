@@ -5,9 +5,9 @@ import { getTypesByPopularity } from '../utils/getTypesByPopularity';
 
 import {
     StoreItemItemOwnParams,
-    OptimisticAsyncStore,
+    OptimisticSyncTable,
     StoreItemInternalParams,
-} from './OptimisticAsyncStore/OptimisticAsyncStore';
+} from './OptimisticSyncTable/OptimisticSyncTable';
 import type { EditableFields, Item, NetworkSyncStatus } from './types';
 import { LocalItemRow } from './localDb';
 
@@ -37,7 +37,7 @@ function toItem(row: LocalItemRow): Item {
 export function useItemsSync({
     itemSyncStore,
 }: {
-    itemSyncStore: OptimisticAsyncStore<LocalItemRow>;
+    itemSyncStore: OptimisticSyncTable<LocalItemRow>;
 }): UseItemsSyncResult {
     const itemRows = useSignal(itemSyncStore.items);
 

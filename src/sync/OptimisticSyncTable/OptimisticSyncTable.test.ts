@@ -1,7 +1,7 @@
 import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { OptimisticAsyncStore, StoreItemInternalParams } from './OptimisticAsyncStore';
+import { OptimisticSyncTable, StoreItemInternalParams } from './OptimisticSyncTable';
 
 type TestRow = StoreItemInternalParams & {
     title: string;
@@ -36,9 +36,9 @@ function createRemoteStorage() {
     };
 }
 
-describe('OptimisticAsyncStore', () => {
+describe('OptimisticSyncTable', () => {
     let remoteStorage: ReturnType<typeof createRemoteStorage>;
-    let store: OptimisticAsyncStore<TestRow>;
+    let store: OptimisticSyncTable<TestRow>;
 
     beforeEach(() => {
         vi.useFakeTimers();
@@ -49,7 +49,7 @@ describe('OptimisticAsyncStore', () => {
         vi.spyOn(crypto, 'randomUUID').mockImplementation(() => uuid(++uuidIndex));
 
         remoteStorage = createRemoteStorage();
-        store = new OptimisticAsyncStore(remoteStorage);
+        store = new OptimisticSyncTable(remoteStorage);
     });
 
     afterEach(() => {

@@ -12,8 +12,8 @@ import { MainPageHeader } from '../MainPageHeader/MainPageHeader';
 import { NotePage } from '../NotePage/NotePage';
 import { Page404 } from '../Page404/Page404';
 import { useItemSyncStoresDictContext } from '../../contexts/ItemSyncStoreContext';
-import { OptimisticAsyncStore } from '../../sync/OptimisticAsyncStore/OptimisticAsyncStore';
-import { LocalDbContextProvider } from '../../contexts/LocalDbContext';
+import { OptimisticSyncTable } from '../../sync/OptimisticSyncTable/OptimisticSyncTable';
+import { LocalDbContextProvider, useExistingLocalDb } from '../../contexts/LocalDbContext';
 import {
     SupabaseControllerStatusContextProvider,
     useSupabaseControllerStatus,
@@ -24,7 +24,7 @@ export function ItemsApp({
     itemSyncStore,
     supabaseClient,
 }: {
-    itemSyncStore: OptimisticAsyncStore<LocalItemRow>;
+    itemSyncStore: OptimisticSyncTable<LocalItemRow>;
     supabaseClient: SupabaseClient;
 }) {
     const sync = useItemsSync({ itemSyncStore });
@@ -44,7 +44,10 @@ export function ItemsApp({
 }
 
 export function NotesApp({ supabaseClient }: { supabaseClient: SupabaseClient }) {
-    const { items: itemSyncStore } = useItemSyncStoresDictContext({ supabaseClient });
+    useItemSyncStoresDictContext({ supabaseClient });
+    const {
+        syncTables: { items: itemSyncStore },
+    } = useExistingLocalDb();
 
     return (
         <Routes>

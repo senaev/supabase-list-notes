@@ -29,11 +29,11 @@ type PendingOptimisticCreate<T extends StoreItemInternalParams> = {
     writePromise: Promise<void>;
 };
 
-export type OptimisticSyncTable<T extends Record<string, StoreItemInternalParams>> = {
-    [key in keyof T]: OptimisticAsyncStore<T[key]>;
+export type OptimisticSyncTablesDict<T extends Record<string, StoreItemInternalParams>> = {
+    [key in keyof T]: OptimisticSyncTable<T[key]>;
 };
 
-export class OptimisticAsyncStore<T extends StoreItemInternalParams> {
+export class OptimisticSyncTable<T extends StoreItemInternalParams> {
     public readonly items = new Signal<T[]>([], deepEqual);
 
     private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate<T>>();

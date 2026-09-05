@@ -1,13 +1,20 @@
-import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
-import { RxDatabase } from 'rxdb';
+import { createContext, PropsWithChildren, useContext } from 'react';
 import { usePromise, UsePromiseResult } from 'senaev-utils/src/reactHooks/usePromise';
+import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
 
-import { itemsSchema, LocalCollections, LocalCollectionsTypes, LocalDb } from '../sync/localDb';
-import { createLocalDatabase } from '../sync/createLocalDatabase';
+import { itemsSchema, LocalCollectionsTypes, LocalDb, LocalItemRow } from '../sync/localDb';
+import { createLocalRxDatabase } from '../sync/createLocalRxDatabase';
+import {
+    OptimisticSyncTable,
+    OptimisticSyncTablesDict,
+} from '../sync/OptimisticSyncTable/OptimisticSyncTable';
 
-export type LocalDbContextType = UsePromiseResult<LocalDb<LocalCollectionsTypes>>;
+export type LocalDbContextType = {
+    localDb: LocalDb<LocalCollectionsTypes>;
+    syncTables: OptimisticSyncTablesDict<LocalCollectionsTypes>;
+};
 
-const LocalDbContext = createContext<LocalDbContextType>(undefined);
+const LocalDbContext = createContext<UsePromiseResult<LocalDbContextType>>(undefined);
 
 LocalDbContext.displayName = 'LocalDbContext';
 
@@ -20,40 +27,40 @@ LocalDbContext.displayName = 'LocalDbContext';
 const DATABASE_NAME = 'supabase-list-notes-local-db-v4';
 
 // TODO: move somewhere else
-const localDbPromise: Promise<RxDatabase<LocalCollections>> = createLocalDatabase(DATABASE_NAME, {
+const localRxDatabasePromise: Promise<LocalDbContextType> = createLocalRxDatabase(DATABASE_NAME, {
     items: itemsSchema,
-}).catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error(error);
+})
+    .then((localRxDatabase) => {
+        const localDb = new LocalDb(localRxDatabase);
 
-    throw error;
-});
-
-export function LocalDbContextProvider({ children }: PropsWithChildren) {
-    const localDbPromiseResult = usePromise(localDbPromise);
-
-    const localDbContextValue: LocalDbContextType = useMemo(() => {
-        if (localDbPromiseResult === undefined) {
-            return undefined;
-        }
-
-        if ('error' in localDbPromiseResult) {
-            return { error: localDbPromiseResult.error };
-        }
+        const syncTables: OptimisticSyncTablesDict<LocalCollectionsTypes> = mapObjectValues(
+            localDb.tables,
+            (table) => new OptimisticSyncTable<LocalItemRow>(table)
+        );
 
         return {
-            data: new LocalDb(localDbPromiseResult.data),
+            localDb,
+            syncTables,
         };
-    }, [localDbPromiseResult]);
+    })
+    .catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error(error);
+
+        throw error;
+    });
+
+export function LocalDbContextProvider({ children }: PropsWithChildren) {
+    const localDbContextValue = usePromise(localRxDatabasePromise);
 
     return (
         <LocalDbContext.Provider value={localDbContextValue}>{children}</LocalDbContext.Provider>
     );
 }
 
-export const useLocalDb = (): LocalDbContextType => useContext(LocalDbContext);
+export const useLocalDb = (): UsePromiseResult<LocalDbContextType> => useContext(LocalDbContext);
 
-export const useExistingLocalDb = (): LocalDb<LocalCollectionsTypes> => {
+export const useExistingLocalDb = (): LocalDbContextType => {
     const contextValue = useContext(LocalDbContext);
 
     if (contextValue === undefined) {
