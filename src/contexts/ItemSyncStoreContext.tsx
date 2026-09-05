@@ -26,7 +26,7 @@ export const useItemSyncStoreContext = ({
     if (!ref.current) {
         forOwn(localDbFacade.tables, (_table, name) => {
             startReplication({
-                collectionName: String(name),
+                tableName: String(name),
                 supabase: supabaseClient,
                 collection: localDbFacade.getCollections()[name],
                 replicationOptions: COLLECTION_REPLICATION_OPTIONS,

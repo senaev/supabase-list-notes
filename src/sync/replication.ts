@@ -30,7 +30,7 @@ export const COLLECTION_REPLICATION_OPTIONS: ReplicationOptions<LocalItemRow> = 
 };
 
 export function startReplication<T extends Record<string, unknown>>({
-    collectionName,
+    tableName,
     supabase,
     collection,
     replicationOptions,
@@ -39,7 +39,7 @@ export function startReplication<T extends Record<string, unknown>>({
     onReceived,
     onSent,
 }: {
-    collectionName: string;
+    tableName: string;
     supabase: SupabaseClient;
     collection: RxCollection<T>;
     replicationOptions: ReplicationOptions<T>;
@@ -52,7 +52,7 @@ export function startReplication<T extends Record<string, unknown>>({
         ...replicationOptions,
         collection,
         client: supabase,
-        tableName: collectionName,
+        tableName,
     };
 
     const replicationState: RxSupabaseReplicationState<T> = replicateSupabase<T>(replicateConfig);
