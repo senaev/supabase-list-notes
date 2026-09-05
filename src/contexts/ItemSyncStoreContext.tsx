@@ -31,6 +31,7 @@ export const useItemSyncStoresDictContext = ({
                 const onErrorSubject = new Subject<Error>();
 
                 return new OptimisticAsyncStore<LocalItemRow>({
+                    put: (item) => table.put(item),
                     subscribeUpdates: (callback) => {
                         table
                             .observeAll((incomingItems) => {
@@ -40,8 +41,6 @@ export const useItemSyncStoresDictContext = ({
                                 onErrorSubject.next(error);
                             });
                     },
-                    create: (item) => table.put(item),
-                    update: (item) => table.put(item),
                     onSubscribeError: (callback) => {
                         onErrorSubject.subscribe(callback);
                     },

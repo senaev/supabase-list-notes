@@ -20,10 +20,9 @@ export type OptimisticAsyncItemOwnParams<T extends OptimisticAsyncItemInternalPa
 >;
 
 type AsyncStore<T extends OptimisticAsyncItemInternalParams> = {
+    readonly put: (item: T) => Promise<void>;
     readonly subscribeUpdates: (callback: (incomingItems: T[]) => void) => void;
     readonly onSubscribeError: (callback: (error: Error) => void) => void;
-    readonly create: (item: T) => Promise<void>;
-    readonly update: (item: T) => Promise<void>;
     readonly onAsyncStoreError: (message: string) => void;
 };
 
@@ -105,7 +104,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
             ...newItemParams,
         } as T;
 
-        const writePromise = this.remoteStorage.create(localRow);
+        const writePromise = this.remoteStorage.put(localRow);
 
         this.pendingOptimisticCreatesById.set(id, {
             item: localRow,
@@ -158,7 +157,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
             _deleted: false,
         };
 
-        await this.remoteStorage.update(updatedLocalRow);
+        await this.remoteStorage.put(updatedLocalRow);
     };
 
     public readonly deleteItem = async (id: string): Promise<void> => {
@@ -184,6 +183,6 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
             _deleted: true,
         };
 
-        await this.remoteStorage.update(deletedRow);
+        await this.remoteStorage.put(deletedRow);
     };
 }
