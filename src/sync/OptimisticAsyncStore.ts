@@ -7,7 +7,7 @@ import { noop } from '../utils/noop';
 import { pickNewerRow } from './pickNewerRow';
 import { EditableFields } from './types';
 
-export type OptimisticAsyncItemInternalParams = {
+export type StoreItemInternalParams = {
     id: string;
     created_at: string;
     modified_at: string;
@@ -15,37 +15,33 @@ export type OptimisticAsyncItemInternalParams = {
     _deleted: boolean;
 };
 
-export type OptimisticAsyncItemOwnParams<T extends OptimisticAsyncItemInternalParams> = Omit<
+export type StoreItemItemOwnParams<T extends StoreItemInternalParams> = Omit<
     T,
-    keyof OptimisticAsyncItemInternalParams
+    keyof StoreItemInternalParams
 >;
 
-type AsyncStore<T extends OptimisticAsyncItemInternalParams> = {
+type AsyncStorage<T extends StoreItemInternalParams> = {
     readonly items: Signal<T[]>;
     readonly put: (item: T) => Promise<void>;
 };
 
-type PendingOptimisticAsyncCreate<T extends OptimisticAsyncItemInternalParams> = {
+type PendingOptimisticCreate<T extends StoreItemInternalParams> = {
     item: T;
     writePromise: Promise<void>;
 };
 
-export type OptimisticAsyncStoresDict<T extends Record<string, OptimisticAsyncItemInternalParams>> =
-    {
-        [key in keyof T]: OptimisticAsyncStore<T[key]>;
-    };
+export type OptimisticSyncTable<T extends Record<string, StoreItemInternalParams>> = {
+    [key in keyof T]: OptimisticAsyncStore<T[key]>;
+};
 
-export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
-    public readonly recordsSignal = new Signal<T[]>([], deepEqual);
+export class OptimisticAsyncStore<T extends StoreItemInternalParams> {
+    public readonly items = new Signal<T[]>([], deepEqual);
 
-    private readonly pendingOptimisticCreatesById = new Map<
-        string,
-        PendingOptimisticAsyncCreate<T>
-    >();
+    private readonly pendingOptimisticCreatesById = new Map<string, PendingOptimisticCreate<T>>();
 
     private pendingOptimisticDeleteIds = new Set<string>();
 
-    public constructor(private readonly remoteStorage: AsyncStore<T>) {
+    public constructor(private readonly remoteStorage: AsyncStorage<T>) {
         subscribeSignalAndCallWithCurrentValue(this.remoteStorage.items, (allIncomingItems) => {
             const incomingIds = new Set(allIncomingItems.map((item) => item.id));
             const incomingItems = allIncomingItems.filter(
@@ -56,9 +52,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
                 [...this.pendingOptimisticDeleteIds].filter((id) => incomingIds.has(id))
             );
 
-            const currentById = new Map(
-                this.recordsSignal.getValue().map((item) => [item.id, item] as const)
-            );
+            const currentById = new Map(this.items.getValue().map((item) => [item.id, item]));
 
             const nextState = incomingItems.map((incomingItem) => {
                 this.pendingOptimisticCreatesById.delete(incomingItem.id);
@@ -76,18 +70,18 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
                 nextState.push(pendingOptimisticCreate.item);
             }
 
-            this.recordsSignal.dispatch(nextState);
+            this.items.dispatch(nextState);
         });
     }
 
     public readonly createItem = (
-        newItemParams: OptimisticAsyncItemOwnParams<T>
+        newItem: StoreItemItemOwnParams<T>
     ): {
-        id: OptimisticAsyncItemInternalParams['id'];
+        id: StoreItemInternalParams['id'];
     } => {
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
-        const internalParams: OptimisticAsyncItemInternalParams = {
+        const internalParams: StoreItemInternalParams = {
             id,
             created_at: now,
             modified_at: now,
@@ -96,7 +90,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
         };
         const localRow: T = {
             ...internalParams,
-            ...newItemParams,
+            ...newItem,
         } as T;
 
         const writePromise = this.remoteStorage.put(localRow);
@@ -106,7 +100,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
             writePromise,
         });
 
-        this.recordsSignal.dispatch([...this.recordsSignal.getValue(), localRow]);
+        this.items.dispatch([...this.items.getValue(), localRow]);
 
         return { id };
     };
@@ -115,7 +109,7 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
         id: string,
         updates: Partial<EditableFields>
     ): Promise<void> => {
-        const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
+        const currentItem = this.items.getValue().find((item) => item.id === id);
 
         if (!currentItem) {
             throw new Error(`ItemsSyncStore.updateItem(${id}) error: note not found`);
@@ -126,8 +120,8 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
 
         let nextItem: T | undefined;
 
-        this.recordsSignal.dispatch(
-            this.recordsSignal.getValue().map((item) => {
+        this.items.dispatch(
+            this.items.getValue().map((item) => {
                 if (item.id !== id) {
                     return item;
                 }
@@ -157,11 +151,11 @@ export class OptimisticAsyncStore<T extends OptimisticAsyncItemInternalParams> {
 
     public readonly deleteItem = async (id: string): Promise<void> => {
         const pendingOptimisticCreate = this.pendingOptimisticCreatesById.get(id);
-        const currentItem = this.recordsSignal.getValue().find((item) => item.id === id);
+        const currentItem = this.items.getValue().find((item) => item.id === id);
 
         this.pendingOptimisticCreatesById.delete(id);
         this.pendingOptimisticDeleteIds.add(id);
-        this.recordsSignal.dispatch(this.recordsSignal.getValue().filter((item) => item.id !== id));
+        this.items.dispatch(this.items.getValue().filter((item) => item.id !== id));
 
         if (pendingOptimisticCreate) {
             await pendingOptimisticCreate.writePromise.catch(noop);

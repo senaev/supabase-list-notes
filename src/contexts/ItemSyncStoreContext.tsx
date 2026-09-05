@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { forOwn } from 'senaev-utils/src/utils/Object/forOwn/forOwn';
 import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
 
-import { OptimisticAsyncStore, OptimisticAsyncStoresDict } from '../sync/OptimisticAsyncStore';
+import { OptimisticAsyncStore, OptimisticSyncTable } from '../sync/OptimisticAsyncStore';
 import { LocalCollectionsTypes, LocalItemRow } from '../sync/localDb';
 import { COLLECTION_REPLICATION_OPTIONS, startReplication } from '../sync/replication';
 
@@ -17,14 +17,14 @@ export const useItemSyncStoresDictContext = ({
     supabaseClient,
 }: {
     supabaseClient: SupabaseClient;
-}): OptimisticAsyncStoresDict<LocalCollectionsTypes> => {
-    const ref = useRef<OptimisticAsyncStoresDict<LocalCollectionsTypes> | null>(null);
+}): OptimisticSyncTable<LocalCollectionsTypes> => {
+    const ref = useRef<OptimisticSyncTable<LocalCollectionsTypes> | null>(null);
 
     const localDb = useExistingLocalDb();
 
     // eslint-disable-next-line react-hooks/refs -- intentional lazy useRef init (survives re-renders without useMemo's non-guaranteed memoization)
     if (!ref.current) {
-        const dict: OptimisticAsyncStoresDict<LocalCollectionsTypes> = mapObjectValues(
+        const dict: OptimisticSyncTable<LocalCollectionsTypes> = mapObjectValues(
             localDb.tables,
             (table) => new OptimisticAsyncStore<LocalItemRow>(table)
         );

@@ -4,9 +4,9 @@ import { Signal } from 'senaev-utils/src/utils/Signal/Signal';
 import { getTypesByPopularity } from '../utils/getTypesByPopularity';
 
 import {
-    OptimisticAsyncItemOwnParams,
+    StoreItemItemOwnParams,
     OptimisticAsyncStore,
-    OptimisticAsyncItemInternalParams,
+    StoreItemInternalParams,
 } from './OptimisticAsyncStore';
 import type { EditableFields, Item, NetworkSyncStatus } from './types';
 import { LocalItemRow } from './localDb';
@@ -15,8 +15,8 @@ export interface UseItemsSyncResult {
     items: Item[];
     typesByPopularity: string[];
     networkSyncStatus: NetworkSyncStatus;
-    addItem: (newItem: OptimisticAsyncItemOwnParams<LocalItemRow>) => {
-        id: OptimisticAsyncItemInternalParams['id'];
+    addItem: (newItem: StoreItemItemOwnParams<LocalItemRow>) => {
+        id: StoreItemInternalParams['id'];
     };
     updateItem: (id: string, fields: Partial<EditableFields>) => void;
     delete: (id: string) => void;
@@ -39,7 +39,7 @@ export function useItemsSync({
 }: {
     itemSyncStore: OptimisticAsyncStore<LocalItemRow>;
 }): UseItemsSyncResult {
-    const itemRows = useSignal(itemSyncStore.recordsSignal);
+    const itemRows = useSignal(itemSyncStore.items);
 
     const items = itemRows.map(toItem);
 
