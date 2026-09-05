@@ -3,7 +3,10 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { forOwn } from 'senaev-utils/src/utils/Object/forOwn/forOwn';
 import { mapObjectValues } from 'senaev-utils/src/utils/Object/mapObjectValues/mapObjectValues';
 
-import { OptimisticAsyncStore, OptimisticSyncTable } from '../sync/OptimisticAsyncStore';
+import {
+    OptimisticAsyncStore,
+    OptimisticSyncTable,
+} from '../sync/OptimisticAsyncStore/OptimisticAsyncStore';
 import { LocalCollectionsTypes, LocalItemRow } from '../sync/localDb';
 import { COLLECTION_REPLICATION_OPTIONS, startReplication } from '../sync/replication';
 
