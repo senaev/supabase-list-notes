@@ -24,7 +24,7 @@ export const useItemSyncStoresDictContext = ({
     // eslint-disable-next-line react-hooks/refs -- intentional lazy useRef init (survives re-renders without useMemo's non-guaranteed memoization)
     if (!ref.current) {
         forOwn(localDb.tables, (_table, name) => {
-            console.log('start replication');
+            // TODO: move to the central init point
             startReplication({
                 tableName: String(name),
                 supabase: supabaseClient,
