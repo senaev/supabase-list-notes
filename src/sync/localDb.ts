@@ -76,10 +76,20 @@ function mapDocument<T>(document: RxDocument<T>): T {
     return document.toMutableJSON();
 }
 
-export class LocalDbFacade {
-    public readonly notes_temp = this.createTable((database) => database.items);
+type Tables = {
+    items: LocalItemRow;
+};
 
-    public constructor(private readonly database: RxDatabase<LocalCollections>) {}
+export class LocalDbFacade {
+    public readonly tables: {
+        [key in keyof Tables]: LocalTable<Tables[key]>;
+    };
+
+    public constructor(private readonly database: RxDatabase<LocalCollections>) {
+        this.tables = {
+            items: this.createTable('items'),
+        };
+    }
 
     public getCollections(): LocalCollections {
         return this.database.collections;
@@ -95,20 +105,20 @@ export class LocalDbFacade {
         return this.database.remove();
     }
 
-    private createTable<T>(
-        getCollection: (database: RxDatabase<LocalCollections>) => RxCollection<T>
-    ): LocalTable<T> {
+    private createTable<T extends keyof Tables>(tableName: T): LocalTable<Tables[T]> {
+        const collection = this.database.collections[tableName];
+
         return {
             bulkPut: async (rows): Promise<void> => {
                 if (rows.length === 0) {
                     return;
                 }
 
-                await getCollection(this.database).bulkUpsert(rows);
+                await collection.bulkUpsert(rows);
             },
 
-            get: async (id): Promise<T | undefined> => {
-                const document = await getCollection(this.database).findOne(id).exec();
+            get: async (id): Promise<Tables[T] | undefined> => {
+                const document = await collection.findOne(id).exec();
 
                 if (!document) {
                     return undefined;
@@ -118,7 +128,7 @@ export class LocalDbFacade {
             },
 
             observeAll: async (onChange): Promise<Subscription> => {
-                const query = getCollection(this.database).find();
+                const query = collection.find();
                 const initialDocuments = await query.exec();
 
                 onChange(initialDocuments.map((document) => mapDocument(document)));
@@ -128,8 +138,7 @@ export class LocalDbFacade {
                 });
             },
 
-            put: (row): Promise<void> =>
-                getCollection(this.database).incrementalUpsert(row).then(noop),
+            put: (row): Promise<void> => collection.incrementalUpsert(row).then(noop),
         };
     }
 }
