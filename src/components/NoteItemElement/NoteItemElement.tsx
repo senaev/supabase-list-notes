@@ -56,7 +56,7 @@ export function NoteItemElement({
                     type={'checkbox'}
                 />
             </label>
-            <label className={'NoteItemElement__textareaLabel'}>
+            <label className={'NoteItemElement__textareaLabel'} data-replicated-value={item.title}>
                 {readonlyText ? (
                     <div className={'NoteItemElement__input'}>{item.title}</div>
                 ) : (

@@ -52,25 +52,34 @@
     color: var(--text-color-placeholder);
 }
 
-.NoteItemElement__input {
-    width: 100%;
+/* The textarea and the invisible copy below must lay out text identically,
+   or the copy would size the row to the wrong height. */
+.NoteItemElement__input,
+.NoteItemElement__textareaLabel::after {
+    grid-area: 1 / 1 / 2 / 2;
+    min-width: 0;
+    min-height: 1.5em;
+    margin-top: var(--textarea-margin-vertical);
+    margin-bottom: var(--textarea-margin-vertical);
     padding: 0;
     border: 0;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    /* Without this a long string with no spaces overflows the row instead of
+       wrapping, and `overflow: hidden` then clips it. */
+    overflow-wrap: break-word;
+}
+
+.NoteItemElement__input {
+    width: 100%;
     outline: 0;
     background: transparent;
     color: inherit;
-    font: inherit;
     display: block;
-    min-width: 0;
-    min-height: 1.5em;
-    padding: 0;
-    font-size: 1rem;
-    line-height: 1.5;
     resize: none;
     overflow: hidden;
-    margin-top: var(--textarea-margin-vertical);
-    margin-bottom: var(--textarea-margin-vertical);
-    white-space: pre-wrap;
 }
 
 .NoteItemElement__checkboxLabel {
@@ -144,7 +153,18 @@
 
 .NoteItemElement__textareaLabel {
     width: 100%;
-    display: flex;
+    min-width: 0;
+    display: grid;
+}
+
+/* An invisible copy of the title, sharing a single grid cell with the
+   textarea. The cell is as tall as the wrapped copy and the textarea
+   stretches to fill it, so the textarea grows with its content - no
+   scrollHeight measuring on every keystroke, and it re-wraps on resize
+   for free. The trailing space keeps a trailing newline from collapsing. */
+.NoteItemElement__textareaLabel::after {
+    content: attr(data-replicated-value) ' ';
+    visibility: hidden;
 }
 
 /* Sits immediately left of the type pill, matching .ItemTypePicker's
