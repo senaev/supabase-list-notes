@@ -2,6 +2,7 @@ import './Modal.css';
 
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { addElementEventListener } from 'senaev-utils/src/utils/DOM/addElementEventListener/addElementEventListener';
 
 /**
  * Generic centered modal: a dimmed, full-viewport overlay (rendered via a
@@ -24,19 +25,19 @@ export function Modal({
     children: React.ReactNode;
     ariaLabel?: string;
 }) {
-    useEffect(() => {
-        function handleKeyDown(event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        }
-
-        document.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [onClose]);
+    useEffect(
+        () =>
+            addElementEventListener({
+                element: document.documentElement,
+                eventName: 'keydown',
+                listener: (event) => {
+                    if (event.key === 'Escape') {
+                        onClose();
+                    }
+                },
+            }),
+        [onClose]
+    );
 
     return createPortal(
         <div

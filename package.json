@@ -11,7 +11,7 @@
         "react-router-dom": "^7.13.2",
         "rxdb": "^17.4.0",
         "rxjs": "^7.8.2",
-        "senaev-utils": "1.0.0-ci.33988583828.1",
+        "senaev-utils": "1.0.0-ci.34053163389.1",
         "typescript": "^5.8.3"
     },
     "scripts": {
